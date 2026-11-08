@@ -344,7 +344,7 @@ export function App() {
           {/* ABA 2: VISTORIAS (MÓDULO 1: 21 GREs)    */}
           {/* ======================================= */}
           {activeTab === 'vistorias' && subView === 'none' && (
-            <div className="p-4 animate-fadeIn">
+            <div className="p-2.5 sm:p-4 animate-fadeIn">
               {!selectedGre && (
                 <GreSelector
                   gres={gres}

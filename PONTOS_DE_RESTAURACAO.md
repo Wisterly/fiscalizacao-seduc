@@ -29,6 +29,21 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.009] — Menu Compacto das 21 GREs (Grid 5x5 Fiel ao Modelo) & Correção de Safe Area / Status Bar
+- **Data/Hora:** 2026-11-08 16:46 (UTC-3)
+- **Escopos Definidos:**
+  - `PR.009` (Geral): Novo menu de seleção das 21 GREs em formato de matriz Grid 5x5 hipercompacto, idêntico ao modelo fotográfico enviado pelo usuário. Cada card possui a logomarca oficial da SEDUC no topo, número em destaque ("01ª GRE" a "21ª GRE"), município sede, efeito luminoso de onda neon laranja na base e selo circular de checkmark ativo. Cadastro de escolas públicas estaduais para todas as 21 GREs do Piauí e dinâmica encadeada de navegação (Seleção da GRE -> Lista de Escolas da GRE -> Vistoria, laudos técnicos, câmera com IA e levantamento).
+  - `PR.009.1` (Desktop / Web): Adaptação responsiva dos cards com efeito glassmorphism e navegação ágil entre as gerências e suas respectivas unidades escolares.
+  - `PR.009.2` (Mobile / Android): Correção definitiva da Safe Area e Status Bar: o aplicativo agora respeita estritamente a barra de status do sistema (`StatusBar.setOverlaysWebView({ overlay: false })`), impedindo qualquer sobreposição sobre a hora, bateria e Wi-Fi. Versão oficial atualizada para v1.0.4 (Build 5).
+- **Tags Git:** `PR.009`, `PR.009.1`, `PR.009.2`
+- **Arquivo Local do APK:** `c:\Users\Lenovo\Documents\antigravity\LAB - GPR\Fiscal.IA.lab - GPR\Fiscal.IA.apk` e `app-release.apk`
+- **Comando de Restauração Rápida:**
+  ```bash
+  git checkout PR.009
+  ```
+
+---
+
 ### [PR.008] — Resolução de Conflito de Instalação: Fechamento do App & Keystore Unificada
 - **Data/Hora:** 2026-11-08 16:02 (UTC-3)
 - **Escopos Definidos:**

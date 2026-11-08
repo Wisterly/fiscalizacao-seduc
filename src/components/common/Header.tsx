@@ -26,7 +26,10 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <>
-      <header className="sticky top-0 z-40 w-full bg-[#090D16]/95 backdrop-blur-2xl border-b border-white/[0.08] px-4 pt-3 pb-3">
+      <header 
+        className="sticky top-0 z-40 w-full bg-[#090D16]/95 backdrop-blur-2xl border-b border-white/[0.08] px-4 pb-3"
+        style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)' }}
+      >
         {subViewTitle ? (
           /* Header específico de Sub-View (como Tela Direita da Referência) */
           <div className="flex items-center justify-between max-w-md mx-auto">
@@ -122,7 +125,10 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Modal de Notificações */}
       {showNotifications && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center p-4 bg-black/70 backdrop-blur-md animate-fadeIn">
+        <div 
+          className="fixed inset-0 z-50 flex items-start justify-center p-4 bg-black/70 backdrop-blur-md animate-fadeIn"
+          style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 2rem)' }}
+        >
           <div className="w-full max-w-md mt-12 bg-[#0D1424] border border-white/10 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
             <div className="p-4 border-b border-white/10 flex items-center justify-between bg-slate-900/60">
               <div className="flex items-center gap-2">
