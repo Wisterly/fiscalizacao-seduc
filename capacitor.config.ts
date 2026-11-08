@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'br.com.gprlab.fiscalia',
-  appName: 'Fiscal.IA',
+  appName: 'Fiscaliz.IA.lab - GPR',
   webDir: 'dist',
   server: {
     androidScheme: 'https'

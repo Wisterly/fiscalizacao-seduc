@@ -20,36 +20,42 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <>
-      <header className="sticky top-0 z-40 w-full bg-[#090D16]/80 backdrop-blur-xl border-b border-white/[0.07] px-4 pt-3 pb-3">
-        <div className="flex items-center justify-between max-w-md mx-auto">
-          {/* Logo e Identificação */}
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-500/20 via-cyan-400/10 to-transparent border border-cyan-500/30 flex items-center justify-center shadow-glass-glow-turq">
-              <span className="font-extrabold text-xs tracking-tight text-cyan-400">GPR</span>
+      <header className="sticky top-0 z-40 w-full bg-[#090D16]/90 backdrop-blur-2xl border-b border-white/[0.08] px-3.5 pt-2.5 pb-2.5">
+        <div className="flex items-center justify-between max-w-md mx-auto gap-2">
+          {/* Canto Superior Esquerdo: Ícone/Logo 3D + Nome do Projeto */}
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+            <div className="relative flex-shrink-0">
+              <img
+                src="/app-icon.png"
+                alt="Fiscaliz.IA.lab - GPR"
+                className="w-10 h-10 rounded-2xl object-cover shadow-glass-glow-gold border border-amber-500/40 p-0.5 bg-slate-900"
+              />
+              <span className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full bg-cyan-400 border-2 border-slate-950 shadow-glass-glow-turq" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-base font-bold text-white tracking-tight leading-none">
-                  Fiscal.IA
+
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <h1 className="text-xs font-black text-white tracking-tight leading-none truncate">
+                  Fiscaliz.IA.lab - GPR
                 </h1>
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-[10px] text-cyan-300 font-semibold animate-ai-glow">
+                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full bg-cyan-500/15 border border-cyan-500/30 text-[9px] text-cyan-300 font-bold animate-ai-glow">
                   <Sparkles className="w-2.5 h-2.5 text-cyan-400" />
-                  IA Ativa
+                  IA
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 font-medium mt-0.5 flex items-center gap-1.5">
-                <span>Governo do Piauí</span>
+              <p className="text-[10px] text-slate-400 font-medium mt-0.5 flex items-center gap-1 truncate">
+                <span>Fiscalização de Obras</span>
                 <span className="w-1 h-1 rounded-full bg-slate-600" />
-                <span className="flex items-center gap-1 text-[10px] text-slate-400">
+                <span className="flex items-center gap-1 text-[9px] text-emerald-400">
                   {isOnline ? (
                     <>
-                      <Wifi className="w-2.5 h-2.5 text-emerald-400" />
-                      <span>Online / Sync</span>
+                      <Wifi className="w-2.5 h-2.5" />
+                      <span>Online</span>
                     </>
                   ) : (
                     <>
                       <WifiOff className="w-2.5 h-2.5 text-amber-400" />
-                      <span>Offline (Local)</span>
+                      <span>Offline</span>
                     </>
                   )}
                 </span>
@@ -57,16 +63,29 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
-          {/* Sino de Notificações */}
-          <div className="flex items-center gap-2">
+          {/* Canto Superior Direito: Logo Secretaria de Educação com mapa do Piauí + Sino */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="h-9 px-1.5 py-1 rounded-xl bg-slate-900/60 border border-white/10 flex items-center justify-center backdrop-blur-md">
+              <img
+                src="/logo-piaui-mapa.png"
+                alt="Secretaria de Educação - Governo do Piauí"
+                onError={(e) => {
+                  // Fallback se não carregar dark-theme
+                  (e.target as HTMLImageElement).src = '/logo-seduc-piaui.png';
+                }}
+                className="h-7 w-auto object-contain max-w-[85px]"
+                title="Secretaria de Estado da Educação - SEDUC Piauí"
+              />
+            </div>
+
             <button
               onClick={() => setShowNotifications(true)}
-              className="relative p-2.5 rounded-xl bg-slate-800/60 border border-white/10 active-press text-slate-300 hover:text-white"
+              className="relative p-2 rounded-xl bg-slate-800/80 border border-white/10 active-press text-slate-300 hover:text-white"
               aria-label="Notificações"
             >
-              <Bell className="w-5 h-5" />
+              <Bell className="w-4 h-4" />
               {alertasPendentes.length > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-orange-500 text-white text-[10px] font-bold flex items-center justify-center shadow-glass-glow-orange border border-slate-900">
+                <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-orange-500 text-white text-[9px] font-bold flex items-center justify-center shadow-glass-glow-orange border border-slate-900">
                   {alertasPendentes.length}
                 </span>
               )}
