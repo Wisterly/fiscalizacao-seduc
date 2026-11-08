@@ -1,0 +1,86 @@
+name: Gerar Aplicativo Android (Fiscalização SEDUC APK)
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-apk:
+    name: Compilar Fiscalização SEDUC APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar código do repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Instalar dependências Web e Capacitor
+        run: npm install
+
+      - name: Compilar Projeto Web (Vite + TypeScript)
+        run: npm run build
+
+      - name: Sincronizar arquivos Web com o pacote Android (Capacitor)
+        run: npx cap sync android
+
+      - name: Configurar Java JDK 21 para Android Gradle
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Dar permissão de execução ao Gradle Wrapper
+        run: chmod +x android/gradlew
+
+      - name: Compilar APK Android
+        working-directory: ./android
+        run: |
+          BUILD_CODE=$(node -p "require('../version.json').buildNumber || 1")
+          VERSION_NAME=$(node -p "require('../version.json').version || '1.0.0'")
+          echo "Compilando Fiscalizacao-SEDUC com versionCode=$BUILD_CODE versionName=$VERSION_NAME"
+          echo "BUILD_CODE=$BUILD_CODE" >> $GITHUB_ENV
+          echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
+          ./gradlew assembleDebug -PversionCode=$BUILD_CODE -PversionName="$VERSION_NAME"
+          cp app/build/outputs/apk/debug/app-debug.apk ../Fiscalizacao-SEDUC.apk
+          cp app/build/outputs/apk/debug/app-debug.apk ../Fiscalizacao-SEDUC-${VERSION_NAME}.apk
+          cp app/build/outputs/apk/debug/app-debug.apk ../Fiscalizacao-SEDUC-v${BUILD_CODE}.apk
+
+      - name: Disponibilizar APK como Artifact no Actions
+        uses: actions/upload-artifact@v4
+        with:
+          name: Fiscalizacao-SEDUC-APK
+          path: |
+            Fiscalizacao-SEDUC*.apk
+          if-no-files-found: error
+
+      - name: Publicar APK em Releases (apk-latest)
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-latest
+          name: "📱 Fiscalização SEDUC v${{ env.VERSION_NAME }} (Build ${{ env.BUILD_CODE }})"
+          body: |
+            ### 🏛 Aplicativo Oficial Android — Fiscalização SEDUC (GPR Lab)
+            - **Download da Versão Atualizada:** Baixe o arquivo **`Fiscalizacao-SEDUC.apk`** abaixo para instalar diretamente no seu celular Android.
+            - **Versão:** v${{ env.VERSION_NAME }} (Build ${{ env.BUILD_CODE }})
+            - **Plataforma:** Android Mobile-First com Safe Area, Status Bar Dark e Offline-First.
+            - **Recursos Nativos:** 21 GREs, OS de 65%, Laudos Fotográficos com IA, Rotas Inteligentes com 1-Click WhatsApp Copy e Central de Demandas.
+          files: |
+            Fiscalizacao-SEDUC.apk
+            Fiscalizacao-SEDUC-*.apk
+          prerelease: false
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

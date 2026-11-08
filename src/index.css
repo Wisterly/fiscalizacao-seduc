@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+  
+  body {
+    background-color: #090D16;
+    color: #F8FAFC;
+    font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    touch-action: manipulation;
+  }
+}
+
+/* Glassmorphism Classes */
+.glass-panel {
+  background: rgba(30, 41, 59, 0.52);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-panel-subtle {
+  background: rgba(17, 24, 39, 0.45);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.glass-panel-elevated {
+  background: rgba(30, 41, 59, 0.70);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+}
+
+/* Esconder barra de rolagem mantendo a rolagem ativa para mobile */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Toque e microinterações de 60fps */
+.active-press {
+  transition: transform 0.12s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.12s ease;
+}
+.active-press:active {
+  transform: scale(0.97);
+  opacity: 0.9;
+}
+
+/* Efeito de brilho pulsante sutil para IA */
+@keyframes ai-pulse {
+  0%, 100% {
+    opacity: 0.9;
+    box-shadow: 0 0 12px rgba(6, 182, 212, 0.4);
+  }
+  50% {
+    opacity: 0.5;
+    box-shadow: 0 0 4px rgba(6, 182, 212, 0.1);
+  }
+}
+
+.animate-ai-glow {
+  animation: ai-pulse 2.5s infinite ease-in-out;
+}

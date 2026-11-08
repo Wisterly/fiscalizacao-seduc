@@ -1,0 +1,36 @@
+# Dependências
+node_modules/
+.pnp
+.pnp.js
+
+# Build de produção
+dist/
+dist-ssr/
+*.local
+
+# Vercel & Firebase
+.vercel/
+*-debug.log*
+
+# Android build outputs locais
+android/app/build/
+android/.gradle/
+android/build/
+android/local.properties
+android/captures/
+.gradle/
+build/
+*.apk
+
+# Logs & Editor
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
