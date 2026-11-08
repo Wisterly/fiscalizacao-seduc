@@ -29,6 +29,21 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.007] — Módulo de Vistorias: Câmera Nativa Direta, Compressão 60fps & Tags Patológicas SEDUC
+- **Data/Hora:** 2026-11-08 15:54 (UTC-3)
+- **Escopos Definidos:**
+  - `PR.007` (Geral): Configuração aprofundada do Módulo de Vistorias com acionamento nativo direto da Câmera traseira do smartphone Android (`capture="environment"`), motor de compressão client-side em Canvas (reduzindo fotos de 8MB para ~180KB com preservação de detalhes periciais) e catálogo de tags rápidas de patologias escolares da SEDUC Piauí (fissuras a 45º, infiltração, elétrica e sanitários) para preenchimento com 1 toque e refinamento via IA.
+  - `PR.007.1` (Desktop / Web): Suporte responsivo com opções de Galeria, Câmera e simulação realista para navegadores de desenvolvimento.
+  - `PR.007.2` (Mobile / Android): Integração direta com a câmera nativa do Android sem intermediários, persistência leve em localStorage/SQLite sem travamentos, e APK v1.0.2 (Build 3) compilado e publicado na Release `apk-latest`.
+- **Tags Git:** `PR.007`, `PR.007.1`, `PR.007.2`
+- **Arquivo Local do APK:** `c:\Users\Lenovo\Documents\antigravity\LAB - GPR\Fiscal.IA.lab - GPR\Fiscal.IA.apk` e `app-release.apk`
+- **Comando de Restauração Rápida:**
+  ```bash
+  git checkout PR.007
+  ```
+
+---
+
 ### [PR.006] — Padronização do Sistema Mestre: Compilação Contínua e Auto-Update Silencioso (CI/CD + OTA In-App)
 - **Data/Hora:** 2026-11-08 15:31 (UTC-3)
 - **Escopos Definidos:**

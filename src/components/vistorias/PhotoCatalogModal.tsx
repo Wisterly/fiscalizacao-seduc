@@ -131,6 +131,36 @@ export const PhotoCatalogModal: React.FC<PhotoCatalogModalProps> = ({
               </button>
             </div>
 
+            {/* Tags de Patologias Rápidas SEDUC (1 Toque) */}
+            <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1.5 mb-1.5">
+              {[
+                { tag: 'Fissura / Trinca a 45º', urgente: true, resp: 'Naila' as ResponsavelTipo },
+                { tag: 'Infiltração / Goteiras', urgente: true, resp: 'Coordenador' as ResponsavelTipo },
+                { tag: 'Fiação Exposta / Quadro', urgente: true, resp: 'Naila' as ResponsavelTipo },
+                { tag: 'Piso Desplacado / Quebrado', urgente: false, resp: 'Coordenador' as ResponsavelTipo },
+                { tag: 'Vazamento Sanitário / Vaso', urgente: false, resp: 'Coordenador' as ResponsavelTipo },
+                { tag: 'Desagregação de Pintura', urgente: false, resp: 'Coordenador' as ResponsavelTipo },
+              ].map((p) => (
+                <button
+                  key={p.tag}
+                  type="button"
+                  onClick={() => {
+                    const textoAtual = legendaOriginal.trim();
+                    const novoTexto = textoAtual ? `${textoAtual} • ${p.tag}` : p.tag;
+                    setLegendaOriginal(novoTexto);
+                    if (p.urgente) {
+                      setIsUrgente(true);
+                      setResponsavelUrgencia(p.resp);
+                      setUrgenciaNota(`Atenção imediata: ${p.tag} identificada`);
+                    }
+                  }}
+                  className="px-2 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 border border-white/10 text-[10px] text-slate-300 hover:text-cyan-300 whitespace-nowrap active-press transition-colors"
+                >
+                  + {p.tag}
+                </button>
+              ))}
+            </div>
+
             <textarea
               rows={2}
               placeholder="Ex: Parede da sala 03 com rachadura perto da janela..."

@@ -1,13 +1,13 @@
 {
-  "version": "1.0.1",
-  "buildNumber": 2,
+  "version": "1.0.2",
+  "buildNumber": 3,
   "releaseDate": "2026-11-08",
   "minRequiredVersion": "1.0.0",
   "downloadUrl": "https://github.com/Wisterly/fiscalizacao-seduc/releases/download/apk-latest/Fiscal.IA.apk",
   "changelog": [
-    "Sistema completo de Auto-Atualização em Tempo Real (OTA In-App)",
-    "Compilação contínua e publicação automática via GitHub Actions",
-    "Módulo de Orçamentos, OS e Medições refinado conforme padrão visual oficial",
-    "Instalação direta com 1 clique e sincronização em nuvem"
+    "Abertura direta da Câmera Nativa traseira do smartphone ao tocar em Tirar Foto",
+    "Compressão inteligente de imagens para máxima fluidez a 60fps em campo",
+    "Tags rápidas de patologias escolares SEDUC (fissuras, infiltrações, elétrica)",
+    "Refinamento pericial com IA acelerado e salvamento otimizado na Timeline"
   ]
 }

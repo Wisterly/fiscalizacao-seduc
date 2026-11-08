@@ -72,22 +72,69 @@ export const NewLevantamentoModal: React.FC<NewLevantamentoModalProps> = ({
     'https://images.unsplash.com/photo-1584697964190-705b893a7d2b?auto=format&fit=crop&w=800&q=80',
   ];
 
-  const handleCapturarFoto = (urlEscolhida?: string) => {
-    const url = urlEscolhida || fotosExemploSimulacao[Math.floor(Math.random() * fotosExemploSimulacao.length)];
-    setCurrentPhotoToCatalog(url);
-  };
-
-  const handleFotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
+  // Função utilitária para compressão de imagem no client-side (evita estouro de memória no celular)
+  const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        if (typeof reader.result === 'string') {
-          setCurrentPhotoToCatalog(reader.result);
-        }
+      reader.onload = (e) => {
+        const img = document.createElement('img');
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          const maxDim = 1280;
+
+          if (width > height) {
+            if (width > maxDim) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            }
+          } else {
+            if (height > maxDim) {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', 0.82));
+          } else {
+            resolve(e.target?.result as string);
+          }
+        };
+        img.src = e.target?.result as string;
       };
       reader.readAsDataURL(file);
+    });
+  };
+
+  // Captura direta com a Câmera Nativa do Android (ou upload de arquivo)
+  const handleFotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      try {
+        const compressedBase64 = await compressImage(file);
+        setCurrentPhotoToCatalog(compressedBase64);
+      } catch (err) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (typeof reader.result === 'string') {
+            setCurrentPhotoToCatalog(reader.result);
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+      e.target.value = '';
     }
+  };
+
+  const handleCapturarFotoSimulada = () => {
+    const url = fotosExemploSimulacao[Math.floor(Math.random() * fotosExemploSimulacao.length)];
+    setCurrentPhotoToCatalog(url);
   };
 
   const handleSaveFotoCatalogada = (foto: FotoLevantamento) => {
@@ -277,10 +324,14 @@ export const NewLevantamentoModal: React.FC<NewLevantamentoModalProps> = ({
                 <p className="text-[10px] text-slate-400">Legenda por ambiente + IA + alertas imediatos</p>
               </div>
 
-              <div className="flex items-center gap-1.5">
-                {/* Upload Real do Celular */}
-                <label className="p-2 rounded-xl bg-slate-800/80 border border-white/10 text-slate-300 hover:text-white cursor-pointer active-press">
-                  <Image className="w-4 h-4" />
+              <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                {/* Botão de Galeria de Fotos */}
+                <label
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-800/80 border border-white/10 text-slate-300 hover:text-white cursor-pointer active-press text-[11px] font-semibold"
+                  title="Selecionar foto existente da galeria"
+                >
+                  <Image className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Galeria</span>
                   <input
                     type="file"
                     accept="image/*"
@@ -289,14 +340,30 @@ export const NewLevantamentoModal: React.FC<NewLevantamentoModalProps> = ({
                   />
                 </label>
 
-                {/* Botão de Disparar Câmera / Simulação */}
+                {/* Botão Principal: Abertura Direta da Câmera Nativa do Celular */}
+                <label
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-400 text-slate-950 font-extrabold text-xs active-press shadow-glass-glow-turq cursor-pointer"
+                  title="Abrir Câmera do Smartphone"
+                >
+                  <Camera className="w-3.5 h-3.5 stroke-[2.5]" />
+                  <span>Tirar Foto</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    onChange={handleFotoUpload}
+                  />
+                </label>
+
+                {/* Simulação rápida para desktop sem webcam */}
                 <button
                   type="button"
-                  onClick={() => handleCapturarFoto()}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-cyan-500 text-slate-950 font-bold text-xs active-press shadow-glass-glow-turq"
+                  onClick={handleCapturarFotoSimulada}
+                  className="px-2 py-1.5 rounded-xl bg-white/5 border border-white/5 text-slate-400 hover:text-slate-200 text-[10px] active-press"
+                  title="Simular foto de exemplo para testes"
                 >
-                  <Camera className="w-3.5 h-3.5" />
-                  Tirar Foto
+                  Exemplo
                 </button>
               </div>
             </div>
