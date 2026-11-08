@@ -39,6 +39,8 @@ export interface AppUpdateManagerPlugin {
   requestInstallPermission(): Promise<void>;
   openInstallPermissionSettings(): Promise<void>;
   downloadAndInstall(options: { url: string }): Promise<{ success: boolean; message: string }>;
+  downloadViaSystemAndCloseApp(options: { url: string }): Promise<{ success: boolean; message: string }>;
+  exitApp(): Promise<void>;
   installLastDownloaded(): Promise<{ success: boolean }>;
   addListener(
     eventName: 'downloadProgress',
@@ -223,6 +225,31 @@ export async function startAppUpdate(
 export async function requestInstallPermission(): Promise<void> {
   if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android') {
     await AppUpdateManager.requestInstallPermission();
+  }
+}
+
+export async function downloadViaSystemAndCloseApp(url?: string): Promise<void> {
+  const targetUrl = url || DEFAULT_APK_DOWNLOAD_URL;
+  if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android') {
+    try {
+      await AppUpdateManager.downloadViaSystemAndCloseApp({ url: targetUrl });
+      return;
+    } catch (e) {
+      console.warn('Falha no download via sistema Android:', e);
+    }
+  }
+
+  // Fallback para navegador
+  window.open(targetUrl, '_system');
+}
+
+export async function closeApp(): Promise<void> {
+  if (Capacitor.isNativePlatform()) {
+    try {
+      await AppUpdateManager.exitApp();
+    } catch (e) {
+      console.warn('Erro ao fechar aplicativo:', e);
+    }
   }
 }
 

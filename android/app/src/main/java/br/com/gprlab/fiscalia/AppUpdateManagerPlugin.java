@@ -1,11 +1,14 @@
 package br.com.gprlab.fiscalia;
 
+import android.app.DownloadManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.Settings;
 import android.util.Log;
 
@@ -29,6 +32,7 @@ public class AppUpdateManagerPlugin extends Plugin {
     private static final String TAG = "AppUpdateManager";
     private boolean isDownloading = false;
     private File lastDownloadedApk = null;
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     /**
      * Consulta versão do aplicativo instalado (conforme padrão do Prompt Mestre).
@@ -133,7 +137,84 @@ public class AppUpdateManagerPlugin extends Plugin {
     }
 
     /**
-     * Realiza o download do APK em segundo plano e dispara o instalador oficial via FileProvider.
+     * Encerra o aplicativo completamente (finishAffinity + exit).
+     */
+    @PluginMethod
+    public void exitApp(PluginCall call) {
+        call.resolve();
+        mainHandler.postDelayed(() -> {
+            try {
+                if (getActivity() != null) {
+                    getActivity().finishAffinity();
+                    System.exit(0);
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Erro ao encerrar app", e);
+            }
+        }, 200);
+    }
+
+    /**
+     * Inicia o download pelo DownloadManager oficial do sistema Android e FECHA o aplicativo imediatamente.
+     * O download ocorre pelo Android em segundo plano com notificação no topo do celular.
+     * Ao terminar, o usuário apenas clica na notificação do Android para instalar com o app fechado!
+     */
+    @PluginMethod
+    public void downloadViaSystemAndCloseApp(PluginCall call) {
+        String downloadUrl = call.getString("url");
+        if (downloadUrl == null || downloadUrl.trim().isEmpty()) {
+            call.reject("URL de download inválida.");
+            return;
+        }
+
+        try {
+            Context context = getContext();
+            DownloadManager dm = (DownloadManager) context.getSystemService(Context.DOWNLOAD_SERVICE);
+
+            File downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+            File destFile = new File(downloadsDir, "Fiscal.IA.apk");
+            if (destFile.exists()) {
+                destFile.delete();
+            }
+
+            Uri uri = Uri.parse(downloadUrl);
+            DownloadManager.Request request = new DownloadManager.Request(uri);
+            request.setTitle("Fiscal.IA - Atualização");
+            request.setDescription("Baixando nova versão do aplicativo...");
+            request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+            request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "Fiscal.IA.apk");
+            request.setMimeType("application/vnd.android.package-archive");
+
+            if (dm != null) {
+                dm.enqueue(request);
+            }
+
+            JSObject res = new JSObject();
+            res.put("success", true);
+            res.put("message", "Download agendado no sistema Android. Fechando aplicativo...");
+            call.resolve(res);
+
+            // Fecha o aplicativo imediatamente após iniciar o download pelo sistema
+            mainHandler.postDelayed(() -> {
+                try {
+                    if (getActivity() != null) {
+                        getActivity().finishAffinity();
+                        System.exit(0);
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "Erro ao fechar app após iniciar download", e);
+                }
+            }, 600);
+
+        } catch (Exception e) {
+            Log.e(TAG, "Erro ao enfileirar download no sistema", e);
+            call.reject("Falha ao iniciar download no Android: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Realiza o download do APK em segundo plano e, ao disparar a instalação,
+     * FECHA o aplicativo automaticamente para evitar qualquer conflito de processo ativo.
      */
     @PluginMethod
     public void downloadAndInstall(PluginCall call) {
@@ -238,16 +319,16 @@ public class AppUpdateManagerPlugin extends Plugin {
                 completeEvent.put("filePath", apkFile.getAbsolutePath());
                 notifyListeners("downloadComplete", completeEvent);
 
-                // Executar instalação nativa na UI Thread
+                // Executar instalação nativa na UI Thread e FECHAR o aplicativo
                 if (getActivity() != null) {
-                    getActivity().runOnUiThread(() -> triggerInstall(apkFile));
+                    getActivity().runOnUiThread(() -> triggerInstallAndExit(apkFile));
                 } else {
-                    triggerInstall(apkFile);
+                    triggerInstallAndExit(apkFile);
                 }
 
                 JSObject res = new JSObject();
                 res.put("success", true);
-                res.put("message", "Download concluído e instalador disparado.");
+                res.put("message", "Download concluído, instalador acionado e aplicativo encerrado.");
                 call.resolve(res);
 
             } catch (Exception e) {
@@ -268,7 +349,7 @@ public class AppUpdateManagerPlugin extends Plugin {
     }
 
     /**
-     * Redispara o instalador do último APK baixado.
+     * Redispara o instalador do último APK baixado e fecha o app.
      */
     @PluginMethod
     public void installLastDownloaded(PluginCall call) {
@@ -278,7 +359,7 @@ public class AppUpdateManagerPlugin extends Plugin {
         }
 
         try {
-            triggerInstall(lastDownloadedApk);
+            triggerInstallAndExit(lastDownloadedApk);
             JSObject res = new JSObject();
             res.put("success", true);
             call.resolve(res);
@@ -288,9 +369,11 @@ public class AppUpdateManagerPlugin extends Plugin {
     }
 
     /**
-     * Dispara a Intent nativa ACTION_VIEW com permissão de leitura via FileProvider.
+     * Dispara a Intent nativa ACTION_VIEW com permissão de leitura via FileProvider,
+     * e ENCERRA O APLICATIVO IMEDIATAMENTE após abrir a tela de instalação.
+     * Isso libera 100% dos recursos e processos, eliminando qualquer conflito de pacote em uso.
      */
-    private void triggerInstall(File apkFile) {
+    private void triggerInstallAndExit(File apkFile) {
         try {
             Context context = getContext();
             String authority = context.getPackageName() + ".fileprovider";
@@ -300,7 +383,22 @@ public class AppUpdateManagerPlugin extends Plugin {
             intent.setDataAndType(contentUri, "application/vnd.android.package-archive");
             intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
             context.startActivity(intent);
+
+            // Encerra o aplicativo 700ms após abrir a tela de instalação
+            mainHandler.postDelayed(() -> {
+                try {
+                    if (getActivity() != null) {
+                        Log.i(TAG, "Fechando aplicativo para conclusão limpa da instalação pelo Android.");
+                        getActivity().finishAffinity();
+                        System.exit(0);
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "Erro ao fechar aplicativo após startActivity", e);
+                }
+            }, 700);
+
         } catch (Exception e) {
             Log.e(TAG, "Falha ao invocar FileProvider e Intent de instalação", e);
             e.printStackTrace();

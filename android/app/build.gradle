@@ -16,8 +16,20 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        shared {
+            storeFile file('fiscalia.keystore')
+            storePassword 'fiscalia2026'
+            keyAlias 'fiscalia'
+            keyPassword 'fiscalia2026'
+        }
+    }
     buildTypes {
+        debug {
+            signingConfig signingConfigs.shared
+        }
         release {
+            signingConfig signingConfigs.shared
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

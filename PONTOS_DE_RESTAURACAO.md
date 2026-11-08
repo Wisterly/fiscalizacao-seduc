@@ -29,6 +29,21 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.008] — Resolução de Conflito de Instalação: Fechamento do App & Keystore Unificada
+- **Data/Hora:** 2026-11-08 16:02 (UTC-3)
+- **Escopos Definidos:**
+  - `PR.008` (Geral): Resolução definitiva do conflito de instalação e bloqueio de atualização do pacote Android. Criação e amarração da Keystore criptográfica única compartilhada (`android/app/fiscalia.keystore`) para garantir assinatura idêntica em qualquer build (local e CI/CD).
+  - `PR.008.1` (Desktop / Web): Atualização de `src/utils/appUpdater.ts` e `UpdateModal.tsx` com opção de download pelo sistema e encerramento automático do aplicativo.
+  - `PR.008.2` (Mobile / Android): Implementação do encerramento forçado do processo (`finishAffinity()` + `System.exit(0)`) logo após disparar o instalador nativo do Android, liberando 100% dos locks de arquivos, e novo método `downloadViaSystemAndCloseApp` para download independente em segundo plano pela cortina de notificações.
+- **Tags Git:** `PR.008`, `PR.008.1`, `PR.008.2`
+- **Arquivo Local do APK:** `c:\Users\Lenovo\Documents\antigravity\LAB - GPR\Fiscal.IA.lab - GPR\Fiscal.IA.apk` e `app-release.apk`
+- **Comando de Restauração Rápida:**
+  ```bash
+  git checkout PR.008
+  ```
+
+---
+
 ### [PR.007] — Módulo de Vistorias: Câmera Nativa Direta, Compressão 60fps & Tags Patológicas SEDUC
 - **Data/Hora:** 2026-11-08 15:54 (UTC-3)
 - **Escopos Definidos:**
