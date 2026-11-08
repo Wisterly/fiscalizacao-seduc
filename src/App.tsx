@@ -32,6 +32,8 @@ import { RotasView } from './components/rotas/RotasView';
 import { DemandasView } from './components/demandas/DemandasView';
 import { GaleriaView } from './components/galeria/GaleriaView';
 import { ConfigView } from './components/config/ConfigView';
+import { UpdateModal } from './components/UpdateModal';
+import { checkForUpdate, VersionMetadata, AppInfo } from './utils/appUpdater';
 
 export function App() {
   // --- Estados do Storage ---
@@ -59,6 +61,31 @@ export function App() {
 
   // Alvo específico de OS para abrir direto
   const [targetOsId, setTargetOsId] = useState<string | undefined>(undefined);
+
+  // --- Estado do Modal de Atualização OTA ---
+  const [updateModalData, setUpdateModalData] = useState<{
+    metadata: VersionMetadata;
+    installedInfo: AppInfo;
+  } | null>(null);
+
+  // Checagem silenciosa de atualização OTA após 8 segundos da abertura
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      try {
+        const res = await checkForUpdate();
+        if (res.hasUpdate && res.metadata) {
+          setUpdateModalData({
+            metadata: res.metadata,
+            installedInfo: res.installed
+          });
+        }
+      } catch (err) {
+        console.warn('Checagem OTA em background:', err);
+      }
+    }, 8000);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   // --- Handlers de Alertas ---
   const handleResolverAlerta = (id: string) => {
@@ -395,7 +422,12 @@ export function App() {
           {/* ======================================= */}
           {activeTab === 'config' && subView === 'none' && (
             <div className="animate-fadeIn">
-              <ConfigView onResetData={handleResetData} />
+              <ConfigView
+                onResetData={handleResetData}
+                onOpenUpdateModal={(metadata, installedInfo) =>
+                  setUpdateModalData({ metadata, installedInfo })
+                }
+              />
             </div>
           )}
         </main>
@@ -409,6 +441,15 @@ export function App() {
           }}
           pendenciasCount={pendenciasCount}
         />
+
+        {/* MODAL: ATUALIZAÇÃO AUTOMÁTICA OTA */}
+        {updateModalData && (
+          <UpdateModal
+            metadata={updateModalData.metadata}
+            installedInfo={updateModalData.installedInfo}
+            onClose={() => setUpdateModalData(null)}
+          />
+        )}
 
         {/* MODAL: NOVO LEVANTAMENTO FOTOGRÁFICO */}
         {schoolForNewLevantamento && (

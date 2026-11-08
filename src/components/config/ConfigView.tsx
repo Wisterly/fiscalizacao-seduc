@@ -1,14 +1,46 @@
-import React, { useState } from 'react';
-import { Settings, Smartphone, RefreshCw, Database, Shield, User, HardDrive, CheckCircle2, RotateCcw } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import {
+  Settings,
+  Smartphone,
+  RefreshCw,
+  Database,
+  Shield,
+  User,
+  HardDrive,
+  CheckCircle2,
+  RotateCcw,
+  Sparkles,
+  Download,
+  AlertCircle
+} from 'lucide-react';
 import { storage } from '../../services/storageService';
+import {
+  checkForUpdate,
+  getInstalledAppInfo,
+  AppInfo,
+  VersionMetadata
+} from '../../utils/appUpdater';
 
 interface ConfigViewProps {
   onResetData: () => void;
+  onOpenUpdateModal?: (metadata: VersionMetadata, installed: AppInfo) => void;
 }
 
-export const ConfigView: React.FC<ConfigViewProps> = ({ onResetData }) => {
+export const ConfigView: React.FC<ConfigViewProps> = ({
+  onResetData,
+  onOpenUpdateModal
+}) => {
   const [syncing, setSyncing] = useState(false);
   const [lastSync, setLastSync] = useState(storage.getLastSync());
+
+  // Estado do OTA Update
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [installedInfo, setInstalledInfo] = useState<AppInfo | null>(null);
+  const [updateStatus, setUpdateStatus] = useState<string | null>(null);
+
+  useEffect(() => {
+    getInstalledAppInfo().then((info) => setInstalledInfo(info));
+  }, []);
 
   const handleSync = () => {
     setSyncing(true);
@@ -18,8 +50,35 @@ export const ConfigView: React.FC<ConfigViewProps> = ({ onResetData }) => {
     }, 800);
   };
 
+  const handleManualCheckUpdate = async () => {
+    setCheckingUpdate(true);
+    setUpdateStatus(null);
+
+    try {
+      const res = await checkForUpdate();
+      setInstalledInfo(res.installed);
+
+      if (res.hasUpdate && res.metadata) {
+        setUpdateStatus('Nova versão encontrada!');
+        if (onOpenUpdateModal) {
+          onOpenUpdateModal(res.metadata, res.installed);
+        }
+      } else {
+        setUpdateStatus('Você já está na versão mais recente!');
+      }
+    } catch (e: any) {
+      setUpdateStatus('Não foi possível conectar à CDN de atualizações.');
+    } finally {
+      setCheckingUpdate(false);
+    }
+  };
+
   const handleConfirmReset = () => {
-    if (window.confirm('Deseja realmente restaurar os dados de fábrica do Piauí? Todas as 21 GREs, OS de 65% e alertas para a Gerência Naila serão restaurados.')) {
+    if (
+      window.confirm(
+        'Deseja realmente restaurar os dados de fábrica do Piauí? Todas as 21 GREs, OS de 65% e alertas para a Gerência Naila serão restaurados.'
+      )
+    ) {
       onResetData();
     }
   };
@@ -44,6 +103,62 @@ export const ConfigView: React.FC<ConfigViewProps> = ({ onResetData }) => {
       </div>
 
       <div className="px-4 space-y-3">
+        {/* SEÇÃO OTA: ATUALIZAÇÕES AUTOMÁTICAS IN-APP */}
+        <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-900/90 to-slate-950 border border-amber-500/25 backdrop-blur-xl shadow-glass relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-28 h-28 bg-amber-500/5 rounded-full blur-2xl pointer-events-none" />
+
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2 text-xs font-bold text-white">
+              <Sparkles className="w-4 h-4 text-amber-400" />
+              <span>Atualizações In-App (OTA)</span>
+            </div>
+            <span className="text-[9px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
+              CI/CD Ativo
+            </span>
+          </div>
+
+          <p className="text-[11px] text-slate-300 leading-relaxed mb-3">
+            O aplicativo detecta novas compilações automaticamente via GitHub Releases sem precisar de download manual ou lojas de apps.
+          </p>
+
+          <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-300 mb-3">
+            <div className="p-2 rounded-xl bg-slate-950/70 border border-white/5">
+              <span className="text-[10px] text-slate-400 block">Versão Instalada:</span>
+              <span className="font-mono text-amber-300 font-bold text-xs">
+                v{installedInfo?.versionName || '1.0.1'} (#{installedInfo?.versionCode || 2})
+              </span>
+            </div>
+            <div className="p-2 rounded-xl bg-slate-950/70 border border-white/5">
+              <span className="text-[10px] text-slate-400 block">Canal OTA:</span>
+              <span className="font-mono text-cyan-300 font-bold text-xs">
+                apk-latest
+              </span>
+            </div>
+          </div>
+
+          {updateStatus && (
+            <div className={`p-2.5 rounded-xl text-xs mb-3 flex items-center gap-2 animate-fadeIn ${
+              updateStatus.includes('Nova versão')
+                ? 'bg-amber-500/15 border border-amber-500/30 text-amber-200'
+                : updateStatus.includes('mais recente')
+                ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-200'
+                : 'bg-slate-800 border border-white/10 text-slate-300'
+            }`}>
+              <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
+              <span>{updateStatus}</span>
+            </div>
+          )}
+
+          <button
+            onClick={handleManualCheckUpdate}
+            disabled={checkingUpdate}
+            className="w-full py-2.5 px-3 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/35 text-amber-300 text-xs font-bold active-press transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${checkingUpdate ? 'animate-spin' : ''}`} />
+            <span>{checkingUpdate ? 'Buscando Nova Versão na Nuvem...' : 'Verificar Atualizações Agora'}</span>
+          </button>
+        </div>
+
         {/* Perfil do Fiscal */}
         <div className="p-4 rounded-2xl bg-slate-900/60 border border-white/10 backdrop-blur-xl shadow-glass">
           <div className="flex items-center gap-3 mb-3">
@@ -76,7 +191,7 @@ export const ConfigView: React.FC<ConfigViewProps> = ({ onResetData }) => {
           <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-300">
             <div className="p-2 rounded-xl bg-slate-800/60 border border-white/5">
               <span className="text-[10px] text-slate-400 block">Pacote Android:</span>
-              <span className="font-mono text-cyan-300 text-[10px]">gov.pi.seduc.fiscalizacao</span>
+              <span className="font-mono text-cyan-300 text-[10px]">br.com.gprlab.fiscalia</span>
             </div>
             <div className="p-2 rounded-xl bg-slate-800/60 border border-white/5">
               <span className="text-[10px] text-slate-400 block">Capacitor Engine:</span>

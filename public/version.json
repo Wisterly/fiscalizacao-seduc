@@ -1,0 +1,14 @@
+{
+  "version": "1.0.1",
+  "buildNumber": 2,
+  "releaseDate": "2026-11-08",
+  "appName": "Fiscal.IA",
+  "packageName": "br.com.gprlab.fiscalia",
+  "apkUrl": "https://github.com/Wisterly/fiscalizacao-seduc/releases/download/apk-latest/Fiscal.IA.apk",
+  "changelog": [
+    "Refinamento visual oficial do módulo de Orçamentos, OS e Medições",
+    "Barra de Medição Neon Turquesa com gradiente dourado e controle tátil de campo",
+    "Sistema de Auto-Atualização Contínua OTA (In-App) com download em 1 clique",
+    "Suporte completo a funcionamento Offline-First e sincronização em segundo plano"
+  ]
+}

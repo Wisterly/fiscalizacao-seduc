@@ -29,6 +29,21 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.005] — OTA Auto-Update In-App & Pipeline CI/CD GitHub Actions
+- **Data/Hora:** 2026-11-08 15:27 (UTC-3)
+- **Escopos Definidos:**
+  - `PR.005` (Geral): Implantação da arquitetura completa de auto-atualização contínua Over-The-Air (OTA) sem intermediação de lojas de aplicativos. Fonte única de verdade de controle semântico de versão (`version.json` e `public/version.json`) com build dinâmico.
+  - `PR.005.1` (Desktop / Web): Módulo cliente TypeScript (`appUpdater.ts`) com verificação em background com anti-cache query string na CDN Fastly do GitHub, temporizador de 8 segundos na inicialização e verificação manual em Configurações.
+  - `PR.005.2` (Mobile / Android): Plugin nativo Android Java (`AppUpdateManagerPlugin.java`) registrado no Capacitor (`MainActivity.java`), gestão de permissões `REQUEST_INSTALL_PACKAGES`, download em background com suporte a redirects de CDN (`HttpURLConnection`), eventos de progresso `downloadProgress` em tempo real, disparo nativo com `FileProvider` (`ACTION_VIEW`), e modal de atualização `UpdateModal.tsx` com barra de progresso em cápsula neon e notas de versão.
+- **Tags Git:** `PR.005`, `PR.005.1`, `PR.005.2`
+- **Arquivo Local do APK:** `c:\Users\Lenovo\Documents\antigravity\LAB - GPR\Fiscal.IA.lab - GPR\Fiscal.IA.apk`
+- **Comando de Restauração Rápida:**
+  ```bash
+  git checkout PR.005
+  ```
+
+---
+
 ### [PR.004] — Refinamento Visual Fiel à Imagem de Referência: Orçamentos, OS e Medições
 - **Data/Hora:** 2026-11-08 15:15 (UTC-3)
 - **Escopos Definidos:**
