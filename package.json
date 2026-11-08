@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "apk:sync": "npm.cmd run build && npx.cmd cap sync android",
+    "apk:sync": "npm.cmd run build && npx.cmd cap sync android && powershell -ExecutionPolicy Bypass -File scripts/pack-apk.ps1",
     "apk:open": "npx.cmd cap open android",
     "cap:sync": "cap sync android",
     "cap:open": "cap open android"
