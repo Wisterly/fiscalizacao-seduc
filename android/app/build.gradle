@@ -1,10 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace "gov.pi.seduc.fiscalizacao"
+    namespace "br.com.gprlab.fiscalia"
     compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "gov.pi.seduc.fiscalizacao"
+        applicationId "br.com.gprlab.fiscalia"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

@@ -30,7 +30,7 @@ export const Header: React.FC<HeaderProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-base font-bold text-white tracking-tight leading-none">
-                  Fiscalização SEDUC
+                  Fiscal.IA
                 </h1>
                 <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-[10px] text-cyan-300 font-semibold animate-ai-glow">
                   <Sparkles className="w-2.5 h-2.5 text-cyan-400" />

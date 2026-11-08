@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'gov.pi.seduc.fiscalizacao',
-  appName: 'Fiscalização SEDUC',
+  appId: 'br.com.gprlab.fiscalia',
+  appName: 'Fiscal.IA',
   webDir: 'dist',
   server: {
     androidScheme: 'https'

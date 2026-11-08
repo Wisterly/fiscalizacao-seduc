@@ -29,6 +29,21 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.002] — Isolamento Total de Identidade Nativa: Fiscal.IA (br.com.gprlab.fiscalia)
+- **Data/Hora:** 2026-11-08 05:54 (UTC-3)
+- **Escopos Definidos:**
+  - `PR.002` (Geral): Nome oficializado como **`Fiscal.IA`** em todo o ecossistema (Vite, Capacitor, AndroidManifest, Strings, Vercel e GitHub).
+  - `PR.002.1` (Desktop): Atualização dos títulos e cabeçalhos para `Fiscal.IA - GPR Lab`.
+  - `PR.002.2` (Mobile): Resolução definitiva do conflito de instalação Android. Configurado `applicationId "br.com.gprlab.fiscalia"` exclusivo, compilado nativamente via Gradle com Android SDK 35 e Microsoft OpenJDK 21, gerando o `Fiscal.IA.apk` puro (instalável como app novo e separado no celular, sem qualquer solicitação de atualização do Kyro).
+- **Tags Git:** `PR.002`, `PR.002.1`, `PR.002.2`
+- **Arquivo Local do APK:** `c:\Users\Lenovo\Documents\antigravity\LAB - GPR\Fiscal.IA.lab - GPR\Fiscal.IA.apk`
+- **Comando de Restauração Rápida:**
+  ```bash
+  git checkout PR.002
+  ```
+
+---
+
 ### [PR.001] — Fundação Arquitetural, Módulos 1 a 4 & Capacitação APK Android
 - **Data/Hora:** 2026-11-08 05:30 (UTC-3)
 - **Escopos Definidos:**
@@ -47,6 +62,6 @@ A numeração segue rigorosamente a hierarquia de escopo:
 ## 🔗 LINKS OFICIAIS DE ACESSO & DOWNLOAD
 
 * **Link de Teste Online (Vercel):** `https://fiscalizacao-seduc.vercel.app` (ou preview ativo)
-* **Link Direto de Download do Aplicativo (.apk):** `https://github.com/Wisterly/fiscalizacao-seduc/releases/download/apk-latest/Fiscalizacao-SEDUC.apk`
+* **Link Direto de Download do Aplicativo (.apk):** `https://github.com/Wisterly/fiscalizacao-seduc/releases/download/apk-latest/Fiscal.IA.apk`
 * **Repositório GitHub:** `https://github.com/Wisterly/fiscalizacao-seduc`
-* **Arquivo Local no PC:** `c:\Users\Lenovo\Documents\antigravity\LAB - GPR\Fiscal.IA.lab - GPR\android\app\build\outputs\apk\debug\app-debug.apk` (ou `./Fiscalizacao-SEDUC.apk`)
+* **Arquivo Local no PC:** `c:\Users\Lenovo\Documents\antigravity\LAB - GPR\Fiscal.IA.lab - GPR\Fiscal.IA.apk`

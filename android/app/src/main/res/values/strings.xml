@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Fiscalização SEDUC</string>
-    <string name="title_activity_main">Fiscalização SEDUC</string>
-    <string name="package_name">gov.pi.seduc.fiscalizacao</string>
-    <string name="custom_url_scheme">gov.pi.seduc.fiscalizacao</string>
+    <string name="app_name">Fiscal.IA</string>
+    <string name="title_activity_main">Fiscal.IA</string>
+    <string name="package_name">br.com.gprlab.fiscalia</string>
+    <string name="custom_url_scheme">br.com.gprlab.fiscalia</string>
 </resources>

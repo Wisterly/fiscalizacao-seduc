@@ -1,4 +1,4 @@
-package gov.pi.seduc.fiscalizacao;
+package br.com.gprlab.fiscalia;
 
 import com.getcapacitor.BridgeActivity;
 
