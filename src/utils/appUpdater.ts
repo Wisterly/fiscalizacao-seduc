@@ -1,14 +1,25 @@
 import { registerPlugin, Capacitor, PluginListenerHandle } from '@capacitor/core';
 
+export interface UpdateInfo {
+  hasUpdate: boolean;
+  latestVersion: string;
+  latestBuild: number;
+  currentVersion: string;
+  currentBuild: number;
+  downloadUrl: string;
+  changelog: string[];
+}
+
 export interface VersionMetadata {
   version: string;
   buildNumber: number;
   releaseDate: string;
+  minRequiredVersion?: string;
+  downloadUrl?: string;
+  apkUrl?: string;
   appName?: string;
   packageName?: string;
-  apkUrl?: string;
   changelog: string[];
-  minSupportedBuild?: number;
   mandatory?: boolean;
 }
 
@@ -17,29 +28,25 @@ export interface AppInfo {
   versionName: string;
   packageName: string;
   canRequestPackageInstalls: boolean;
+  canInstall?: boolean;
   platform: string;
-  osVersion?: string;
-  sdkInt?: number;
-}
-
-export interface DownloadProgressEvent {
-  progress: number;
-  downloadedBytes: number;
-  totalBytes: number;
 }
 
 export interface AppUpdateManagerPlugin {
+  getAppVersion(): Promise<{ versionName: string; versionCode: number; packageName: string }>;
   getAppInfo(): Promise<AppInfo>;
+  checkInstallPermission(): Promise<{ canInstall: boolean }>;
+  requestInstallPermission(): Promise<void>;
   openInstallPermissionSettings(): Promise<void>;
-  downloadAndInstall(options: { url: string; fileName?: string }): Promise<{ success: boolean; message: string }>;
+  downloadAndInstall(options: { url: string }): Promise<{ success: boolean; message: string }>;
   installLastDownloaded(): Promise<{ success: boolean }>;
   addListener(
     eventName: 'downloadProgress',
-    listenerFunc: (event: DownloadProgressEvent) => void
+    listenerFunc: (event: { percent: number; progress?: number; downloadedBytes?: number; totalBytes?: number }) => void
   ): Promise<PluginListenerHandle>;
   addListener(
     eventName: 'downloadComplete',
-    listenerFunc: (event: { success: boolean; filePath: string; fileSize: number }) => void
+    listenerFunc: (event: { success: boolean; filePath: string }) => void
   ): Promise<PluginListenerHandle>;
   addListener(
     eventName: 'downloadError',
@@ -50,74 +57,87 @@ export interface AppUpdateManagerPlugin {
 
 export const AppUpdateManager = registerPlugin<AppUpdateManagerPlugin>('AppUpdateManager');
 
-export const GITHUB_RAW_VERSION_URL =
-  'https://raw.githubusercontent.com/Wisterly/fiscalizacao-seduc/main/version.json';
-
-export const DEFAULT_APK_RELEASE_URL =
+export const GITHUB_REPO_URL = 'https://raw.githubusercontent.com/Wisterly/fiscalizacao-seduc';
+export const DEFAULT_APK_DOWNLOAD_URL =
   'https://github.com/Wisterly/fiscalizacao-seduc/releases/download/apk-latest/Fiscal.IA.apk';
 
 /**
- * Consulta a versão instalada localmente no dispositivo.
+ * Consulta atualizações na CDN do GitHub (conforme especificação do Prompt Mestre).
  */
-export async function getInstalledAppInfo(): Promise<AppInfo> {
-  if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android') {
-    try {
-      return await AppUpdateManager.getAppInfo();
-    } catch (e) {
-      console.warn('Erro ao chamar plugin nativo getAppInfo:', e);
-    }
-  }
-
-  // Fallback para ambiente Web / Desktop
-  return {
-    versionCode: 1,
-    versionName: '1.0.0',
-    packageName: 'br.com.gprlab.fiscalia',
-    canRequestPackageInstalls: true,
-    platform: 'web'
-  };
-}
-
-/**
- * Consulta a CDN do GitHub para obter os metadados mais recentes de versão.
- */
-export async function fetchRemoteVersionMetadata(): Promise<VersionMetadata> {
-  const timestamp = Date.now();
-  const cdnUrl = `${GITHUB_RAW_VERSION_URL}?_t=${timestamp}`;
-
+export async function checkForAppUpdates(repoUrl = GITHUB_REPO_URL): Promise<UpdateInfo | null> {
   try {
-    const response = await fetch(cdnUrl, {
-      cache: 'no-store',
-      headers: {
-        'Accept': 'application/json',
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache'
-      }
+    const isNative = Capacitor.isNativePlatform();
+
+    // Buscar versão remota sem cache
+    const response = await fetch(`${repoUrl}/main/version.json?_t=${Date.now()}`, {
+      cache: 'no-store'
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status} ao consultar version.json na CDN.`);
-    }
+    if (!response.ok) return null;
 
-    const data: VersionMetadata = await response.json();
-    return data;
-  } catch (error) {
-    // Fallback secundário tentando a raiz da aplicação (/version.json)
-    try {
-      const localResponse = await fetch(`/version.json?_t=${timestamp}`, { cache: 'no-store' });
-      if (localResponse.ok) {
-        return await localResponse.json();
+    const remote: VersionMetadata = await response.json();
+    let currentBuild = 1;
+    let currentVersion = '1.0.0';
+
+    if (isNative) {
+      try {
+        const info = await AppUpdateManager.getAppVersion();
+        currentBuild = Number(info.versionCode) || 1;
+        currentVersion = info.versionName || '1.0.0';
+      } catch (e) {
+        console.warn('Erro ao chamar plugin nativo getAppVersion:', e);
       }
-    } catch (e) {
-      // Ignora erro do fallback secundário
     }
 
-    throw error;
+    if (remote.buildNumber > currentBuild) {
+      return {
+        hasUpdate: true,
+        latestVersion: remote.version,
+        latestBuild: remote.buildNumber,
+        currentVersion,
+        currentBuild,
+        downloadUrl: remote.downloadUrl || remote.apkUrl || DEFAULT_APK_DOWNLOAD_URL,
+        changelog: remote.changelog || []
+      };
+    }
+
+    return null;
+  } catch (error) {
+    console.warn('Erro ao verificar atualizações do app:', error);
+    return null;
   }
 }
 
 /**
- * Checa se há uma versão mais recente disponível para download.
+ * Dispara o download e instalação nativa com callback de progresso (conforme Prompt Mestre).
+ */
+export async function downloadAndInstallUpdate(
+  url: string,
+  onProgress?: (percent: number) => void
+): Promise<void> {
+  if (!Capacitor.isNativePlatform()) {
+    window.open(url || DEFAULT_APK_DOWNLOAD_URL, '_system');
+    return;
+  }
+
+  let listener: PluginListenerHandle | null = null;
+  try {
+    if (onProgress) {
+      listener = await AppUpdateManager.addListener('downloadProgress', (data) => {
+        onProgress(data.percent);
+      });
+    }
+
+    await AppUpdateManager.downloadAndInstall({ url: url || DEFAULT_APK_DOWNLOAD_URL });
+  } finally {
+    if (listener) {
+      await listener.remove();
+    }
+  }
+}
+
+/**
+ * Função de consulta avançada para integração com o UpdateModal e ConfigView.
  */
 export async function checkForUpdate(): Promise<{
   hasUpdate: boolean;
@@ -125,10 +145,33 @@ export async function checkForUpdate(): Promise<{
   installed: AppInfo;
   error?: string;
 }> {
-  const installed = await getInstalledAppInfo();
+  let installed: AppInfo = {
+    versionCode: 1,
+    versionName: '1.0.0',
+    packageName: 'br.com.gprlab.fiscalia',
+    canRequestPackageInstalls: true,
+    platform: Capacitor.getPlatform()
+  };
+
+  if (Capacitor.isNativePlatform()) {
+    try {
+      installed = await AppUpdateManager.getAppInfo();
+    } catch (e) {
+      // Ignora erro nativo no fallback
+    }
+  }
 
   try {
-    const metadata = await fetchRemoteVersionMetadata();
+    const timestamp = Date.now();
+    const response = await fetch(`${GITHUB_REPO_URL}/main/version.json?_t=${timestamp}`, {
+      cache: 'no-store'
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status} ao consultar version.json`);
+    }
+
+    const metadata: VersionMetadata = await response.json();
     const hasUpdate = metadata.buildNumber > installed.versionCode;
 
     return {
@@ -137,7 +180,6 @@ export async function checkForUpdate(): Promise<{
       installed
     };
   } catch (err: any) {
-    console.warn('Não foi possível verificar atualizações OTA:', err);
     return {
       hasUpdate: false,
       metadata: null,
@@ -147,16 +189,12 @@ export async function checkForUpdate(): Promise<{
   }
 }
 
-/**
- * Inicia o download e a instalação com emissão de progresso contínuo.
- */
 export async function startAppUpdate(
   apkUrl: string,
   onProgress?: (progress: number, downloadedBytes: number, totalBytes: number) => void
 ): Promise<{ success: boolean; message: string }> {
   if (!Capacitor.isNativePlatform()) {
-    // Se estiver na Web, abre o download do APK diretamente no navegador
-    window.open(apkUrl || DEFAULT_APK_RELEASE_URL, '_blank');
+    window.open(apkUrl || DEFAULT_APK_DOWNLOAD_URL, '_blank');
     return { success: true, message: 'Download iniciado no navegador web.' };
   }
 
@@ -164,18 +202,17 @@ export async function startAppUpdate(
 
   try {
     if (onProgress) {
-      progressListener = await AppUpdateManager.addListener(
-        'downloadProgress',
-        (event: DownloadProgressEvent) => {
-          onProgress(event.progress, event.downloadedBytes, event.totalBytes);
-        }
-      );
+      progressListener = await AppUpdateManager.addListener('downloadProgress', (event) => {
+        onProgress(
+          event.percent,
+          event.downloadedBytes || 0,
+          event.totalBytes || 0
+        );
+      });
     }
 
-    const targetUrl = apkUrl && apkUrl.trim().length > 0 ? apkUrl : DEFAULT_APK_RELEASE_URL;
-    const result = await AppUpdateManager.downloadAndInstall({ url: targetUrl });
-
-    return result;
+    const targetUrl = apkUrl || DEFAULT_APK_DOWNLOAD_URL;
+    return await AppUpdateManager.downloadAndInstall({ url: targetUrl });
   } finally {
     if (progressListener) {
       await progressListener.remove();
@@ -183,11 +220,25 @@ export async function startAppUpdate(
   }
 }
 
-/**
- * Abre a tela nativa de permissão para instalar fontes desconhecidas no Android.
- */
 export async function requestInstallPermission(): Promise<void> {
   if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android') {
-    await AppUpdateManager.openInstallPermissionSettings();
+    await AppUpdateManager.requestInstallPermission();
   }
+}
+
+export async function getInstalledAppInfo(): Promise<AppInfo> {
+  if (Capacitor.isNativePlatform()) {
+    try {
+      return await AppUpdateManager.getAppInfo();
+    } catch (e) {
+      // fallback
+    }
+  }
+  return {
+    versionCode: 1,
+    versionName: '1.0.0',
+    packageName: 'br.com.gprlab.fiscalia',
+    canRequestPackageInstalls: true,
+    platform: 'web'
+  };
 }

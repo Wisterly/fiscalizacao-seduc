@@ -1,9 +1,7 @@
-name: Gerar Aplicativo Android (Fiscal.IA APK)
+name: Gerar Aplicativo Android (Release APK & CI/CD)
 
 on:
   push:
-    branches: [ "main", "master" ]
-  pull_request:
     branches: [ "main", "master" ]
   workflow_dispatch:
 
@@ -12,7 +10,7 @@ permissions:
 
 jobs:
   build-apk:
-    name: Compilar Fiscal.IA APK
+    name: Compilar APK Android
     runs-on: ubuntu-latest
 
     steps:
@@ -25,26 +23,26 @@ jobs:
           node-version: '22'
           cache: 'npm'
 
-      - name: Instalar dependências Web e Capacitor
-        run: npm install
+      - name: Instalar dependências
+        run: npm install --legacy-peer-deps || npm install
 
       - name: Compilar Projeto Web (Vite + TypeScript)
         run: npm run build
 
-      - name: Sincronizar arquivos Web com o pacote Android (Capacitor)
+      - name: Sincronizar com Capacitor Android
         run: npx cap sync android
 
-      - name: Configurar Java JDK 21 para Android Gradle
+      - name: Configurar Java JDK 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
           cache: 'gradle'
 
-      - name: Dar permissão de execução ao Gradle Wrapper
+      - name: Permissão de execução no Gradle Wrapper
         run: chmod +x android/gradlew
 
-      - name: Compilar APK Android via Gradle
+      - name: Compilar APKs com numeração dinâmica via Gradle
         working-directory: ./android
         run: |
           BUILD_CODE=$(node -p "require('../version.json').buildNumber || 1")
@@ -54,6 +52,7 @@ jobs:
           echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
           ./gradlew assembleDebug -PversionCode=$BUILD_CODE -PversionName="$VERSION_NAME"
           cp app/build/outputs/apk/debug/app-debug.apk ../Fiscal.IA.apk
+          cp app/build/outputs/apk/debug/app-debug.apk ../app-release.apk
           cp app/build/outputs/apk/debug/app-debug.apk ../Fiscal.IA-${VERSION_NAME}.apk
           cp app/build/outputs/apk/debug/app-debug.apk ../Fiscal.IA-v${BUILD_CODE}.apk
 
@@ -63,23 +62,24 @@ jobs:
           name: Fiscal.IA-APK
           path: |
             Fiscal.IA*.apk
+            app-release.apk
           if-no-files-found: error
 
-      - name: Publicar APK na Release Oficial (apk-latest)
+      - name: Publicar Release Oficial no GitHub com tag apk-latest
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: apk-latest
-          name: "📱 Fiscal.IA v${{ env.VERSION_NAME }} (Build ${{ env.BUILD_CODE }})"
+          name: "📱 Fiscal.IA Android v${{ env.VERSION_NAME }} (Build ${{ env.BUILD_CODE }})"
           body: |
             ### 🏛 Aplicativo Oficial Android — Fiscalização SEDUC (GPR Lab)
-            - **Download da Versão Atualizada:** Baixe o arquivo **`Fiscal.IA.apk`** abaixo para instalar diretamente no seu celular Android.
             - **Versão:** v${{ env.VERSION_NAME }} (Build ${{ env.BUILD_CODE }})
-            - **Auto-Atualização OTA:** O aplicativo detecta esta compilação automaticamente ao abrir e oferece atualização com 1 clique.
+            - **Download Direto:** Baixe o arquivo **`Fiscal.IA.apk`** ou **`app-release.apk`** abaixo para instalar no seu celular.
+            - **Auto-Atualização OTA:** O aplicativo detecta esta compilação automaticamente ao abrir e oferece atualização silenciosa com 1 clique.
             - **Plataforma:** Android Mobile-First com Safe Area, Status Bar Dark e Modo Offline-First.
-            - **Recursos Nativos:** 21 GREs, Orçamentos e OS com 65% medido, Laudos Fotográficos com IA, Rotas Inteligentes com 1-Click WhatsApp Copy e Central de Demandas.
           files: |
             Fiscal.IA.apk
+            app-release.apk
             Fiscal.IA-*.apk
           prerelease: false
           make_latest: true

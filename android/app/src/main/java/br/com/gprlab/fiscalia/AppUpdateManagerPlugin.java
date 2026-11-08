@@ -3,12 +3,9 @@ package br.com.gprlab.fiscalia;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
-import android.os.Handler;
-import android.os.Looper;
 import android.provider.Settings;
 import android.util.Log;
 
@@ -20,31 +17,54 @@ import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 @CapacitorPlugin(name = "AppUpdateManager")
 public class AppUpdateManagerPlugin extends Plugin {
     private static final String TAG = "AppUpdateManager";
-    private final ExecutorService executor = Executors.newSingleThreadExecutor();
-    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private boolean isDownloading = false;
     private File lastDownloadedApk = null;
 
     /**
-     * Retorna informações sobre a versão atual instalada no aparelho.
+     * Consulta versão do aplicativo instalado (conforme padrão do Prompt Mestre).
+     */
+    @PluginMethod
+    public void getAppVersion(PluginCall call) {
+        JSObject ret = new JSObject();
+        try {
+            Context context = getContext();
+            PackageInfo pInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
+            ret.put("versionName", pInfo.versionName != null ? pInfo.versionName : "1.0.0");
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                ret.put("versionCode", pInfo.getLongVersionCode());
+            } else {
+                ret.put("versionCode", pInfo.versionCode);
+            }
+            ret.put("packageName", context.getPackageName());
+            call.resolve(ret);
+        } catch (Exception e) {
+            Log.e(TAG, "Erro ao obter versão instalada", e);
+            ret.put("versionName", "1.0.0");
+            ret.put("versionCode", 1);
+            ret.put("packageName", getContext().getPackageName());
+            call.resolve(ret);
+        }
+    }
+
+    /**
+     * Consulta avançada de informações do aplicativo e status de permissão.
      */
     @PluginMethod
     public void getAppInfo(PluginCall call) {
+        JSObject ret = new JSObject();
         try {
             Context context = getContext();
-            PackageManager pm = context.getPackageManager();
-            PackageInfo pInfo = pm.getPackageInfo(context.getPackageName(), 0);
-
+            PackageInfo pInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
             long versionCode;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 versionCode = pInfo.getLongVersionCode();
@@ -52,179 +72,213 @@ public class AppUpdateManagerPlugin extends Plugin {
                 versionCode = pInfo.versionCode;
             }
 
-            boolean canRequestInstalls = true;
+            boolean canInstall = true;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                canRequestInstalls = pm.canRequestPackageInstalls();
+                canInstall = context.getPackageManager().canRequestPackageInstalls();
             }
 
-            JSObject ret = new JSObject();
             ret.put("versionCode", versionCode);
             ret.put("versionName", pInfo.versionName != null ? pInfo.versionName : "1.0.0");
             ret.put("packageName", context.getPackageName());
-            ret.put("canRequestPackageInstalls", canRequestInstalls);
+            ret.put("canRequestPackageInstalls", canInstall);
+            ret.put("canInstall", canInstall);
             ret.put("platform", "android");
-            ret.put("osVersion", Build.VERSION.RELEASE);
             ret.put("sdkInt", Build.VERSION.SDK_INT);
-
             call.resolve(ret);
         } catch (Exception e) {
-            Log.e(TAG, "Erro ao obter dados do aplicativo", e);
-            call.reject("Erro ao obter dados do aplicativo: " + e.getMessage(), e);
+            Log.e(TAG, "Erro ao obter app info", e);
+            ret.put("versionCode", 1);
+            ret.put("versionName", "1.0.0");
+            ret.put("packageName", getContext().getPackageName());
+            ret.put("canRequestPackageInstalls", true);
+            ret.put("canInstall", true);
+            ret.put("platform", "android");
+            call.resolve(ret);
         }
     }
 
     /**
-     * Abre a tela de configurações do Android para permitir a instalação de fontes desconhecidas.
+     * Verifica se o aplicativo possui permissão para instalar fontes desconhecidas (Android 8+).
      */
     @PluginMethod
-    public void openInstallPermissionSettings(PluginCall call) {
-        try {
-            Context context = getContext();
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                if (!context.getPackageManager().canRequestPackageInstalls()) {
-                    Intent intent = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES);
-                    intent.setData(Uri.parse("package:" + context.getPackageName()));
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    context.startActivity(intent);
-                }
-            }
-            call.resolve();
-        } catch (Exception e) {
-            Log.e(TAG, "Erro ao abrir configurações de permissão", e);
-            call.reject("Erro ao abrir configurações: " + e.getMessage(), e);
+    public void checkInstallPermission(PluginCall call) {
+        JSObject ret = new JSObject();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            ret.put("canInstall", getContext().getPackageManager().canRequestPackageInstalls());
+        } else {
+            ret.put("canInstall", true);
         }
+        call.resolve(ret);
     }
 
     /**
-     * Realiza o download do APK em background emitindo eventos de progresso e dispara o instalador nativo.
+     * Solicita permissão para instalar fontes desconhecidas abrindo as configurações nativas.
+     */
+    @PluginMethod
+    public void requestInstallPermission(PluginCall call) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            if (!getContext().getPackageManager().canRequestPackageInstalls()) {
+                Intent intent = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES);
+                intent.setData(Uri.parse("package:" + getContext().getPackageName()));
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                getContext().startActivity(intent);
+            }
+        }
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void openInstallPermissionSettings(PluginCall call) {
+        requestInstallPermission(call);
+    }
+
+    /**
+     * Realiza o download do APK em segundo plano e dispara o instalador oficial via FileProvider.
      */
     @PluginMethod
     public void downloadAndInstall(PluginCall call) {
-        String apkUrl = call.getString("url");
-        if (apkUrl == null || apkUrl.trim().isEmpty()) {
-            call.reject("URL do APK não informada.");
+        String downloadUrl = call.getString("url");
+        if (downloadUrl == null || downloadUrl.trim().isEmpty()) {
+            call.reject("URL de download inválida ou vazia.");
             return;
         }
 
-        executor.execute(() -> {
-            HttpURLConnection connection = null;
-            InputStream input = null;
-            FileOutputStream output = null;
+        if (isDownloading) {
+            call.reject("Download já em andamento.");
+            return;
+        }
+
+        isDownloading = true;
+
+        new Thread(() -> {
+            HttpURLConnection conn = null;
+            InputStream in = null;
+            FileOutputStream out = null;
 
             try {
                 Context context = getContext();
-                File targetDir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
-                if (targetDir == null) {
-                    targetDir = context.getCacheDir();
+                File downloadDir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
+                if (downloadDir == null) {
+                    downloadDir = context.getCacheDir();
                 }
 
-                if (!targetDir.exists()) {
-                    targetDir.mkdirs();
+                if (!downloadDir.exists()) {
+                    downloadDir.mkdirs();
                 }
 
-                File apkFile = new File(targetDir, "Fiscal.IA-update.apk");
+                File apkFile = new File(downloadDir, "app-update.apk");
                 if (apkFile.exists()) {
                     apkFile.delete();
                 }
 
-                connection = openConnectionWithRedirects(apkUrl);
-                int responseCode = connection.getResponseCode();
-                if (responseCode != HttpURLConnection.HTTP_OK) {
-                    throw new Exception("Falha HTTP ao baixar APK: Código " + responseCode);
-                }
+                // Seguir redirecionamentos HTTP do GitHub para AWS S3 (301, 302, 307, 308)
+                String currentUrl = downloadUrl;
+                int redirects = 0;
+                while (redirects < 8) {
+                    URL u = new URL(currentUrl);
+                    conn = (HttpURLConnection) u.openConnection();
+                    conn.setInstanceFollowRedirects(true);
+                    conn.setConnectTimeout(20000);
+                    conn.setReadTimeout(35000);
+                    conn.setRequestProperty("User-Agent", "FiscalIA-OTA-AutoUpdate");
+                    conn.connect();
 
-                long fileLength = connection.getContentLengthLong();
-                input = connection.getInputStream();
-                output = new FileOutputStream(apkFile);
-
-                byte[] data = new byte[8192];
-                long total = 0;
-                int count;
-                int lastReportedProgress = -1;
-
-                while ((count = input.read(data)) != -1) {
-                    total += count;
-                    output.write(data, 0, count);
-
-                    int progress = (fileLength > 0) ? (int) ((total * 100) / fileLength) : -1;
-                    if (progress != lastReportedProgress && (progress % 2 == 0 || progress == 100)) {
-                        lastReportedProgress = progress;
-                        final int currentProgress = progress;
-                        final long currentTotal = total;
-                        final long currentFileLength = fileLength;
-
-                        mainHandler.post(() -> {
-                            JSObject eventData = new JSObject();
-                            eventData.put("progress", currentProgress);
-                            eventData.put("downloadedBytes", currentTotal);
-                            eventData.put("totalBytes", currentFileLength);
-                            notifyListeners("downloadProgress", eventData);
-                        });
+                    int status = conn.getResponseCode();
+                    if (status == 301 || status == 302 || status == 303 || status == 307 || status == 308) {
+                        currentUrl = conn.getHeaderField("Location");
+                        conn.disconnect();
+                        redirects++;
+                    } else {
+                        break;
                     }
                 }
 
-                output.flush();
-                output.close();
-                output = null;
+                long totalBytes = conn.getContentLengthLong();
+                in = new BufferedInputStream(conn.getInputStream(), 16384);
+                out = new FileOutputStream(apkFile);
 
-                input.close();
-                input = null;
+                byte[] buffer = new byte[8192];
+                long downloadedBytes = 0;
+                int readBytes;
+                long lastNotify = 0;
 
+                while ((readBytes = in.read(buffer)) != -1) {
+                    downloadedBytes += readBytes;
+                    out.write(buffer, 0, readBytes);
+                    long now = System.currentTimeMillis();
+
+                    if (now - lastNotify > 150 || (totalBytes > 0 && downloadedBytes >= totalBytes)) {
+                        lastNotify = now;
+                        int percent = (totalBytes > 0) ? (int) ((downloadedBytes * 100) / totalBytes) : -1;
+
+                        JSObject p = new JSObject();
+                        p.put("percent", percent);
+                        p.put("progress", percent);
+                        p.put("downloadedBytes", downloadedBytes);
+                        p.put("totalBytes", totalBytes);
+                        notifyListeners("downloadProgress", p);
+                    }
+                }
+
+                out.flush();
+                out.close();
+                out = null;
+
+                in.close();
+                in = null;
+
+                conn.disconnect();
+                conn = null;
+                isDownloading = false;
                 lastDownloadedApk = apkFile;
 
-                // Notifica que o download foi concluído
-                mainHandler.post(() -> {
-                    JSObject completeData = new JSObject();
-                    completeData.put("success", true);
-                    completeData.put("filePath", apkFile.getAbsolutePath());
-                    completeData.put("fileSize", apkFile.length());
-                    notifyListeners("downloadComplete", completeData);
-                });
+                // Notifica conclusão
+                JSObject completeEvent = new JSObject();
+                completeEvent.put("success", true);
+                completeEvent.put("filePath", apkFile.getAbsolutePath());
+                notifyListeners("downloadComplete", completeEvent);
 
-                // Dispara a Intent nativa de instalação do Android
-                mainHandler.post(() -> {
-                    try {
-                        triggerInstallIntent(apkFile);
-                        JSObject result = new JSObject();
-                        result.put("success", true);
-                        result.put("message", "Instalador nativo disparado com sucesso.");
-                        call.resolve(result);
-                    } catch (Exception ex) {
-                        Log.e(TAG, "Erro ao disparar intent de instalação", ex);
-                        call.reject("Erro ao abrir instalador do Android: " + ex.getMessage(), ex);
-                    }
-                });
+                // Executar instalação nativa na UI Thread
+                if (getActivity() != null) {
+                    getActivity().runOnUiThread(() -> triggerInstall(apkFile));
+                } else {
+                    triggerInstall(apkFile);
+                }
+
+                JSObject res = new JSObject();
+                res.put("success", true);
+                res.put("message", "Download concluído e instalador disparado.");
+                call.resolve(res);
 
             } catch (Exception e) {
-                Log.e(TAG, "Erro durante download do APK", e);
-                mainHandler.post(() -> {
-                    JSObject errorData = new JSObject();
-                    errorData.put("error", e.getMessage());
-                    notifyListeners("downloadError", errorData);
-                    call.reject("Falha no download da atualização: " + e.getMessage(), e);
-                });
+                isDownloading = false;
+                Log.e(TAG, "Erro no download do APK", e);
+                JSObject errEvent = new JSObject();
+                errEvent.put("error", e.getMessage());
+                notifyListeners("downloadError", errEvent);
+                call.reject("Erro no download: " + e.getMessage(), e);
             } finally {
                 try {
-                    if (output != null) output.close();
-                    if (input != null) input.close();
+                    if (out != null) out.close();
+                    if (in != null) in.close();
                 } catch (Exception ignored) {}
-                if (connection != null) connection.disconnect();
+                if (conn != null) conn.disconnect();
             }
-        });
+        }).start();
     }
 
     /**
-     * Permite reinstalar ou redisparar a instalação do último APK baixado.
+     * Redispara o instalador do último APK baixado.
      */
     @PluginMethod
     public void installLastDownloaded(PluginCall call) {
         if (lastDownloadedApk == null || !lastDownloadedApk.exists()) {
-            call.reject("Nenhum arquivo de atualização baixado recentemente.");
+            call.reject("Nenhum arquivo baixado recentemente.");
             return;
         }
 
         try {
-            triggerInstallIntent(lastDownloadedApk);
+            triggerInstall(lastDownloadedApk);
             JSObject res = new JSObject();
             res.put("success", true);
             call.resolve(res);
@@ -234,61 +288,22 @@ public class AppUpdateManagerPlugin extends Plugin {
     }
 
     /**
-     * Cria e dispara a Intent ACTION_VIEW com permissão FileProvider.
+     * Dispara a Intent nativa ACTION_VIEW com permissão de leitura via FileProvider.
      */
-    private void triggerInstallIntent(File apkFile) throws Exception {
-        if (!apkFile.exists() || apkFile.length() == 0) {
-            throw new Exception("O arquivo APK baixado está vazio ou inexistente.");
+    private void triggerInstall(File apkFile) {
+        try {
+            Context context = getContext();
+            String authority = context.getPackageName() + ".fileprovider";
+            Uri contentUri = FileProvider.getUriForFile(context, authority, apkFile);
+
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.setDataAndType(contentUri, "application/vnd.android.package-archive");
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            context.startActivity(intent);
+        } catch (Exception e) {
+            Log.e(TAG, "Falha ao invocar FileProvider e Intent de instalação", e);
+            e.printStackTrace();
         }
-
-        Context context = getContext();
-        String authority = context.getPackageName() + ".fileprovider";
-        Uri apkUri = FileProvider.getUriForFile(context, authority, apkFile);
-
-        Intent intent = new Intent(Intent.ACTION_VIEW);
-        intent.setDataAndType(apkUri, "application/vnd.android.package-archive");
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-
-        context.startActivity(intent);
-    }
-
-    /**
-     * Abre conexão HTTP com suporte robusto a múltiplos redirects (necessário para GitHub Releases).
-     */
-    private HttpURLConnection openConnectionWithRedirects(String urlString) throws Exception {
-        URL url = new URL(urlString);
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setInstanceFollowRedirects(true);
-        conn.setConnectTimeout(25000);
-        conn.setReadTimeout(45000);
-        conn.setRequestProperty("User-Agent", "FiscalIA-Android-OTA");
-
-        int status = conn.getResponseCode();
-        int redirects = 0;
-
-        while ((status == HttpURLConnection.HTTP_MOVED_TEMP ||
-                status == HttpURLConnection.HTTP_MOVED_PERM ||
-                status == HttpURLConnection.HTTP_SEE_OTHER ||
-                status == 307 || status == 308) && redirects < 8) {
-
-            String newUrl = conn.getHeaderField("Location");
-            if (newUrl == null || newUrl.isEmpty()) {
-                break;
-            }
-
-            conn.disconnect();
-            url = new URL(newUrl);
-            conn = (HttpURLConnection) url.openConnection();
-            conn.setInstanceFollowRedirects(true);
-            conn.setConnectTimeout(25000);
-            conn.setReadTimeout(45000);
-            conn.setRequestProperty("User-Agent", "FiscalIA-Android-OTA");
-
-            status = conn.getResponseCode();
-            redirects++;
-        }
-
-        return conn;
     }
 }

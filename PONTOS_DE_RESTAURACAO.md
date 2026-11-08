@@ -29,6 +29,21 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.006] — Padronização do Sistema Mestre: Compilação Contínua e Auto-Update Silencioso (CI/CD + OTA In-App)
+- **Data/Hora:** 2026-11-08 15:31 (UTC-3)
+- **Escopos Definidos:**
+  - `PR.006` (Geral): Reestruturação e padronização integral dos 5 componentes do Prompt Mestre: `version.json` unificado na raiz e `public/`, Workflow GitHub Actions com compilação dinâmica e publicação simultânea de `Fiscal.IA.apk` e `app-release.apk` na release `apk-latest`.
+  - `PR.006.1` (Desktop / Web): Métodos universais `checkForAppUpdates` e `downloadAndInstallUpdate` em `appUpdater.ts` sem cabeçalhos de CORS bloqueantes e suporte a todos os parâmetros técnicos solicitados.
+  - `PR.006.2` (Mobile / Android): Plugin nativo `AppUpdateManagerPlugin.java` com métodos nativos `getAppVersion`, `checkInstallPermission`, `requestInstallPermission` e `downloadAndInstall` com stream assíncrono em thread, redirecionamento HTTP 301/302/307/308 para AWS S3, notificação de progresso `percent` em tempo real e invocação de `FileProvider` (`ACTION_VIEW`).
+- **Tags Git:** `PR.006`, `PR.006.1`, `PR.006.2`
+- **Arquivo Local do APK:** `c:\Users\Lenovo\Documents\antigravity\LAB - GPR\Fiscal.IA.lab - GPR\Fiscal.IA.apk` e `app-release.apk`
+- **Comando de Restauração Rápida:**
+  ```bash
+  git checkout PR.006
+  ```
+
+---
+
 ### [PR.005] — OTA Auto-Update In-App & Pipeline CI/CD GitHub Actions
 - **Data/Hora:** 2026-11-08 15:27 (UTC-3)
 - **Escopos Definidos:**
