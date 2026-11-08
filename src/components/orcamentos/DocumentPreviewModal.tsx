@@ -1,42 +1,69 @@
-import React from 'react';
-import { X, FileText, Download, CheckCircle, ShieldCheck } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, FileText, Download, CheckCircle, ShieldCheck, FileCode } from 'lucide-react';
 import { OrdemServico } from '../../types';
 
 interface DocumentPreviewModalProps {
   os: OrdemServico;
-  tipo: 'orcamento' | 'memorial';
+  tipo?: 'orcamento' | 'memorial';
   onClose: () => void;
 }
 
 export const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
   os,
-  tipo,
+  tipo = 'orcamento',
   onClose
 }) => {
-  const isOrcamento = tipo === 'orcamento';
+  const [currentTipo, setCurrentTipo] = useState<'orcamento' | 'memorial'>(tipo);
+  const isOrcamento = currentTipo === 'orcamento';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/85 backdrop-blur-md animate-fadeIn">
       <div className="w-full max-w-lg bg-[#0D1424] border border-white/10 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="p-4 border-b border-white/10 flex items-center justify-between bg-slate-900/60">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
-              <FileText className="w-4 h-4" />
+        <div className="p-4 border-b border-white/10 bg-slate-900/60">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-glass-glow-gold">
+                <FileText className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="font-bold text-white text-xs">
+                  {isOrcamento ? 'Planilha Orçamentária SINAPI / SEDUC' : 'Memorial Descritivo de Especificações Técnicas'}
+                </h3>
+                <p className="text-[10px] text-slate-400">{os.numeroOS}</p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-bold text-white text-xs">
-                {isOrcamento ? 'Planilha Orçamentária SINAPI / SEDUC' : 'Memorial Descritivo de Especificações Técnicas'}
-              </h3>
-              <p className="text-[10px] text-slate-400">{os.numeroOS}</p>
-            </div>
+            <button
+              onClick={onClose}
+              className="p-1 rounded-lg text-slate-400 hover:text-white"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1 rounded-lg text-slate-400 hover:text-white"
-          >
-            <X className="w-5 h-5" />
-          </button>
+
+          {/* Abas Alternadoras no Topo do Modal */}
+          <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-slate-950/70 border border-white/5">
+            <button
+              onClick={() => setCurrentTipo('orcamento')}
+              className={`py-1.5 text-center rounded-lg text-xs font-bold transition-all ${
+                isOrcamento
+                  ? 'bg-amber-500 text-slate-950 shadow-glass-glow-gold'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Planilha Orçamentária
+            </button>
+            <button
+              onClick={() => setCurrentTipo('memorial')}
+              className={`py-1.5 text-center rounded-lg text-xs font-bold transition-all ${
+                !isOrcamento
+                  ? 'bg-cyan-500 text-slate-950 shadow-glass-glow-turq'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Memorial Descritivo
+            </button>
+          </div>
         </div>
 
         {/* Corpo do Documento */}

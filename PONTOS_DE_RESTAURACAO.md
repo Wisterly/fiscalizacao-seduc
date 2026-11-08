@@ -29,6 +29,21 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.004] — Refinamento Visual Fiel à Imagem de Referência: Orçamentos, OS e Medições
+- **Data/Hora:** 2026-11-08 15:15 (UTC-3)
+- **Escopos Definidos:**
+  - `PR.004` (Geral): Refinamento visual e funcional idêntico ao mockup oficial (`media_1794160911533_3d46f9d1.png`). Módulo de Orçamentos, OS e Medições alinhado com GRE 01 e Teresina, cadastro de U. E. João Clímaco d'Almeida (OS 140/2026-SEDUC a 65% medido) e U. E. Dep. Pinheiro Machado (OS 141/2026-SEDUC a 40% medido).
+  - `PR.004.1` (Desktop / Web): Header contextual dinâmico para subviews com seta voltar (`←`), título e menu (`⋮`), e modal unificado de documentos com alternância instantânea entre Planilha Orçamentária e Memorial Descritivo.
+  - `PR.004.2` (Mobile / Android): Cápsula de medição neon turquesa com brilho glow (`shadow-[0_0_18px_rgba(6,182,212,0.45)]`), barra de progresso com gradiente dourado e texto centralizado ("65% Medido"), link turquesa brilhante com botão estilizado `[PDF]`, controles táteis para aferição de medição e ajuste na 5ª aba para "Configurações".
+- **Tags Git:** `PR.004`, `PR.004.1`, `PR.004.2`
+- **Arquivo Local do APK:** `c:\Users\Lenovo\Documents\antigravity\LAB - GPR\Fiscal.IA.lab - GPR\Fiscal.IA.apk`
+- **Comando de Restauração Rápida:**
+  ```bash
+  git checkout PR.004
+  ```
+
+---
+
 ### [PR.003] — Identidade Visual Oficial: Ícone 3D (Capacete SEDUC Piauí) & Header Dual-Logo
 - **Data/Hora:** 2026-11-08 06:00 (UTC-3)
 - **Escopos Definidos:**

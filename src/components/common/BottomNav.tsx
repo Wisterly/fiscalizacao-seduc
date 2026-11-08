@@ -19,7 +19,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
     { id: 'vistorias', label: 'Vistorias', icon: ClipboardList },
     { id: 'demandas', label: 'Demandas', icon: CheckSquare, badge: pendenciasCount },
     { id: 'galeria', label: 'Galeria', icon: GalleryIcon },
-    { id: 'config', label: 'Ajustes', icon: Settings },
+    { id: 'config', label: 'Configurações', icon: Settings },
   ] as const;
 
   return (

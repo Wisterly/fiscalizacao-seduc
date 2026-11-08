@@ -213,6 +213,14 @@ export function App() {
         <Header
           alertas={alertas}
           onResolverAlerta={handleResolverAlerta}
+          subViewTitle={
+            subView === 'orcamentos'
+              ? 'Orçamentos, OS e Medições'
+              : subView === 'rotas'
+              ? 'Rotas de Vistoria IA'
+              : null
+          }
+          onBackFromSubView={() => setSubView('none')}
           onNavigateToTab={(tab) => {
             if (tab === 'orcamentos') {
               setActiveTab('vistorias');
@@ -285,6 +293,7 @@ export function App() {
                 schools={schools}
                 onUpdateMedicao={handleUpdateMedicaoOS}
                 targetOsId={targetOsId}
+                onBack={() => setSubView('none')}
               />
             </div>
           )}

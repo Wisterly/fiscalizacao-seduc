@@ -27,7 +27,7 @@ export const INITIAL_GRES: GRE[] = [
 export const INITIAL_SCHOOLS: Escola[] = [
   {
     id: 'esc-01',
-    greId: 'gre-04',
+    greId: 'gre-01',
     nome: "U. E. João Clímaco d'Almeida",
     municipio: 'Teresina',
     endereco: 'Rua Des. Pires de Castro, Bairro Piçarra',
@@ -42,7 +42,7 @@ export const INITIAL_SCHOOLS: Escola[] = [
   },
   {
     id: 'esc-02',
-    greId: 'gre-19',
+    greId: 'gre-01',
     nome: 'U. E. Dep. Pinheiro Machado',
     municipio: 'Teresina',
     endereco: 'Av. União, Bairro Aeroporto',
@@ -52,7 +52,8 @@ export const INITIAL_SCHOOLS: Escola[] = [
     dataUltimaVistoria: '2026-08-12',
     diasSemVisita: 88,
     demandasUrgentesCount: 4,
-    temOsAtiva: false
+    temOsAtiva: true,
+    osId: 'os-141'
   },
   {
     id: 'esc-03',
@@ -185,10 +186,10 @@ export const INITIAL_AMBIENTES: Ambiente[] = [
 export const INITIAL_OS: OrdemServico[] = [
   {
     id: 'os-140',
-    numeroOS: 'OS Nº 140/2026 - SEDUC',
+    numeroOS: '140/2026-SEDUC',
     escolaId: 'esc-01',
     escolaNome: "U. E. João Clímaco d'Almeida",
-    greId: 'gre-04',
+    greId: 'gre-01',
     municipio: 'Teresina',
     objeto: 'Reforma geral, revisão estrutural de cobertura, modernização das instalações elétricas e acessibilidade completa com piso tátil e banheiros PCD.',
     valorOrcamento: 485920.40,
@@ -200,8 +201,28 @@ export const INITIAL_OS: OrdemServico[] = [
     orcamentoPdfSimulado: 'ORCAMENTO_140_2026_SEDUC_REV03.pdf',
     memorialDescritivoPdfSimulado: 'MEMORIAL_DESCRITIVO_JOAO_CLIMACO_2026.pdf',
     observacoes: [
-      { id: 'obs-1', data: '2026-10-18', autor: 'Fiscal de Obras GPR', texto: 'Avanço de 15% na cobertura metálica. Pintura interna do bloco B iniciada. Medição atingiu 65% conforme vistoria em loco.' },
+      { id: 'obs-1', data: '2026-10-18', autor: 'Fiscal de Obras GPR', texto: 'Aguardando materiais da empresa para avanço da cobertura.' },
       { id: 'obs-2', data: '2026-09-10', autor: 'Fiscal de Obras GPR', texto: 'Concluída a tubulação subterrânea de esgoto dos banheiros PCD.' }
+    ]
+  },
+  {
+    id: 'os-141',
+    numeroOS: '141/2026-SEDUC',
+    escolaId: 'esc-02',
+    escolaNome: 'U. E. Dep. Pinheiro Machado',
+    greId: 'gre-01',
+    municipio: 'Teresina',
+    objeto: 'Recuperação emergencial estrutural das vigas e pilares do bloco administrativo, reforma da cobertura e escoramento preventivo.',
+    valorOrcamento: 345000.00,
+    percentualMedicao: 40,
+    dataInicio: '2026-07-01',
+    prazoFinal: '2026-12-30',
+    status: 'ativa',
+    empresaContratada: 'Engenharia & Empreendimentos Poty Ltda',
+    orcamentoPdfSimulado: 'ORCAMENTO_141_2026_SEDUC_PINHEIRO.pdf',
+    memorialDescritivoPdfSimulado: 'MEMORIAL_PINHEIRO_MACHADO_2026.pdf',
+    observacoes: [
+      { id: 'obs-3', data: '2026-10-22', autor: 'Fiscal de Obras GPR', texto: 'Escoramento metálico concluído. Aguardando entrega de perfis metálicos.' }
     ]
   },
   {
