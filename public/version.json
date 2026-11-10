@@ -1,13 +1,12 @@
 {
-  "version": "1.0.6",
-  "buildNumber": 7,
+  "version": "1.0.7",
+  "buildNumber": 8,
   "releaseDate": "2026-11-10",
   "minRequiredVersion": "1.0.0",
   "downloadUrl": "https://github.com/Wisterly/fiscalizacao-seduc/releases/download/apk-latest/Fiscal.IA.apk",
   "changelog": [
-    "Grid do seletor de GRE reconfigurado para 4 colunas com ampliação proporcional dos botões",
-    "Botões maiores com área de toque ergonômica adaptada à largura e altura do smartphone",
-    "Tipografia e nomes dos municípios ampliados em escala proporcional mantendo quebra de linha",
-    "Brasão oficial da SEDUC e Governo do Piauí ampliado proporcionalmente na base de cada card"
+    "Cards das 21 GREs em formato perfeitamente redondo (circular aspect-square)",
+    "Número das GREs ampliado com maior destaque visual em branco puro",
+    "Borda furtacor iridescente em 360º com gradiente cósmico holográfico e halo neon"
   ]
 }

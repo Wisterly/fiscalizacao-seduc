@@ -71,6 +71,25 @@
   opacity: 0.9;
 }
 
+/* Efeito de Borda Furtacor Iridescente (Gradiente Holográfico 360º) */
+.border-furtacor {
+  background: conic-gradient(from 180deg at 50% 50%, #06B6D4 0deg, #F59E0B 90deg, #EC4899 180deg, #8B5CF6 270deg, #06B6D4 360deg);
+}
+
+.border-furtacor-active {
+  background: conic-gradient(from 180deg at 50% 50%, #22D3EE 0deg, #FBBF24 90deg, #F43F5E 180deg, #A855F7 270deg, #22D3EE 360deg);
+  animation: rotate-furtacor 8s linear infinite;
+}
+
+@keyframes rotate-furtacor {
+  from {
+    filter: hue-rotate(0deg);
+  }
+  to {
+    filter: hue-rotate(360deg);
+  }
+}
+
 /* Efeito de brilho pulsante sutil para IA */
 @keyframes ai-pulse {
   0%, 100% {

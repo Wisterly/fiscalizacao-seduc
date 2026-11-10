@@ -29,6 +29,21 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.012] — Cards Redondos com Borda Furtacor Holográfica & Números das GREs Ampliados
+- **Data/Hora:** 2026-11-10 02:39 (UTC-3)
+- **Escopos Definidos:**
+  - `PR.012` (Geral): Redesenho completo dos cards do Seletor de GREs para o formato perfeitamente circular/redondo (`rounded-full aspect-square`) em 4 colunas, com borda furtacor iridescente em 360º (`conic-gradient` passando por ciano, âmbar, rosa neon e violeta cósmico). Tipografia dos números das gerências ampliada com destaque pesado e sombra de profundidade ("01ª GRE" a "21ª GRE"), sede em dourado âmbar radiante com quebra de linha harmoniosa e brasão da SEDUC / Governo do Piauí alinhado à base do círculo. Animação de rotação de matiz iridescente quando a GRE é selecionada.
+  - `PR.012.1` (Desktop / Web): Adaptação dos círculos holográficos com reflexo vítreo superior em alta resolução.
+  - `PR.012.2` (Mobile / Android): Ergonomia e toque circular suave a 60fps no celular, APK v1.0.7 (Build 8) assinado com keystore única e auto-atualização OTA in-app.
+- **Tags Git:** `PR.012`, `PR.012.1`, `PR.012.2`
+- **Arquivo Local do APK:** `c:\Users\Lenovo\Documents\antigravity\LAB - GPR\Fiscal.IA.lab - GPR\Fiscal.IA.apk` e `app-release.apk`
+- **Comando de Restauração Rápida:**
+  ```bash
+  git checkout PR.012
+  ```
+
+---
+
 ### [PR.011] — Seletor de GREs em 4 Colunas com Botões Ampliados & Proporcionais
 - **Data/Hora:** 2026-11-10 02:32 (UTC-3)
 - **Escopos Definidos:**
