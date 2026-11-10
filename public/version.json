@@ -1,14 +1,14 @@
 {
-  "version": "1.0.4",
-  "buildNumber": 5,
-  "releaseDate": "2026-11-08",
+  "version": "1.0.5",
+  "buildNumber": 6,
+  "releaseDate": "2026-11-10",
   "minRequiredVersion": "1.0.0",
   "downloadUrl": "https://github.com/Wisterly/fiscalizacao-seduc/releases/download/apk-latest/Fiscal.IA.apk",
   "changelog": [
-    "Correção de Safe Area: aplicativo estritamente abaixo da Status Bar (hora, Wi-Fi e bateria)",
-    "Menu das 21 GREs compacto em Grid 5x5 sem rolagem, fiel ao padrão visual solicitado",
-    "Cards com miniatura oficial SEDUC, efeito de onda luminosa laranja e selo de seleção ativa",
-    "Navegação encadeada: Seleção da GRE -> Escolas da GRE -> Vistoria e Laudos da Escola",
-    "Cadastro e vinculação de escolas estaduais para todas as 21 GREs do Piauí"
+    "Novo modelo visual cósmico e tecnológico para os cards das GREs com aro neon dourado degradê",
+    "Correção oficial: 9ª GRE é Picos, 10ª GRE é Floriano e 11ª GRE é Uruçuí",
+    "Quebra de linha inteligente para leitura completa de nomes extensos (São João do Piauí, São Raimundo Nonato, Valença do Piauí, etc.)",
+    "Tipografia em destaque branco puro para número da GRE e dourado âmbar radiante para os municípios",
+    "Logo oficial da SEDUC e Governo do Piauí perfeitamente enquadrada na base de cada card"
   ]
 }

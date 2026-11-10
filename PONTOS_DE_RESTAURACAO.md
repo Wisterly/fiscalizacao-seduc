@@ -29,6 +29,21 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.010] — Novo Modelo Visual dos Cards das GREs (Aro Neon Cósmico), Correção das Sedes & Quebra de Linha
+- **Data/Hora:** 2026-11-10 02:28 (UTC-3)
+- **Escopos Definidos:**
+  - `PR.010` (Geral): Novo design dos cards do Seletor de GREs inspirado no modelo institucional circular/cósmico com halo luminoso neon âmbar/ouro, fundo azul marinho profundo, número da GRE em destaque branco puro ("01ª GRE" a "21ª GRE"), nome do município sede em dourado âmbar radiante com quebra de linha inteligente para leitura completa sem truncar nomes extensos (São João do Piauí, São Raimundo Nonato, Valença do Piauí, etc.) e logo oficial da SEDUC / Governo do Piauí na base. Correção oficial das sedes das gerências: 09ª GRE é Picos, 10ª GRE é Floriano e 11ª GRE é Uruçuí.
+  - `PR.010.1` (Desktop / Web): Adaptação do Grid 5x5 para telas maiores com transição fluida para a listagem das escolas da GRE selecionada.
+  - `PR.010.2` (Mobile / Android): Visualização perfeita sem cortes e sem necessidade de scroll no smartphone, APK v1.0.5 (Build 6) assinado com keystore unificada e suporte a auto-atualização OTA in-app.
+- **Tags Git:** `PR.010`, `PR.010.1`, `PR.010.2`
+- **Arquivo Local do APK:** `c:\Users\Lenovo\Documents\antigravity\LAB - GPR\Fiscal.IA.lab - GPR\Fiscal.IA.apk` e `app-release.apk`
+- **Comando de Restauração Rápida:**
+  ```bash
+  git checkout PR.010
+  ```
+
+---
+
 ### [PR.009] — Menu Compacto das 21 GREs (Grid 5x5 Fiel ao Modelo) & Correção de Safe Area / Status Bar
 - **Data/Hora:** 2026-11-08 16:46 (UTC-3)
 - **Escopos Definidos:**

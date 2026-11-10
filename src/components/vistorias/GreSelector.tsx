@@ -24,9 +24,14 @@ export const GreSelector: React.FC<GreSelectorProps> = ({
     return `${String(num).padStart(2, '0')}ª GRE`;
   };
 
-  // Nome simplificado da sede para caber com elegância no card compacto
-  const getSedeDisplay = (gre: GRE) => {
+  // Nome oficial da sede corrigido e ajustado conforme orientação SEDUC
+  const getSedeName = (gre: GRE) => {
     if (gre.numero === 4) return 'Teresina Sul';
+    if (gre.numero === 9) return 'Picos';
+    if (gre.numero === 10) return 'Floriano';
+    if (gre.numero === 11) return 'Uruçuí';
+    if (gre.numero === 12) return 'São João do Piauí';
+    if (gre.numero === 13) return 'São Raimundo Nonato';
     if (gre.numero === 18) return 'Teresina Norte';
     if (gre.numero === 19) return 'Teresina Sudeste';
     if (gre.numero === 20) return 'Teresina';
@@ -34,26 +39,87 @@ export const GreSelector: React.FC<GreSelectorProps> = ({
     return gre.sede;
   };
 
+  // Quebra de linha inteligente para leitura completa sem cortes ou reticências
+  const renderSedeFormatted = (sede: string) => {
+    if (sede === 'São João do Piauí') {
+      return (
+        <span className="block leading-[1.02]">
+          São João<br />do Piauí
+        </span>
+      );
+    }
+    if (sede === 'São Raimundo Nonato') {
+      return (
+        <span className="block leading-[1.02]">
+          São Raimundo<br />Nonato
+        </span>
+      );
+    }
+    if (sede === 'Valença do Piauí') {
+      return (
+        <span className="block leading-[1.02]">
+          Valença<br />do Piauí
+        </span>
+      );
+    }
+    if (sede === 'Teresina Sudeste') {
+      return (
+        <span className="block leading-[1.02]">
+          Teresina<br />Sudeste
+        </span>
+      );
+    }
+    if (sede === 'Teresina Norte') {
+      return (
+        <span className="block leading-[1.02]">
+          Teresina<br />Norte
+        </span>
+      );
+    }
+    if (sede === 'Teresina Sul') {
+      return (
+        <span className="block leading-[1.02]">
+          Teresina<br />Sul
+        </span>
+      );
+    }
+    if (sede === 'Campo Maior') {
+      return (
+        <span className="block leading-[1.02]">
+          Campo<br />Maior
+        </span>
+      );
+    }
+    if (sede === 'Bom Jesus') {
+      return (
+        <span className="block leading-[1.02]">
+          Bom<br />Jesus
+        </span>
+      );
+    }
+    return <span className="block leading-[1.02]">{sede}</span>;
+  };
+
   return (
     <div className="w-full flex flex-col justify-start select-none">
-      {/* Título Oficial Superior: 1. Selecionar a GRE */}
-      <div className="flex items-center gap-2 mb-3 px-0.5">
+      {/* Título Superior: 1. Selecionar a GRE */}
+      <div className="flex items-center gap-2 mb-2.5 px-0.5">
         <div className="w-6 h-6 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center flex-shrink-0 shadow-[0_0_10px_rgba(245,158,11,0.25)]">
           <MapPin className="w-3.5 h-3.5 text-amber-400 stroke-[2.5]" />
         </div>
         <h2 className="text-sm sm:text-base font-extrabold text-white tracking-tight leading-none">
           1. Selecionar a GRE
         </h2>
-        <span className="ml-auto text-[10px] font-semibold text-slate-400 bg-white/5 px-2 py-0.5 rounded-full border border-white/5">
+        <span className="ml-auto text-[10px] font-semibold text-amber-400/90 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
           21 Regiões
         </span>
       </div>
 
-      {/* Grid 5x5 Compacto das 21 GREs (Visível 100% sem scroll no celular) */}
+      {/* Grid 5x5 com os novos Cards oficiais cósmicos tecnológicos */}
       <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
         {sortedGres.map((gre) => {
           const isSelected = selectedGreId === gre.id;
-          const sedeText = getSedeDisplay(gre);
+          const sedeText = getSedeName(gre);
 
           return (
             <button
@@ -61,58 +127,46 @@ export const GreSelector: React.FC<GreSelectorProps> = ({
               type="button"
               onClick={() => onSelectGre(gre)}
               aria-label={`${formatGreNumber(gre.numero)} - ${sedeText}`}
-              className={`relative h-[66px] xs:h-[70px] sm:h-[76px] rounded-xl border flex flex-col justify-between items-center p-1 sm:p-1.5 transition-all duration-150 active:scale-95 overflow-hidden group text-center cursor-pointer ${
+              className={`relative h-[76px] xs:h-[82px] sm:h-[88px] rounded-2xl flex flex-col justify-between items-center p-1 sm:p-1.5 transition-all duration-150 active:scale-95 overflow-hidden group text-center cursor-pointer ${
                 isSelected
-                  ? 'bg-[#151D2C] border-amber-500 ring-2 ring-amber-500/90 shadow-[0_0_16px_rgba(245,158,11,0.45)]'
-                  : 'bg-[#111723]/95 border-white/[0.09] hover:border-amber-500/50 hover:bg-[#161F2E]'
+                  ? 'bg-gradient-to-b from-[#111C35] via-[#0B1428] to-[#060B18] border-2 border-amber-400 ring-2 ring-amber-400/90 shadow-[0_0_20px_rgba(251,191,36,0.6),inset_0_0_15px_rgba(251,191,36,0.25)] scale-[1.02]'
+                  : 'bg-gradient-to-b from-[#0C152B] via-[#081022] to-[#040814] border border-amber-500/35 hover:border-amber-400/70 hover:bg-[#101C38] shadow-[0_0_12px_rgba(245,158,11,0.18),inset_0_0_10px_rgba(245,158,11,0.08)]'
               }`}
             >
-              {/* Selo circular de Seleção (igual à 08ª GRE do print) */}
+              {/* Efeito de Halo de Fogo / Anel Neon Superior e Inferior */}
+              <div className="absolute inset-0 rounded-2xl pointer-events-none ring-1 ring-inset ring-amber-400/20 group-hover:ring-amber-400/50" />
+              <div className="absolute top-0 inset-x-2 h-[1px] bg-gradient-to-r from-transparent via-amber-400/80 to-transparent pointer-events-none" />
+              <div className="absolute bottom-0 inset-x-2 h-[1px] bg-gradient-to-r from-transparent via-amber-500/60 to-transparent pointer-events-none" />
+
+              {/* Selo de Seleção Ativa no Canto Superior Direito */}
               {isSelected && (
-                <div className="absolute top-1 right-1 z-10 w-3.5 h-3.5 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-black shadow-md ring-1 ring-amber-300">
+                <div className="absolute top-1 right-1 z-20 w-3.5 h-3.5 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center font-black shadow-md ring-1 ring-amber-200">
                   <Check className="w-2.5 h-2.5 stroke-[3.5]" />
                 </div>
               )}
 
-              {/* Topo do Card: Miniatura da Logo Oficial SEDUC */}
-              <div className="w-full flex items-center justify-center pt-0.5 flex-shrink-0">
-                <img
-                  src="/logo-seduc-piaui.png"
-                  alt="SEDUC"
-                  className="h-2.5 xs:h-3 sm:h-3.5 object-contain max-w-[88%] filter drop-shadow opacity-85 group-hover:opacity-100 transition-opacity"
-                  loading="lazy"
-                />
-              </div>
-
-              {/* Miolo do Card: Número da GRE + Município Sede */}
-              <div className="w-full flex flex-col items-center justify-center my-auto px-0.5">
-                <span className="text-[10px] xs:text-[11px] sm:text-xs font-black text-white tracking-tight leading-tight">
+              {/* 1. Número da GRE em destaque branco puro */}
+              <div className="w-full flex items-center justify-center pt-0.5 flex-shrink-0 z-10">
+                <span className="text-[10.5px] xs:text-[11.5px] sm:text-xs font-black text-white tracking-tight leading-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
                   {formatGreNumber(gre.numero)}
                 </span>
-                <span className="text-[7.5px] xs:text-[8.5px] sm:text-[9.5px] text-slate-300 font-medium leading-tight truncate w-full mt-0.5">
-                  {sedeText}
-                </span>
               </div>
 
-              {/* Base do Card: Efeito de Luz / Onda Neon Laranja Translúcida */}
-              <div className="w-full h-3 sm:h-3.5 relative overflow-hidden pointer-events-none -mb-0.5 flex-shrink-0">
-                {/* Brilho de fundo suave */}
-                <div className="absolute inset-0 bg-gradient-to-t from-orange-500/25 via-amber-500/10 to-transparent opacity-80" />
-                
-                {/* Onda luminosa vítrea */}
-                <svg
-                  viewBox="0 0 100 30"
-                  preserveAspectRatio="none"
-                  className="absolute bottom-0 w-full h-full opacity-90"
-                >
-                  <path
-                    d="M0,30 Q50,2 100,30"
-                    fill="none"
-                    stroke={isSelected ? '#F59E0B' : '#F97316'}
-                    strokeWidth="3.2"
-                    strokeLinecap="round"
-                  />
-                </svg>
+              {/* 2. Nome do Município Sede em Dourado Âmbar Radiante com Quebra Completa */}
+              <div className="w-full flex flex-col items-center justify-center my-auto px-0.5 z-10">
+                <div className="text-[7.5px] xs:text-[8.5px] sm:text-[9.5px] font-bold text-amber-400 tracking-tight leading-[1.05] drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">
+                  {renderSedeFormatted(sedeText)}
+                </div>
+              </div>
+
+              {/* 3. Base do Card: Logo Oficial SEDUC | MAPA | GOVERNO DO PIAUÍ */}
+              <div className="w-full flex items-center justify-center pb-0.5 flex-shrink-0 z-10">
+                <img
+                  src="/logo-seduc-piaui.png"
+                  alt="SEDUC Piauí"
+                  className="h-2.5 xs:h-3 sm:h-3.5 object-contain max-w-[92%] filter drop-shadow opacity-90 group-hover:opacity-100 transition-opacity"
+                  loading="lazy"
+                />
               </div>
             </button>
           );

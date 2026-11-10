@@ -23,8 +23,8 @@ import {
 } from '../data/seedData';
 
 const STORAGE_KEYS = {
-  GRES: 'seduc_fiscal_gres_v2',
-  SCHOOLS: 'seduc_fiscal_schools_v2',
+  GRES: 'seduc_fiscal_gres_v3',
+  SCHOOLS: 'seduc_fiscal_schools_v3',
   AMBIENTES: 'seduc_fiscal_ambientes_v1',
   OS: 'seduc_fiscal_os_v1',
   ALERTAS: 'seduc_fiscal_alertas_v1',
