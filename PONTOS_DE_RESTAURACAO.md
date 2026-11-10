@@ -29,6 +29,21 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.013] — Borda Furtacor Minimalista (Laranja, Dourado, Verde e Azul — Sem Rosa/Roxo)
+- **Data/Hora:** 2026-11-10 02:46 (UTC-3)
+- **Escopos Definidos:**
+  - `PR.013` (Geral): Calibração refinada e minimalista da borda furtacor dos cards das 21 GREs: composta estritamente pelas tonalidades de Laranja (infraestrutura e calor), Dourado/Âmbar (sol piauiense), Verde (esmeralda e bandeira do Piauí) e Azul/Ciano (águas e tecnologia), removendo 100% de tons de rosa, roxo, magenta ou lilás. Efeito iridescente equilibrado e sóbrio com pulsação suave em luz quente e ciano pericial.
+  - `PR.013.1` (Desktop / Web): Adaptação minimalista da paleta furtacor nos tokens e anéis cósmicos institucionais.
+  - `PR.013.2` (Mobile / Android): Visualização sóbria e corporativa para engenharia em campo, APK v1.0.8 (Build 9) com auto-atualização OTA e keystore unificada.
+- **Tags Git:** `PR.013`, `PR.013.1`, `PR.013.2`
+- **Arquivo Local do APK:** `c:\Users\Lenovo\Documents\antigravity\LAB - GPR\Fiscal.IA.lab - GPR\Fiscal.IA.apk` e `app-release.apk`
+- **Comando de Restauração Rápida:**
+  ```bash
+  git checkout PR.013
+  ```
+
+---
+
 ### [PR.012] — Cards Redondos com Borda Furtacor Holográfica & Números das GREs Ampliados
 - **Data/Hora:** 2026-11-10 02:39 (UTC-3)
 - **Escopos Definidos:**

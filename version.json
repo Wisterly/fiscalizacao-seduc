@@ -1,12 +1,12 @@
 {
-  "version": "1.0.7",
-  "buildNumber": 8,
+  "version": "1.0.8",
+  "buildNumber": 9,
   "releaseDate": "2026-11-10",
   "minRequiredVersion": "1.0.0",
   "downloadUrl": "https://github.com/Wisterly/fiscalizacao-seduc/releases/download/apk-latest/Fiscal.IA.apk",
   "changelog": [
-    "Cards das 21 GREs em formato perfeitamente redondo (circular aspect-square)",
-    "Número das GREs ampliado com maior destaque visual em branco puro",
-    "Borda furtacor iridescente em 360º com gradiente cósmico holográfico e halo neon"
+    "Calibração minimalista da borda furtacor: estritamente em tons de laranja, dourado, verde e azul",
+    "Remoção total de tons rosa e roxo para visual sóbrio, institucional e pericial",
+    "Cards redondos com anel iridescente equilibrado nas cores oficiais e número das GREs ampliado"
   ]
 }
