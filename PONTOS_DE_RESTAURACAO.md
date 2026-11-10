@@ -29,6 +29,21 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.011] — Seletor de GREs em 4 Colunas com Botões Ampliados & Proporcionais
+- **Data/Hora:** 2026-11-10 02:32 (UTC-3)
+- **Escopos Definidos:**
+  - `PR.011` (Geral): Reorganização estrutural da matriz do Seletor de GREs para 4 colunas (`grid-cols-4`), distribuindo as 21 GREs com botões ampliados e ergonômicos adaptados com perfeição à largura do smartphone Android. Escalonamento proporcional de todos os elementos: números das gerências maiores e em negrito puro ("01ª GRE" a "21ª GRE"), nomes das sedes ampliados em dourado âmbar radiante com quebra de linha preservada, e miniatura oficial da SEDUC / Governo do Piauí aumentada na base.
+  - `PR.011.1` (Desktop / Web): Distribuição refinada em 4 colunas com adaptação equilibrada a telas responsivas.
+  - `PR.011.2` (Mobile / Android): Área de toque (touch target) ampliada e confortável para uso com uma mão em campo, APK v1.0.6 (Build 7) gerado com keystore unificada e auto-atualização OTA in-app.
+- **Tags Git:** `PR.011`, `PR.011.1`, `PR.011.2`
+- **Arquivo Local do APK:** `c:\Users\Lenovo\Documents\antigravity\LAB - GPR\Fiscal.IA.lab - GPR\Fiscal.IA.apk` e `app-release.apk`
+- **Comando de Restauração Rápida:**
+  ```bash
+  git checkout PR.011
+  ```
+
+---
+
 ### [PR.010] — Novo Modelo Visual dos Cards das GREs (Aro Neon Cósmico), Correção das Sedes & Quebra de Linha
 - **Data/Hora:** 2026-11-10 02:28 (UTC-3)
 - **Escopos Definidos:**
