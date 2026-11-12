@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { storage } from './services/storageService';
+import { syncInepFromGoogleSheets } from './services/sheetsSyncService';
 import {
   GRE,
   Escola,
@@ -150,6 +151,18 @@ export function App() {
 
   const handleSelectSchool = (school: Escola) => {
     setSelectedSchool(school);
+  };
+
+  const handleAddSchool = (newSchool: Omit<Escola, 'id'>) => {
+    const updated = storage.addSchool(newSchool);
+    setSchools(updated);
+  };
+
+  const handleSyncSchools = async (): Promise<number> => {
+    const imported = await syncInepFromGoogleSheets();
+    const updated = storage.syncSchoolsFromInep(imported);
+    setSchools(updated);
+    return imported.length;
   };
 
   // --- Handlers de Ambientes Globais ---
@@ -361,10 +374,8 @@ export function App() {
                   schools={schools}
                   onBack={() => setSelectedGre(null)}
                   onSelectSchool={handleSelectSchool}
-                  onOpenNovoLevantamentoDireto={(esc) => {
-                    setSelectedSchool(esc);
-                    setSchoolForNewLevantamento(esc);
-                  }}
+                  onAddSchool={handleAddSchool}
+                  onSyncFromSheets={handleSyncSchools}
                 />
               )}
 

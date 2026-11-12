@@ -29,6 +29,21 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.014] — Integração Planilha DADOS INEP (703 Unidades EM USO), Lista INEP/Escola/Município & Cadastro Manual
+- **Data/Hora:** 2026-11-12 01:02 (UTC-3)
+- **Escopos Definidos:**
+  - `PR.014` (Geral): Integração oficial da aba `DADOS INEP` (Google Sheets `gid=89902018`) com extração e filtro rigoroso da Coluna F (`SITUAÇÃO IMÓVEL === "EM USO"`), totalizando 703 unidades reais ativas em todas as 21 GREs do Piauí disponíveis 100% offline em `src/data/inepSchools.json`, além de sincronização online direta via `sheetsSyncService.ts`. Lista limpa das escolas exibida na sequência exata: **1. INEP** (Coluna A), **2. Nome Entidade** (Coluna K) e **3. Município** (Coluna J). Novo modal `AddSchoolModal.tsx` acionado pelo botão **"+ Adicionar Escola"** dentro de cada GRE, com salvamento persistente e vinculação automática ao fluxo de vistoria/levantamento da unidade escolar (`SchoolTimeline`). Alinhamento das nomenclaturas da Capital/Grande Teresina (`04ª Teresina Centro/Norte`, `18ª Grande Teresina`, `19ª Teresina Sul`, `20ª Teresina Leste`, `21ª Teresina Sudeste`) conforme a base oficial.
+  - `PR.014.1` (Desktop / Web): Navegação encadeada fluida GRE -> Escolas EM USO -> Levantamento e suporte a busca/filtro por município no navegador.
+  - `PR.014.2` (Mobile / Android): Operação offline-first instantânea com todas as 703 unidades em uso carregadas localmente no APK v1.0.9 (Build 10), keystore unificada e auto-atualização OTA in-app.
+- **Tags Git:** `PR.014`, `PR.014.1`, `PR.014.2`
+- **Arquivo Local do APK:** `c:\Users\Lenovo\Documents\antigravity\LAB - GPR\Fiscal.IA.lab - GPR\Fiscal.IA.apk` e `app-release.apk`
+- **Comando de Restauração Rápida:**
+  ```bash
+  git checkout PR.014
+  ```
+
+---
+
 ### [PR.013] — Borda Furtacor Minimalista (Laranja, Dourado, Verde e Azul — Sem Rosa/Roxo)
 - **Data/Hora:** 2026-11-10 02:46 (UTC-3)
 - **Escopos Definidos:**

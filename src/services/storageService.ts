@@ -23,8 +23,8 @@ import {
 } from '../data/seedData';
 
 const STORAGE_KEYS = {
-  GRES: 'seduc_fiscal_gres_v3',
-  SCHOOLS: 'seduc_fiscal_schools_v3',
+  GRES: 'seduc_fiscal_gres_v4',
+  SCHOOLS: 'seduc_fiscal_schools_inep_v4',
   AMBIENTES: 'seduc_fiscal_ambientes_v1',
   OS: 'seduc_fiscal_os_v1',
   ALERTAS: 'seduc_fiscal_alertas_v1',
@@ -83,6 +83,50 @@ class StorageService {
   updateSchool(school: Escola): Escola[] {
     const list = this.getSchools();
     const updated = list.map(s => s.id === school.id ? school : s);
+    this.setItem(STORAGE_KEYS.SCHOOLS, updated);
+    return updated;
+  }
+
+  /**
+   * Adiciona manualmente uma nova escola dentro de uma GRE específica.
+   */
+  addSchool(newSchool: Omit<Escola, 'id'>): Escola[] {
+    const list = this.getSchools();
+    const created: Escola = {
+      ...newSchool,
+      id: `manual-${Date.now()}`,
+      isManual: true
+    };
+    const updated = [created, ...list];
+    this.setItem(STORAGE_KEYS.SCHOOLS, updated);
+    return updated;
+  }
+
+  /**
+   * Sincroniza escolas importadas da planilha INEP preservando escolas manuais e status locais.
+   */
+  syncSchoolsFromInep(imported: Escola[]): Escola[] {
+    const current = this.getSchools();
+    const manuals = current.filter(s => s.isManual);
+    const currentMap = new Map(current.map(s => [s.id, s]));
+
+    const mergedImported = imported.map(item => {
+      const existing = currentMap.get(item.id);
+      if (existing) {
+        return {
+          ...item,
+          statusConservacao: existing.statusConservacao,
+          dataUltimaVistoria: existing.dataUltimaVistoria,
+          diasSemVisita: existing.diasSemVisita,
+          demandasUrgentesCount: existing.demandasUrgentesCount,
+          temOsAtiva: existing.temOsAtiva,
+          osId: existing.osId
+        };
+      }
+      return item;
+    });
+
+    const updated = [...manuals, ...mergedImported];
     this.setItem(STORAGE_KEYS.SCHOOLS, updated);
     return updated;
   }

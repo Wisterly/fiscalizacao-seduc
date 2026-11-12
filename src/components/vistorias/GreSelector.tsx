@@ -24,76 +24,43 @@ export const GreSelector: React.FC<GreSelectorProps> = ({
     return `${String(num).padStart(2, '0')}ª GRE`;
   };
 
-  // Nome oficial da sede corrigido e ajustado conforme orientação SEDUC
-  const getSedeName = (gre: GRE) => {
-    if (gre.numero === 4) return 'Teresina Sul';
-    if (gre.numero === 9) return 'Picos';
-    if (gre.numero === 10) return 'Floriano';
-    if (gre.numero === 11) return 'Uruçuí';
-    if (gre.numero === 12) return 'São João do Piauí';
-    if (gre.numero === 13) return 'São Raimundo Nonato';
-    if (gre.numero === 18) return 'Teresina Norte';
-    if (gre.numero === 19) return 'Teresina Sudeste';
-    if (gre.numero === 20) return 'Teresina';
-    if (gre.numero === 21) return 'Teresina';
-    return gre.sede;
+  // Mapa oficial de sedes conforme planilha DADOS INEP SEDUC-PI
+  const GRE_SEDES_OFICIAIS: Record<number, string> = {
+    4: 'Teresina Centro/Norte',
+    9: 'Picos',
+    10: 'Floriano',
+    11: 'Uruçuí',
+    12: 'São João do Piauí',
+    13: 'São Raimundo Nonato',
+    18: 'Grande Teresina',
+    19: 'Teresina Sul',
+    20: 'Teresina Leste',
+    21: 'Teresina Sudeste'
   };
 
-  // Quebra de linha inteligente para leitura completa sem cortes ou reticências
+  // Quebras de linha pré-definidas para leitura integral em cards redondos
+  const SEDE_LINE_BREAKS: Record<string, [string, string]> = {
+    'São João do Piauí': ['São João', 'do Piauí'],
+    'São Raimundo Nonato': ['São Raimundo', 'Nonato'],
+    'Valença do Piauí': ['Valença', 'do Piauí'],
+    'Teresina Centro/Norte': ['Teresina', 'Centro/Norte'],
+    'Grande Teresina': ['Grande', 'Teresina'],
+    'Teresina Sudeste': ['Teresina', 'Sudeste'],
+    'Teresina Leste': ['Teresina', 'Leste'],
+    'Teresina Norte': ['Teresina', 'Norte'],
+    'Teresina Sul': ['Teresina', 'Sul'],
+    'Campo Maior': ['Campo', 'Maior'],
+    'Bom Jesus': ['Bom', 'Jesus']
+  };
+
+  const getSedeName = (gre: GRE) => GRE_SEDES_OFICIAIS[gre.numero] || gre.sede;
+
   const renderSedeFormatted = (sede: string) => {
-    if (sede === 'São João do Piauí') {
+    const lines = SEDE_LINE_BREAKS[sede];
+    if (lines) {
       return (
         <span className="block leading-[1.05]">
-          São João<br />do Piauí
-        </span>
-      );
-    }
-    if (sede === 'São Raimundo Nonato') {
-      return (
-        <span className="block leading-[1.05]">
-          São Raimundo<br />Nonato
-        </span>
-      );
-    }
-    if (sede === 'Valença do Piauí') {
-      return (
-        <span className="block leading-[1.05]">
-          Valença<br />do Piauí
-        </span>
-      );
-    }
-    if (sede === 'Teresina Sudeste') {
-      return (
-        <span className="block leading-[1.05]">
-          Teresina<br />Sudeste
-        </span>
-      );
-    }
-    if (sede === 'Teresina Norte') {
-      return (
-        <span className="block leading-[1.05]">
-          Teresina<br />Norte
-        </span>
-      );
-    }
-    if (sede === 'Teresina Sul') {
-      return (
-        <span className="block leading-[1.05]">
-          Teresina<br />Sul
-        </span>
-      );
-    }
-    if (sede === 'Campo Maior') {
-      return (
-        <span className="block leading-[1.05]">
-          Campo<br />Maior
-        </span>
-      );
-    }
-    if (sede === 'Bom Jesus') {
-      return (
-        <span className="block leading-[1.05]">
-          Bom<br />Jesus
+          {lines[0]}<br />{lines[1]}
         </span>
       );
     }

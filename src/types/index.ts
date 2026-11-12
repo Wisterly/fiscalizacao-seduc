@@ -13,10 +13,14 @@ export interface GRE {
 
 export interface Escola {
   id: string;
+  inep?: string;
   greId: string;
   nome: string;
   municipio: string;
   endereco: string;
+  situacaoImovel?: string;
+  situacaoEducacional?: string;
+  isManual?: boolean;
   diretora?: string;
   telefone?: string;
   statusConservacao: ConservacaoStatus;

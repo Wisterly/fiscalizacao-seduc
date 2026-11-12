@@ -37,11 +37,21 @@ export const SchoolTimeline: React.FC<SchoolTimelineProps> = ({
           <ArrowLeft className="w-4 h-4" />
         </button>
         <div className="min-w-0 flex-1">
-          <h2 className="text-sm font-bold text-white tracking-tight leading-snug truncate">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {school.inep && (
+              <span className="text-[10px] font-mono font-bold text-cyan-300 bg-cyan-500/10 border border-cyan-500/25 px-1.5 py-0.5 rounded">
+                INEP: {school.inep}
+              </span>
+            )}
+            <span className="text-[11px] text-amber-400 font-semibold truncate">
+              {school.municipio}
+            </span>
+          </div>
+          <h2 className="text-sm font-bold text-white tracking-tight leading-snug mt-0.5">
             {school.nome}
           </h2>
-          <p className="text-[11px] text-slate-400">
-            {gre?.nome || 'Jurisdição SEDUC'} • {school.municipio}
+          <p className="text-[10.5px] text-slate-400 truncate">
+            {gre?.nome || 'Jurisdição SEDUC'}
           </p>
         </div>
       </div>
