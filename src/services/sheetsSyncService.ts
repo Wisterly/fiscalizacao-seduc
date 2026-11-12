@@ -98,6 +98,7 @@ export function parseInepCsvToSchools(csvText: string): Escola[] {
     const greRaw = (r[8] || '').trim();      // Coluna I - GRE
     const municipio = (r[9] || '').trim();   // Coluna J - MUNICIPIO
     const nome = (r[10] || '').trim();       // Coluna K - NOME ENTIDADE
+    const plusCode = (r[20] || '').trim();   // Coluna U - google PlusCode
     const bairro = (r[24] || '').trim();     // Coluna Y - BAIRROS
     const endereco = (r[25] || '').trim();   // Coluna Z - ENDEREÇOS
 
@@ -111,6 +112,7 @@ export function parseInepCsvToSchools(csvText: string): Escola[] {
       nome,
       municipio,
       endereco: endereco || (bairro ? `${bairro}, ${municipio}` : municipio),
+      coordenadas: plusCode || undefined,
       situacaoImovel: 'EM USO',
       situacaoEducacional: sitEduc,
       statusConservacao: 'regular',

@@ -18,6 +18,9 @@ export interface Escola {
   nome: string;
   municipio: string;
   endereco: string;
+  coordenadas?: string;
+  linkMaps?: string;
+  observacoesGerais?: string;
   situacaoImovel?: string;
   situacaoEducacional?: string;
   isManual?: boolean;

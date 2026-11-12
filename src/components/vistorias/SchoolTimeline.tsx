@@ -1,7 +1,24 @@
-import React from 'react';
-import { ArrowLeft, Plus, Calendar, Clock, Image, FileText, User, Phone, MapPin, ChevronRight, AlertTriangle } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import {
+  ArrowLeft,
+  Calendar,
+  Clock,
+  FileText,
+  User,
+  Phone,
+  MapPin,
+  ChevronRight,
+  AlertTriangle,
+  Settings,
+  Navigation,
+  ExternalLink,
+  Trash2,
+  Check,
+  X
+} from 'lucide-react';
 import { Escola, Levantamento, GRE } from '../../types';
 import { StatusConservacaoBadge } from '../common/Badge';
+import { EditSchoolModal } from './EditSchoolModal';
 
 interface SchoolTimelineProps {
   school: Escola;
@@ -10,8 +27,13 @@ interface SchoolTimelineProps {
   onBack: () => void;
   onNovoLevantamento: () => void;
   onVisualizarLevantamento: (levantamento: Levantamento) => void;
+  onUpdateSchool: (updatedSchool: Escola) => void;
+  onDeleteLevantamentos?: (ids: string[]) => void;
   onVerOS?: (osId: string) => void;
 }
+
+const LONG_PRESS_MS = 450;
+const MOVE_THRESHOLD_PX = 10;
 
 export const SchoolTimeline: React.FC<SchoolTimelineProps> = ({
   school,
@@ -20,40 +42,162 @@ export const SchoolTimeline: React.FC<SchoolTimelineProps> = ({
   onBack,
   onNovoLevantamento,
   onVisualizarLevantamento,
+  onUpdateSchool,
+  onDeleteLevantamentos,
   onVerOS
 }) => {
+  const [showEditModal, setShowEditModal] = useState(false);
+
+  // Estados de seleção múltipla por pressionamento longo (Long Press)
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  // Refs para controle preciso de Long Press sem atrapalhar o scroll no celular
+  const pressTimerRef = useRef<number | null>(null);
+  const startPosRef = useRef<{ x: number; y: number } | null>(null);
+  const longPressTriggeredRef = useRef(false);
+
+  useEffect(() => {
+    return () => {
+      if (pressTimerRef.current) window.clearTimeout(pressTimerRef.current);
+    };
+  }, []);
+
+  // Sai do modo de seleção se trocar de escola
+  useEffect(() => {
+    setSelectionMode(false);
+    setSelectedIds(new Set());
+    setShowDeleteConfirm(false);
+  }, [school.id]);
+
   // Ordena os levantamentos do mais recente para o mais antigo
   const sortedLevantamentos = [...levantamentos].sort((a, b) => b.id.localeCompare(a.id));
 
+  const clearPressTimer = () => {
+    if (pressTimerRef.current) {
+      window.clearTimeout(pressTimerRef.current);
+      pressTimerRef.current = null;
+    }
+    startPosRef.current = null;
+  };
+
+  const activateSelectionFor = (id: string) => {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(40);
+    }
+    setSelectionMode(true);
+    setSelectedIds(new Set([id]));
+  };
+
+  const handlePointerDown = (id: string, e: React.PointerEvent) => {
+    if (e.button !== 0 && e.pointerType === 'mouse') return;
+    longPressTriggeredRef.current = false;
+    startPosRef.current = { x: e.clientX, y: e.clientY };
+
+    clearPressTimer();
+    startPosRef.current = { x: e.clientX, y: e.clientY };
+    pressTimerRef.current = window.setTimeout(() => {
+      longPressTriggeredRef.current = true;
+      activateSelectionFor(id);
+    }, LONG_PRESS_MS);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!startPosRef.current) return;
+    const dx = Math.abs(e.clientX - startPosRef.current.x);
+    const dy = Math.abs(e.clientY - startPosRef.current.y);
+    if (dx > MOVE_THRESHOLD_PX || dy > MOVE_THRESHOLD_PX) {
+      clearPressTimer();
+    }
+  };
+
+  const handleCardClick = (lev: Levantamento) => {
+    if (longPressTriggeredRef.current) {
+      longPressTriggeredRef.current = false;
+      return;
+    }
+    if (selectionMode) {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(lev.id)) {
+          next.delete(lev.id);
+        } else {
+          next.add(lev.id);
+        }
+        return next;
+      });
+      return;
+    }
+    onVisualizarLevantamento(lev);
+  };
+
+  const handleToggleAll = () => {
+    if (selectedIds.size === sortedLevantamentos.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(sortedLevantamentos.map((l) => l.id)));
+    }
+  };
+
+  const handleConfirmDelete = () => {
+    if (onDeleteLevantamentos && selectedIds.size > 0) {
+      onDeleteLevantamentos(Array.from(selectedIds));
+    }
+    setShowDeleteConfirm(false);
+    setSelectionMode(false);
+    setSelectedIds(new Set());
+  };
+
+  const mapsUrl = school.coordenadas
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(school.coordenadas)}`
+    : school.endereco
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${school.endereco}, ${school.municipio}, PI`)}`
+    : null;
+
   return (
     <div className="w-full">
-      {/* Top Header da Escola */}
-      <div className="flex items-center gap-3 mb-3">
-        <button
-          onClick={onBack}
-          className="p-2 rounded-xl bg-slate-800/80 border border-white/10 text-slate-300 hover:text-white active-press"
-          aria-label="Voltar"
-        >
-          <ArrowLeft className="w-4 h-4" />
-        </button>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {school.inep && (
-              <span className="text-[10px] font-mono font-bold text-cyan-300 bg-cyan-500/10 border border-cyan-500/25 px-1.5 py-0.5 rounded">
-                INEP: {school.inep}
+      {/* Top Header da Escola com Botão de Engrenagem no Canto Superior Direito */}
+      <div className="flex items-center justify-between gap-2 mb-3">
+        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+          <button
+            type="button"
+            onClick={onBack}
+            className="p-2 rounded-xl bg-slate-800/80 border border-white/10 text-slate-300 hover:text-white active-press flex-shrink-0"
+            aria-label="Voltar"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {school.inep && (
+                <span className="text-[10px] font-mono font-bold text-cyan-300 bg-cyan-500/10 border border-cyan-500/25 px-1.5 py-0.5 rounded">
+                  INEP: {school.inep}
+                </span>
+              )}
+              <span className="text-[11px] text-amber-400 font-semibold truncate">
+                {school.municipio}
               </span>
-            )}
-            <span className="text-[11px] text-amber-400 font-semibold truncate">
-              {school.municipio}
-            </span>
+            </div>
+            <h2 className="text-sm font-bold text-white tracking-tight leading-snug mt-0.5">
+              {school.nome}
+            </h2>
+            <p className="text-[10.5px] text-slate-400 truncate">
+              {gre?.nome || 'Jurisdição SEDUC'}
+            </p>
           </div>
-          <h2 className="text-sm font-bold text-white tracking-tight leading-snug mt-0.5">
-            {school.nome}
-          </h2>
-          <p className="text-[10.5px] text-slate-400 truncate">
-            {gre?.nome || 'Jurisdição SEDUC'}
-          </p>
         </div>
+
+        {/* Engrenagem de Configurações da Escola (Canto Superior Direito) */}
+        <button
+          type="button"
+          onClick={() => setShowEditModal(true)}
+          className="p-2.5 rounded-xl bg-slate-800/85 border border-amber-500/30 text-amber-400 hover:text-amber-300 hover:bg-slate-800 active-press flex-shrink-0 shadow-[0_0_12px_rgba(245,158,11,0.18)]"
+          aria-label="Configurações da Escola"
+          title="Editar direção, telefone, localização e informações da escola"
+        >
+          <Settings className="w-4 h-4" />
+        </button>
       </div>
 
       {/* Card Resumo da Unidade Escolar */}
@@ -70,19 +214,78 @@ export const SchoolTimeline: React.FC<SchoolTimelineProps> = ({
           <StatusConservacaoBadge status={school.statusConservacao} />
         </div>
 
-        <div className="space-y-1.5 text-xs text-slate-300">
-          <p className="flex items-center gap-2">
+        <div className="space-y-2 text-xs text-slate-300">
+          <div
+            onClick={() => !school.diretora && setShowEditModal(true)}
+            className={`flex items-center gap-2 ${!school.diretora ? 'cursor-pointer hover:text-white' : ''}`}
+          >
             <User className="w-3.5 h-3.5 text-cyan-400 flex-shrink-0" />
-            <span>Direção: <strong className="text-white font-medium">{school.diretora || 'Não informado'}</strong></span>
-          </p>
-          <p className="flex items-center gap-2">
-            <Phone className="w-3.5 h-3.5 text-cyan-400 flex-shrink-0" />
-            <span>Telefone: <strong className="text-white font-medium">{school.telefone || '(86) 3216-3200'}</strong></span>
-          </p>
-          <p className="flex items-center gap-2">
-            <MapPin className="w-3.5 h-3.5 text-cyan-400 flex-shrink-0" />
-            <span>{school.endereco}</span>
-          </p>
+            <span>
+              Direção:{' '}
+              <strong className={`font-medium ${school.diretora ? 'text-white' : 'text-amber-300/90 underline decoration-dotted'}`}>
+                {school.diretora || 'Não informado (toque na engrenagem)'}
+              </strong>
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between gap-2">
+            <div
+              onClick={() => !school.telefone && setShowEditModal(true)}
+              className={`flex items-center gap-2 min-w-0 ${!school.telefone ? 'cursor-pointer hover:text-white' : ''}`}
+            >
+              <Phone className="w-3.5 h-3.5 text-cyan-400 flex-shrink-0" />
+              <span className="truncate">
+                Telefone:{' '}
+                <strong className={`font-medium ${school.telefone ? 'text-white' : 'text-slate-400'}`}>
+                  {school.telefone || 'Não informado'}
+                </strong>
+              </span>
+            </div>
+            {school.telefone && (
+              <a
+                href={`tel:${school.telefone.replace(/\D/g, '')}`}
+                className="text-[10px] font-bold text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-lg flex-shrink-0 active-press"
+              >
+                Ligar
+              </a>
+            )}
+          </div>
+
+          <div className="flex items-start gap-2">
+            <MapPin className="w-3.5 h-3.5 text-cyan-400 flex-shrink-0 mt-0.5" />
+            <span className="leading-snug">{school.endereco}</span>
+          </div>
+
+          {(school.coordenadas || mapsUrl) && (
+            <div className="flex items-center justify-between gap-2 pt-1">
+              <div className="flex items-center gap-2 min-w-0">
+                <Navigation className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
+                <span className="text-[11px] font-mono text-amber-300/90 truncate">
+                  {school.coordenadas || 'Localização por endereço'}
+                </span>
+              </div>
+              {mapsUrl && (
+                <a
+                  href={mapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-[10px] font-bold text-cyan-300 bg-cyan-500/15 border border-cyan-500/30 px-2 py-0.5 rounded-lg flex-shrink-0 active-press"
+                >
+                  <span>Abrir Mapa</span>
+                  <ExternalLink className="w-2.5 h-2.5" />
+                </a>
+              )}
+            </div>
+          )}
+
+          {school.observacoesGerais && (
+            <div className="mt-2 pt-2 border-t border-white/[0.06] text-[11px] text-slate-300 bg-black/20 p-2 rounded-xl">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
+                Notas da Unidade:
+              </span>
+              {school.observacoesGerais}
+            </div>
+          )}
         </div>
 
         {school.temOsAtiva && school.osId && onVerOS && (
@@ -92,6 +295,7 @@ export const SchoolTimeline: React.FC<SchoolTimelineProps> = ({
               <span>Ordem de Serviço Vinculada</span>
             </div>
             <button
+              type="button"
               onClick={() => onVerOS(school.osId!)}
               className="text-[11px] font-bold text-amber-300 hover:text-amber-200 px-2.5 py-1 rounded-lg bg-amber-500/15 border border-amber-500/30 active-press"
             >
@@ -101,51 +305,130 @@ export const SchoolTimeline: React.FC<SchoolTimelineProps> = ({
         )}
       </div>
 
-      {/* Botão em Grande Destaque: + Novo Levantamento */}
+      {/* Botão Premium em Vidro Fosco Translúcido & Borda Furtacor Minimalista (sem símbolo +) */}
       <div className="mb-4">
-        <button
-          onClick={onNovoLevantamento}
-          className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-cyan-500 to-teal-500 text-slate-950 font-extrabold text-sm flex items-center justify-center gap-2 active-press shadow-glass-glow-turq hover:opacity-95 transition-all"
-        >
-          <Plus className="w-5 h-5 stroke-[2.5]" />
-          <span>+ Novo Levantamento Fotográfico</span>
-        </button>
+        <div className="p-[1.5px] rounded-2xl border-furtacor shadow-[0_0_22px_rgba(249,115,22,0.22),0_0_14px_rgba(6,182,212,0.2)] active-press">
+          <button
+            type="button"
+            onClick={onNovoLevantamento}
+            className="relative w-full py-3.5 px-4 rounded-[14.5px] bg-[#0B1426]/70 hover:bg-[#101C36]/80 backdrop-blur-2xl text-white font-extrabold text-sm flex items-center justify-center overflow-hidden transition-all"
+          >
+            {/* Reflexo vítreo sutil no topo interno */}
+            <div className="absolute top-0 inset-x-4 h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-b from-white/[0.07] to-transparent pointer-events-none" />
+            <span className="relative z-10 tracking-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+              Novo Relatório Fotográfico
+            </span>
+          </button>
+        </div>
       </div>
 
-      {/* Título da Linha do Tempo */}
-      <div className="flex items-center justify-between mb-3 px-1">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-          <Calendar className="w-3.5 h-3.5 text-cyan-400" />
-          Histórico Cronológico de Vistorias ({sortedLevantamentos.length})
-        </h3>
-        <span className="text-[10px] text-slate-500">Mais recentes primeiro</span>
-      </div>
+      {/* Cabeçalho dos Relatórios OU Barra Contextual de Seleção Múltipla & Exclusão */}
+      {selectionMode ? (
+        <div className="flex items-center justify-between gap-2 mb-3 p-2.5 rounded-2xl bg-slate-900/90 border border-orange-500/40 backdrop-blur-xl shadow-[0_0_16px_rgba(249,115,22,0.2)] animate-fadeIn">
+          <div className="flex items-center gap-2 min-w-0">
+            <button
+              type="button"
+              onClick={() => {
+                setSelectionMode(false);
+                setSelectedIds(new Set());
+              }}
+              className="p-1.5 rounded-lg bg-white/5 text-slate-300 hover:text-white active-press"
+              aria-label="Cancelar seleção"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <span className="text-xs font-extrabold text-white truncate">
+              {selectedIds.size} selecionado{selectedIds.size === 1 ? '' : 's'}
+            </span>
+          </div>
 
-      {/* Linha do Tempo Vertical */}
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <button
+              type="button"
+              onClick={handleToggleAll}
+              className="px-2.5 py-1.5 rounded-xl bg-white/5 border border-white/10 text-[11px] font-bold text-slate-200 active-press"
+            >
+              {selectedIds.size === sortedLevantamentos.length ? 'Desmarcar' : 'Todos'}
+            </button>
+            <button
+              type="button"
+              disabled={selectedIds.size === 0}
+              onClick={() => setShowDeleteConfirm(true)}
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-orange-500/20 border border-orange-500/50 text-orange-300 font-extrabold text-[11px] active-press disabled:opacity-40 shadow-[0_0_12px_rgba(249,115,22,0.25)]"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Excluir ({selectedIds.size})</span>
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex items-center justify-between mb-3 px-1">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+            <Calendar className="w-3.5 h-3.5 text-cyan-400" />
+            Relatórios & Vistorias ({sortedLevantamentos.length})
+          </h3>
+          {sortedLevantamentos.length > 0 && (
+            <span className="text-[10px] text-slate-500">Segure no card para excluir</span>
+          )}
+        </div>
+      )}
+
+      {/* Linha do Tempo Vertical dos Relatórios */}
       <div className="relative pl-6 pb-8 space-y-4 before:content-[''] before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-gradient-to-b before:from-cyan-500/60 before:via-slate-700 before:to-transparent">
         {sortedLevantamentos.length === 0 ? (
           <div className="p-4 rounded-2xl bg-slate-900/40 border border-white/5 text-xs text-slate-400 text-center">
-            Nenhum levantamento anterior registrado para esta escola. Toque em "+ Novo Levantamento Fotográfico" acima para iniciar a primeira vistoria.
+            Nenhum relatório registrado para esta escola. Toque em "Novo Relatório Fotográfico" acima para iniciar a vistoria.
           </div>
         ) : (
           sortedLevantamentos.map((lev) => {
             const fotosCount = lev.fotos.length;
-            const temFotoUrgente = lev.fotos.some(f => f.isUrgente);
+            const temFotoUrgente = lev.fotos.some((f) => f.isUrgente);
+            const isSelected = selectedIds.has(lev.id);
 
             return (
               <div
                 key={lev.id}
-                onClick={() => onVisualizarLevantamento(lev)}
-                className="relative p-3.5 rounded-2xl bg-slate-900/60 hover:bg-slate-900/80 border border-white/10 hover:border-cyan-500/30 backdrop-blur-xl transition-all cursor-pointer active-press shadow-glass"
+                onPointerDown={(e) => handlePointerDown(lev.id, e)}
+                onPointerUp={clearPressTimer}
+                onPointerCancel={clearPressTimer}
+                onPointerMove={handlePointerMove}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  activateSelectionFor(lev.id);
+                }}
+                onClick={() => handleCardClick(lev)}
+                className={`relative p-3.5 rounded-2xl backdrop-blur-xl transition-all cursor-pointer active-press shadow-glass select-none ${
+                  isSelected
+                    ? 'bg-orange-950/35 border-2 border-orange-400/80 shadow-[0_0_16px_rgba(249,115,22,0.3)]'
+                    : 'bg-slate-900/60 hover:bg-slate-900/80 border border-white/10 hover:border-cyan-500/30'
+                }`}
               >
                 {/* Marcador de ponto na linha do tempo */}
-                <span className={`absolute -left-[19px] top-4 w-3.5 h-3.5 rounded-full border-2 border-[#090D16] ${
-                  temFotoUrgente ? 'bg-orange-500 shadow-glass-glow-orange' : 'bg-cyan-400 shadow-glass-glow-turq'
-                }`} />
+                <span
+                  className={`absolute -left-[19px] top-4 w-3.5 h-3.5 rounded-full border-2 border-[#090D16] ${
+                    isSelected
+                      ? 'bg-orange-400 shadow-glass-glow-orange'
+                      : temFotoUrgente
+                      ? 'bg-orange-500 shadow-glass-glow-orange'
+                      : 'bg-cyan-400 shadow-glass-glow-turq'
+                  }`}
+                />
 
-                {/* Cabeçalho do Laudo */}
+                {/* Cabeçalho do Relatório */}
                 <div className="flex items-start justify-between gap-2 mb-1.5">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-white">
+                  <div className="flex items-center gap-2 text-xs font-bold text-white">
+                    {selectionMode && (
+                      <span
+                        className={`w-4 h-4 rounded-md flex items-center justify-center border transition-colors ${
+                          isSelected
+                            ? 'bg-orange-500 border-orange-400 text-slate-950'
+                            : 'bg-slate-800/80 border-white/25 text-transparent'
+                        }`}
+                      >
+                        <Check className="w-3 h-3 stroke-[3]" />
+                      </span>
+                    )}
                     <Clock className="w-3.5 h-3.5 text-cyan-400" />
                     <span>{lev.dataHora}</span>
                   </div>
@@ -197,8 +480,8 @@ export const SchoolTimeline: React.FC<SchoolTimelineProps> = ({
                 <div className="flex items-center justify-between pt-2 mt-2 border-t border-white/[0.06] text-[10px] text-slate-400">
                   <span>Fiscal: {lev.concluidoPor}</span>
                   <span className="text-cyan-400 flex items-center gap-0.5 font-semibold">
-                    Abrir Relatório Completo
-                    <ChevronRight className="w-3 h-3" />
+                    {selectionMode ? (isSelected ? 'Selecionado' : 'Toque para marcar') : 'Abrir Relatório Completo'}
+                    {!selectionMode && <ChevronRight className="w-3 h-3" />}
                   </span>
                 </div>
               </div>
@@ -206,6 +489,59 @@ export const SchoolTimeline: React.FC<SchoolTimelineProps> = ({
           })
         )}
       </div>
+
+      {/* Modal: Configurações da Escola (Engrenagem) */}
+      {showEditModal && (
+        <EditSchoolModal
+          school={school}
+          onSave={(updated) => {
+            onUpdateSchool(updated);
+            setShowEditModal(false);
+          }}
+          onClose={() => setShowEditModal(false)}
+        />
+      )}
+
+      {/* Modal de Confirmação de Exclusão em Lote */}
+      {showDeleteConfirm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn"
+          style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)' }}
+        >
+          <div className="w-full max-w-sm bg-[#0D1424] border border-orange-500/35 rounded-3xl shadow-2xl p-5 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-orange-500/15 border border-orange-500/35 flex items-center justify-center text-orange-400 flex-shrink-0">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-extrabold text-white text-sm">
+                  Excluir {selectedIds.size} {selectedIds.size === 1 ? 'Relatório' : 'Relatórios'}?
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Esta ação removerá os relatórios selecionados do histórico desta unidade escolar.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-2.5 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 py-2.5 rounded-2xl bg-slate-800 border border-white/10 text-xs font-bold text-slate-300 active-press"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                className="flex-1 py-2.5 rounded-2xl bg-gradient-to-r from-orange-500 to-red-500 text-white font-extrabold text-xs active-press shadow-[0_0_16px_rgba(249,115,22,0.4)]"
+              >
+                Sim, Excluir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

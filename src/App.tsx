@@ -158,6 +158,17 @@ export function App() {
     setSchools(updated);
   };
 
+  const handleUpdateSchool = (updatedSchool: Escola) => {
+    const updated = storage.updateSchool(updatedSchool);
+    setSchools(updated);
+    setSelectedSchool(updatedSchool);
+  };
+
+  const handleDeleteLevantamentos = (ids: string[]) => {
+    const updated = storage.deleteLevantamentos(ids);
+    setLevantamentos(updated);
+  };
+
   const handleSyncSchools = async (): Promise<number> => {
     const imported = await syncInepFromGoogleSheets();
     const updated = storage.syncSchoolsFromInep(imported);
@@ -383,7 +394,7 @@ export function App() {
                 <SchoolTimeline
                   school={selectedSchool}
                   gre={selectedGre || undefined}
-                  levantamentos={storage.getLevantamentosByEscola(selectedSchool.id)}
+                  levantamentos={levantamentos.filter(l => l.escolaId === selectedSchool.id)}
                   onBack={() => setSelectedSchool(null)}
                   onNovoLevantamento={() => setSchoolForNewLevantamento(selectedSchool)}
                   onVisualizarLevantamento={(lev) => {
@@ -392,6 +403,8 @@ export function App() {
                       school: selectedSchool
                     });
                   }}
+                  onUpdateSchool={handleUpdateSchool}
+                  onDeleteLevantamentos={handleDeleteLevantamentos}
                   onVerOS={(osId) => {
                     setSubView('orcamentos');
                     setTargetOsId(osId);

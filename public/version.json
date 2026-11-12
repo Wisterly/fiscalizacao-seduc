@@ -1,14 +1,14 @@
 {
-  "version": "1.0.9",
-  "buildNumber": 10,
+  "version": "1.0.10",
+  "buildNumber": 11,
   "releaseDate": "2026-11-12",
   "minRequiredVersion": "1.0.0",
   "downloadUrl": "https://github.com/Wisterly/fiscalizacao-seduc/releases/download/apk-latest/Fiscal.IA.apk",
   "changelog": [
-    "Integração completa com a aba DADOS INEP: 703 unidades filtradas estritamente com situação 'EM USO' (Coluna F)",
-    "Lista de escolas ao clicar na GRE na sequência oficial: 1. INEP -> 2. Nome da Escola (Coluna K) -> 3. Município (Coluna J)",
-    "Novo botão '+ Adicionar Escola' dentro de cada GRE para cadastro manual em campo com salvamento offline",
-    "Sincronização direta ao vivo com a planilha do Google Sheets via botão de atualização",
-    "Fluxo encadeado completo: Card da GRE -> Lista de Escolas EM USO -> Vistoria e Levantamento da Escola"
+    "Cabeçalho superior atualizado para exibir oficialmente o nome do aplicativo: Fiscaliz.IA.lab",
+    "Engrenagem de configurações em cada escola para informar direção, telefone, endereço, GPS e notas",
+    "Importação base de 676 Plus Codes de localização da planilha INEP com link direto para Google Maps",
+    "Botão 'Novo Relatório Fotográfico' redesenhado sem símbolo '+' em vidro fosco e borda furtacor minimalista",
+    "Pressionamento longo (segurar) nos relatórios para seleção múltipla e exclusão em lote via lixeira"
   ]
 }

@@ -73,7 +73,23 @@ class StorageService {
 
   // --- Escolas ---
   getSchools(): Escola[] {
-    return this.getItem<Escola[]>(STORAGE_KEYS.SCHOOLS, INITIAL_SCHOOLS);
+    const saved = this.getItem<Escola[]>(STORAGE_KEYS.SCHOOLS, INITIAL_SCHOOLS);
+    // Enriquece registros já salvos caso novas coordenadas oficiais tenham sido adicionadas à base inicial
+    const seedCoords = new Map(
+      INITIAL_SCHOOLS.filter(s => s.coordenadas).map(s => [s.id, s.coordenadas!])
+    );
+    let changed = false;
+    const enriched = saved.map(s => {
+      if (!s.coordenadas && seedCoords.has(s.id)) {
+        changed = true;
+        return { ...s, coordenadas: seedCoords.get(s.id) };
+      }
+      return s;
+    });
+    if (changed) {
+      this.setItem(STORAGE_KEYS.SCHOOLS, enriched);
+    }
+    return enriched;
   }
 
   getSchoolById(id: string): Escola | undefined {
@@ -115,6 +131,12 @@ class StorageService {
       if (existing) {
         return {
           ...item,
+          diretora: existing.diretora,
+          telefone: existing.telefone,
+          observacoesGerais: existing.observacoesGerais,
+          linkMaps: existing.linkMaps,
+          coordenadas: existing.coordenadas || item.coordenadas,
+          endereco: existing.endereco || item.endereco,
           statusConservacao: existing.statusConservacao,
           dataUltimaVistoria: existing.dataUltimaVistoria,
           diasSemVisita: existing.diasSemVisita,
@@ -327,6 +349,13 @@ class StorageService {
     });
 
     return novo;
+  }
+
+  deleteLevantamentos(ids: string[]): Levantamento[] {
+    const idSet = new Set(ids);
+    const updated = this.getLevantamentos().filter(l => !idSet.has(l.id));
+    this.setItem(STORAGE_KEYS.LEVANTAMENTOS, updated);
+    return updated;
   }
 
   // --- Rotas de Vistoria ---

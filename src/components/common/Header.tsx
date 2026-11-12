@@ -78,14 +78,14 @@ export const Header: React.FC<HeaderProps> = ({
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
                   <h1 className="text-sm font-extrabold text-white tracking-tight leading-none truncate">
-                    Fiscalização Seduc
+                    Fiscaliz.IA.lab
                   </h1>
                   <span className="text-[9px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.2 rounded border border-amber-500/20">
                     GPR
                   </span>
                 </div>
                 <p className="text-[10px] text-slate-400 font-medium mt-0.5 truncate flex items-center gap-1">
-                  <span>Fiscaliz.IA.lab</span>
+                  <span>SEDUC Piauí</span>
                   <span className="w-1 h-1 rounded-full bg-slate-600" />
                   <span className="text-emerald-400 font-semibold">{isOnline ? 'Online' : 'Offline'}</span>
                 </p>

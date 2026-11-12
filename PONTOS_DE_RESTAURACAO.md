@@ -29,6 +29,21 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.015] — Engrenagem de Configurações da Escola, Cabeçalho Fiscaliz.IA.lab, Botão Vidro Furtacor & Exclusão Múltipla
+- **Data/Hora:** 2026-11-12 02:01 (UTC-3)
+- **Escopos Definidos:**
+  - `PR.015` (Geral): Atualização do cabeçalho principal para exibir **Fiscaliz.IA.lab** (`GPR`) em vez de "Fiscalização". Inclusão de botão com ícone de engrenagem (`Settings`) no canto superior direito da tela da escola (`SchoolTimeline.tsx`) abrindo `EditSchoolModal.tsx` para edição persistente de nome da diretora, telefone, endereço, localização GPS (com captura direta pelo dispositivo) e observações adicionais. Inclusão inicial de **676 Plus Codes** da aba `DADOS INEP` com botão "Abrir Mapa". Redesign do botão principal para **`Novo Relatório Fotográfico`** (sem `+`) em efeito vidro fosco translúcido e borda furtacor minimalista (laranja, dourado, verde e azul). Implementação de pressionamento longo (Long Press) nos cards de relatórios para habilitar seleção múltipla e exclusão em lote via botão de lixeira.
+  - `PR.015.1` (Desktop / Web): Suporte a seleção múltipla via pressionamento longo ou botão direito do mouse, edição de dados escolares e links rápidos para mapas.
+  - `PR.015.2` (Mobile / Android): Feedback tátil (`navigator.vibrate`) ao iniciar menu de seleção dos relatórios, captura GPS em campo e APK v1.0.10 (Build 11) assinado com keystore unificada.
+- **Tags Git:** `PR.015`, `PR.015.1`, `PR.015.2`
+- **Arquivo Local do APK:** `c:\Users\Lenovo\Documents\antigravity\LAB - GPR\Fiscal.IA.lab - GPR\Fiscal.IA.apk` e `app-release.apk`
+- **Comando de Restauração Rápida:**
+  ```bash
+  git checkout PR.015
+  ```
+
+---
+
 ### [PR.014] — Integração Planilha DADOS INEP (703 Unidades EM USO), Lista INEP/Escola/Município & Cadastro Manual
 - **Data/Hora:** 2026-11-12 01:02 (UTC-3)
 - **Escopos Definidos:**
