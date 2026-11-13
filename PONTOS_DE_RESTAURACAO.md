@@ -29,6 +29,21 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.021] — Formatação Oficial UGERF / GPR do Roteiro WhatsApp com Campo de Data e Pessoas na Rota
+- **Data/Hora:** 2026-11-13 12:25 (UTC-3)
+- **Escopos Definidos:**
+  - `PR.021` (Geral): Adequação estrita do template de exportação de rotas para WhatsApp para o padrão oficial da UGERF / GPR. Cabeçalho oficial `*🛣️ ROTEIRO DE VISTORIAS — UGERF / GPR*` contendo `*GRE:*`, `*Data:* XX/XX á XX/XX`, `*Diárias:*`, `*👥 Equipe:*` e `*Total de Escolas:*`. Listagem simplificada por dias (`*📅 DIA 1*`, `*📅 DIA 2*`) com recuo, emoji de localização e destaque estrito: `📍 *Cidade* — Nome da Escola` (sem horários ou notas secundárias). Inclusão do campo persistente de "Data / Período da Rota" ao lado da equipe de campo.
+  - `PR.021.1` (Desktop / Web): Grid responsivo de 3 colunas para inserção rápida de Data/Período e Equipe de Campo com botões de limpeza em 1 clique e cópia formatada imediata.
+  - `PR.021.2` (Mobile / Android): Otimização ergonômica dos inputs para teclado virtual no Android, sincronização Capacitor e geração da versão v1.0.16 (Build 17).
+- **Tags Git:** `PR.021`, `PR.021.1`, `PR.021.2`
+- **Arquivo Local do APK:** `c:\Users\KayroPaula\OneDrive - Secretaria de Educação do Estado do Piaui\Documentos\Antigravity\FiscaIA.lab - GPR\Fiscal.IA.apk`
+- **Comando de Restauração Rápida:**
+  ```bash
+  git checkout PR.021
+  ```
+
+---
+
 ### [PR.020] — Customização de Rotas: Exclusão de Escolas Sugeridas, Exportação Limpa WhatsApp (Cidades e Escolas) & Campo de Equipe de Campo
 - **Data/Hora:** 2026-11-13 11:05 (UTC-3)
 - **Escopos Definidos:**

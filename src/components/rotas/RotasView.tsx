@@ -81,6 +81,24 @@ export const RotasView: React.FC<RotasViewProps> = ({
     }
   };
 
+  // Data / Período da Viagem (Persistido no localStorage)
+  const [dataPeriodo, setDataPeriodo] = useState<string>(() => {
+    try {
+      return localStorage.getItem('seduc_rotas_data_periodo') || '';
+    } catch {
+      return '';
+    }
+  });
+
+  const handleDataPeriodoChange = (val: string) => {
+    setDataPeriodo(val);
+    try {
+      localStorage.setItem('seduc_rotas_data_periodo', val);
+    } catch (err) {
+      console.error('Erro ao salvar período no localStorage:', err);
+    }
+  };
+
   // Escolas sugeridas pelo sistema que o usuário optou por retirar da rota
   const [escolasRemovidasIds, setEscolasRemovidasIds] = useState<string[]>([]);
 
@@ -119,9 +137,9 @@ export const RotasView: React.FC<RotasViewProps> = ({
     return gerarPlanoDeViagem(subTab, escolasElegiveis, greAtiva, selectedDiaria);
   }, [subTab, escolasElegiveis, greAtiva, selectedDiaria]);
 
-  // Handler de Cópia para WhatsApp (Sem horários, apenas cidades e escolas, com a equipe)
+  // Handler de Cópia para WhatsApp (Padrão UGERF / GPR: sem horários, apenas cidades e escolas, com data e equipe)
   const handleCopiarWhatsApp = async () => {
-    const texto = formatarPlanoParaWhatsApp(planoViagem, equipeRota);
+    const texto = formatarPlanoParaWhatsApp(planoViagem, equipeRota, dataPeriodo);
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(texto);
@@ -359,36 +377,74 @@ export const RotasView: React.FC<RotasViewProps> = ({
         </div>
 
         {/* 4. CAMPO DE PESSOAS NA ROTA (EQUIPE DE CAMPO) */}
-        <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3 sm:p-4 space-y-2">
+        {/* 4. CAMPOS DE EXPORTAÇÃO WHATSAPP (DATA & EQUIPE DE CAMPO) */}
+        <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3 sm:p-4 space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
             <label className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
               <Users className="w-4 h-4 text-amber-400" />
-              <span>Equipe de Campo / Pessoas na Rota</span>
+              <span>Dados para Exportação WhatsApp (UGERF / GPR)</span>
             </label>
             <span className="text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 self-start sm:self-auto">
               Exportado no WhatsApp
             </span>
           </div>
-          <div className="relative">
-            <input
-              type="text"
-              value={equipeRota}
-              onChange={(e) => handleEquipeChange(e.target.value)}
-              placeholder="Digite os nomes da equipe (ex: Eng. Carlos Silva, Fiscal Marcos, Motorista João)"
-              className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all pr-9"
-            />
-            {equipeRota && (
-              <button
-                onClick={() => handleEquipeChange('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1 rounded-lg transition-colors"
-                title="Limpar campo"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {/* Campo de Data / Período */}
+            <div className="space-y-1">
+              <label className="text-[11px] font-semibold text-slate-400 flex items-center gap-1">
+                <Calendar className="w-3.5 h-3.5 text-amber-400" />
+                <span>Data / Período:</span>
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={dataPeriodo}
+                  onChange={(e) => handleDataPeriodoChange(e.target.value)}
+                  placeholder="Ex: 18/11 á 20/11 ou XX/XX á XX/XX"
+                  className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all pr-8"
+                />
+                {dataPeriodo && (
+                  <button
+                    onClick={() => handleDataPeriodoChange('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1 rounded-lg transition-colors"
+                    title="Limpar data"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Campo de Equipe */}
+            <div className="md:col-span-2 space-y-1">
+              <label className="text-[11px] font-semibold text-slate-400 flex items-center gap-1">
+                <Users className="w-3.5 h-3.5 text-amber-400" />
+                <span>Equipe de Campo (Fiscais, Engenheiros, Motorista):</span>
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={equipeRota}
+                  onChange={(e) => handleEquipeChange(e.target.value)}
+                  placeholder="Ex: Eng. Carlos Silva, Fiscal Marcos, Motorista João"
+                  className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all pr-8"
+                />
+                {equipeRota && (
+                  <button
+                    onClick={() => handleEquipeChange('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1 rounded-lg transition-colors"
+                    title="Limpar equipe"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
+
           <p className="text-[11px] text-slate-400">
-            Adicione os nomes dos fiscais, engenheiros e motorista. Eles serão incluídos no cabeçalho da exportação para o WhatsApp.
+            Exporta o modelo oficial: <code>*🛣️ ROTEIRO DE VISTORIAS — UGERF / GPR*</code> com apenas as cidades e os nomes das escolas por dia.
           </p>
         </div>
 

@@ -1,13 +1,13 @@
 {
-  "version": "1.0.15",
-  "buildNumber": 16,
+  "version": "1.0.16",
+  "buildNumber": 17,
   "releaseDate": "2026-11-13",
   "minRequiredVersion": "1.0.0",
   "downloadUrl": "https://github.com/Wisterly/fiscalizacao-seduc/releases/download/apk-latest/Fiscal.IA.apk",
   "changelog": [
-    "Opção de retirar escolas sugeridas pelo sistema com recálculo dinâmico da rota",
-    "Exportação para WhatsApp limpa: sem horários, listando apenas cidades e nomes das escolas",
-    "Novo campo persistente de Equipe de Campo / Pessoas na Rota incluído no cabeçalho do WhatsApp",
-    "Banner de restauração de escolas sugeridas e sincronização automática"
+    "Formatação Oficial UGERF / GPR de exportação para WhatsApp exatamente conforme especificado",
+    "Campo de Data / Período da Viagem integrado ao cabeçalho (ex: *Data:* XX/XX á XX/XX)",
+    "Cabeçalho unificado: *ROTEIRO DE VISTORIAS — UGERF / GPR*, *GRE:*, *Diárias:*, *👥 Equipe:* e *Total de Escolas:*",
+    "Listagem diária estrita por cidade e escola: 📍 *Cidade* — Nome da Escola"
   ]
 }

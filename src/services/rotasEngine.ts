@@ -977,34 +977,33 @@ export function gerarPlanoDeViagem(
 
 /**
  * Formata o plano de viagem para compartilhamento no WhatsApp
- * Sem horários: lista apenas cidades e o nome das escolas, incluindo a equipe de campo informada.
+ * Padrão Oficial: UGERF / GPR, sem horários, apenas cidades e nomes das escolas, com data e equipe.
  */
-export function formatarPlanoParaWhatsApp(plano: PlanoViagem, equipe?: string): string {
-  const emojiTipo = plano.tipoRota === 'prioridade' ? '🚨' : '🛣️';
-  let txt = `*${emojiTipo} ROTEIRO OFICIAL DE VISTORIAS — FISCAL.IA.LAB (SEDUC-PI)*\n`;
-  txt += `*Jurisdição:* ${plano.gre.nome}\n`;
-  if (plano.cidadePolo && plano.diaria !== '1.5') {
-    txt += `*Cidade-Polo de Pernoite:* ${plano.cidadePolo}\n`;
-  }
-  txt += `*Regime de Diárias:* ${plano.diaria} diárias\n`;
-  txt += `*Tipo de Rota:* ${plano.tipoRota === 'prioridade' ? 'Rota por Prioridade (Hierarquia & Criticidade)' : 'Rota por Trajeto (Otimização Geográfica)'}\n`;
-  txt += `*Veículo:* ${plano.veiculoInfo}\n`;
+export function formatarPlanoParaWhatsApp(
+  plano: PlanoViagem, 
+  equipe?: string, 
+  dataPeriodo?: string
+): string {
+  let txt = `*🛣️ ROTEIRO DE VISTORIAS — UGERF / GPR*\n`;
+  txt += `*GRE:* ${plano.gre.nome}\n`;
+  txt += `*Data:* ${dataPeriodo && dataPeriodo.trim() ? dataPeriodo.trim() : 'XX/XX á XX/XX'}\n`;
+  txt += `*Diárias:* ${plano.diaria} diárias\n`;
 
   if (equipe && equipe.trim()) {
-    txt += `*👥 Equipe de Campo:* ${equipe.trim()}\n`;
+    txt += `*👥 Equipe:* ${equipe.trim()}\n`;
   }
 
   txt += `*Total de Escolas:* ${plano.totalEscolasAtendidas}\n`;
-  txt += `-------------------------------------------\n\n`;
+  txt += `-------------------------------------------\n`;
 
   plano.dias.forEach((d) => {
-    txt += `*📅 ${d.titulo.toUpperCase()}*\n`;
+    txt += `*📅 DIA ${d.diaNumero}*\n`;
     
     // Obter apenas as vistorias em escolas
     const vistorias = d.paradas.filter(p => p.tipo === 'vistoria' && p.escola);
 
     if (vistorias.length === 0) {
-      txt += `  _Deslocamento / Retorno (Sem vistorias agendadas)_\n`;
+      txt += `  _Deslocamento / Retorno_\n`;
     } else {
       vistorias.forEach((p) => {
         if (p.escola) {
@@ -1013,9 +1012,7 @@ export function formatarPlanoParaWhatsApp(plano: PlanoViagem, equipe?: string): 
         }
       });
     }
-    txt += `\n`;
   });
 
-  txt += `_Fiscal.IA.lab — Gerência de Manutenção e Obras (SEDUC-PI)_`;
-  return txt;
+  return txt.trim();
 }
