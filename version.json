@@ -1,14 +1,14 @@
 {
-  "version": "1.0.11",
-  "buildNumber": 12,
+  "version": "1.0.12",
+  "buildNumber": 13,
   "releaseDate": "2026-11-12",
   "minRequiredVersion": "1.0.0",
   "downloadUrl": "https://github.com/Wisterly/fiscalizacao-seduc/releases/download/apk-latest/Fiscal.IA.apk",
   "changelog": [
-    "Integração oficial das 53 localizações e links Maps extraídos diretamente do PDF enviado pelo usuário (08ª e 15ª GREs)",
-    "Criação do arquivo mestre de configuração 'src/data/schoolsGeodataConfig.json' para mapeamento contínuo de endereços e coordenadas",
-    "Cabeçalho unificado com o nome oficial do projeto: Fiscal.IA.lab (GPR)",
-    "Redesign ultra-premium do botão 'Novo Relatório Fotográfico' em vidro translúcido com borda prismática e reflexo superior",
-    "Enriquecimento automático da base local com persistência de dados e links dinâmicos para o Google Maps"
+    "Integração oficial da Ata de Manutenção SEDUC (Google Sheets gid=671056752) com 2.850 Ordens de Serviço reais",
+    "Mapeamento de 251 obras ativas em execução e 2.599 obras no histórico concluído vinculadas a cada escola",
+    "Sincronização ao vivo com 1 clique diretamente da planilha de controle de ata via Google Sheets",
+    "Suporte híbrido a anexo manual de arquivos PDF (OS e Orçamento Descritivo) e pastas do Google Drive por escola",
+    "Barra de medição interativa no perfil de cada unidade com cálculo de avanço físico em tempo real"
   ]
 }

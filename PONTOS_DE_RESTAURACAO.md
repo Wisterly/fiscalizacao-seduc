@@ -29,6 +29,21 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.017] — Integração Completa da Ata de Manutenção SEDUC (2.850 Ordens de Serviço), Sincronização ao Vivo & Gestão Híbrida
+- **Data/Hora:** 2026-11-12 23:55 (UTC-3)
+- **Escopos Definidos:**
+  - `PR.017` (Geral): Integração oficial da planilha da Ata de Manutenção da SEDUC Piauí (`gid=671056752`), processando e estruturando **2.850 Ordens de Serviço reais** vinculadas univocamente às escolas do aplicativo (251 obras em execução ativa e 2.599 no histórico de concluídas). Implementação de sincronização ao vivo direta com o Google Sheets através de `syncAtaFromGoogleSheets` no `sheetsSyncService.ts`. Criação do banco offline local `ordensServicoAta.json` e migração da chave de storage para `seduc_fiscal_os_v2`.
+  - `PR.017.1` (Desktop / Web): Atualização da tela `OrcamentosView` com contadores em tempo real para "Com OS Ativa" e "Histórico de OS", botão de sincronização ao vivo do Google Sheets, modal de documentos atualizado e busca integrada por escola, construtora e número da OS.
+  - `PR.017.2` (Mobile / Android): No perfil de cada escola (`SchoolTimeline.tsx`), exibição da nova seção `SchoolOSSection` com as obras ativas e concluídas daquela unidade, medição física ajustável, download de documentos oficiais, modal `AttachOSModal` para upload de PDF e vinculação de pastas do Google Drive, e geração do novo APK nativo **`Fiscal.IA.apk`** v1.0.12 (Build 13).
+- **Tags Git:** `PR.017`, `PR.017.1`, `PR.017.2`
+- **Arquivo Local do APK:** `c:\Users\Lenovo\Documents\antigravity\LAB - GPR\Fiscal.IA.lab - GPR\Fiscal.IA.apk`
+- **Comando de Restauração Rápida:**
+  ```bash
+  git checkout PR.017
+  ```
+
+---
+
 ### [PR.016] — Geolocalizações do PDF (08ª e 15ª GREs), Botão Vidro Translúcido, Módulo Híbrido de OS, Orçamentos e Histórico
 - **Data/Hora:** 2026-11-12 23:15 (UTC-3)
 - **Escopos Definidos:**

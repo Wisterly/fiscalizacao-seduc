@@ -10,11 +10,14 @@ import {
   Sliders,
   X,
   Paperclip,
-  Download
+  Download,
+  RefreshCw
 } from 'lucide-react';
 import { OrdemServico, GRE, Escola } from '../../types';
 import { DocumentPreviewModal } from './DocumentPreviewModal';
 import { AttachOSModal } from './AttachOSModal';
+import { syncAtaFromGoogleSheets } from '../../services/sheetsSyncService';
+import { storage } from '../../services/storageService';
 
 interface OrcamentosViewProps {
   ordensServico: OrdemServico[];
@@ -54,6 +57,25 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
 
   // Modal de Anexo e Edição de OS
   const [attachModalOS, setAttachModalOS] = useState<OrdemServico | null>(null);
+
+  // Sincronização ao vivo da Ata de Manutenção
+  const [syncingAta, setSyncingAta] = useState(false);
+
+  const handleSyncAtaLive = async () => {
+    setSyncingAta(true);
+    try {
+      const updatedOS = await syncAtaFromGoogleSheets(schools);
+      storage.syncOrdensServicoFromAta(updatedOS);
+      if (onSaveOS && updatedOS.length > 0) {
+        onSaveOS(updatedOS[0]);
+      }
+      alert(`Sincronização concluída com sucesso! ${updatedOS.length} ordens de serviço atualizadas do Google Sheets.`);
+    } catch (e: any) {
+      alert(`Erro ao sincronizar ata: ${e?.message || e}`);
+    } finally {
+      setSyncingAta(false);
+    }
+  };
 
   // Lista única de municípios para o dropdown
   const todosMunicipios = Array.from(
@@ -161,29 +183,41 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
         </div>
       </div>
 
-      {/* 3. PÍLULAS / ABAS DE STATUS (Com OS Ativa | Histórico de OS) */}
+      {/* 3. PÍLULAS / ABAS DE STATUS (Com OS Ativa | Histórico de OS) + Sincronizar Google Sheets */}
       <div className="px-4 mb-4">
-        <div className="flex items-center gap-2.5">
-          <button
-            onClick={() => setAbaStatus('ativa')}
-            className={`px-5 py-2 rounded-full text-xs transition-all active-press ${
-              abaStatus === 'ativa'
-                ? 'border-2 border-amber-400 bg-amber-500/15 text-amber-300 font-extrabold shadow-[0_0_15px_rgba(234,179,8,0.30)]'
-                : 'border border-white/10 bg-slate-900/60 text-slate-400 hover:text-slate-200 font-medium'
-            }`}
-          >
-            Com OS Ativa
-          </button>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setAbaStatus('ativa')}
+              className={`px-3.5 py-2 rounded-full text-xs transition-all active-press ${
+                abaStatus === 'ativa'
+                  ? 'border-2 border-amber-400 bg-amber-500/15 text-amber-300 font-extrabold shadow-[0_0_15px_rgba(234,179,8,0.30)]'
+                  : 'border border-white/10 bg-slate-900/60 text-slate-400 hover:text-slate-200 font-medium'
+              }`}
+            >
+              Com OS Ativa ({ordensServico.filter((o) => o.status === 'ativa').length})
+            </button>
+
+            <button
+              onClick={() => setAbaStatus('historico')}
+              className={`px-3.5 py-2 rounded-full text-xs transition-all active-press ${
+                abaStatus === 'historico'
+                  ? 'border-2 border-cyan-400 bg-cyan-500/15 text-cyan-300 font-extrabold shadow-[0_0_15px_rgba(6,182,212,0.30)]'
+                  : 'border border-cyan-500/30 bg-slate-900/60 text-cyan-300 hover:border-cyan-400 font-medium'
+              }`}
+            >
+              Histórico ({ordensServico.filter((o) => o.status === 'historico').length})
+            </button>
+          </div>
 
           <button
-            onClick={() => setAbaStatus('historico')}
-            className={`px-5 py-2 rounded-full text-xs transition-all active-press ${
-              abaStatus === 'historico'
-                ? 'border-2 border-cyan-400 bg-cyan-500/15 text-cyan-300 font-extrabold shadow-[0_0_15px_rgba(6,182,212,0.30)]'
-                : 'border border-cyan-500/30 bg-slate-900/60 text-cyan-300 hover:border-cyan-400 font-medium'
-            }`}
+            type="button"
+            onClick={handleSyncAtaLive}
+            disabled={syncingAta}
+            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-cyan-400 active-press disabled:opacity-50"
+            title="Sincronizar Ata de Manutenção ao vivo do Google Sheets"
           >
-            Histórico de OS
+            <RefreshCw className={`w-4 h-4 ${syncingAta ? 'animate-spin' : ''}`} />
           </button>
         </div>
       </div>

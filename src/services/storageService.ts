@@ -26,7 +26,7 @@ const STORAGE_KEYS = {
   GRES: 'seduc_fiscal_gres_v4',
   SCHOOLS: 'seduc_fiscal_schools_inep_v5',
   AMBIENTES: 'seduc_fiscal_ambientes_v1',
-  OS: 'seduc_fiscal_os_v1',
+  OS: 'seduc_fiscal_os_v2',
   ALERTAS: 'seduc_fiscal_alertas_v1',
   DEMANDAS: 'seduc_fiscal_demandas_v1',
   TAREFAS: 'seduc_fiscal_tarefas_v1',
@@ -233,6 +233,35 @@ class StorageService {
     });
     this.setItem(STORAGE_KEYS.OS, updated);
     return updated;
+  }
+
+  /**
+   * Sincroniza ordens de serviço da Ata de Manutenção preservando anexos locais e medições customizadas.
+   */
+  syncOrdensServicoFromAta(importedOS: OrdemServico[]): OrdemServico[] {
+    const current = this.getOrdensServico();
+    const currentMap = new Map(current.map(o => [o.id, o]));
+
+    const merged = importedOS.map(item => {
+      const existing = currentMap.get(item.id);
+      if (existing) {
+        return {
+          ...item,
+          osPdfBlob: existing.osPdfBlob || item.osPdfBlob,
+          osPdfUrl: existing.osPdfUrl || item.osPdfUrl,
+          osPdfNome: existing.osPdfNome || item.osPdfNome,
+          orcamentoPdfBlob: existing.orcamentoPdfBlob || item.orcamentoPdfBlob,
+          orcamentoPdfUrl: existing.orcamentoPdfUrl || item.orcamentoPdfUrl,
+          orcamentoPdfNome: existing.orcamentoPdfNome || item.orcamentoPdfNome,
+          percentualMedicao: existing.percentualMedicao !== undefined ? existing.percentualMedicao : item.percentualMedicao,
+          observacoes: existing.observacoes && existing.observacoes.length > 0 ? existing.observacoes : item.observacoes
+        };
+      }
+      return item;
+    });
+
+    this.setItem(STORAGE_KEYS.OS, merged);
+    return merged;
   }
 
   // --- Alertas Urgentes ---

@@ -1,5 +1,6 @@
 import { GRE, Escola, Ambiente, OrdemServico, Demanda, AlertaUrgente, RotaVistoria, TarefaDoDia, Levantamento } from '../types';
 import inepSchoolsJson from './inepSchools.json';
+import ordensServicoAtaJson from './ordensServicoAta.json';
 
 export const INITIAL_GRES: GRE[] = [
   { id: 'gre-01', numero: 1, nome: '01ª GRE - Parnaíba', sede: 'Parnaíba', municipios: ['Parnaíba', 'Ilha Grande', 'Luís Correia', 'Buriti dos Lopes'], isFavorite: true },
@@ -53,89 +54,7 @@ export const INITIAL_AMBIENTES: Ambiente[] = [
   { id: 'amb-9', nome: 'Pátio Coberto / Quadra Poliesportiva', isPadrao: true },
 ];
 
-export const INITIAL_OS: OrdemServico[] = [
-  {
-    id: 'os-140',
-    numeroOS: '140/2026-SEDUC',
-    escolaId: 'inep-22026924',
-    escolaNome: 'CETI GOVERNADOR JOÃO CLIMACO DALMEIDA',
-    greId: 'gre-04',
-    municipio: 'TERESINA',
-    objeto: 'Reforma geral, revisão estrutural de cobertura, modernização das instalações elétricas e acessibilidade completa com piso tátil e banheiros PCD.',
-    valorOrcamento: 485920.40,
-    percentualMedicao: 65,
-    dataInicio: '2026-06-15',
-    prazoFinal: '2026-12-20',
-    status: 'ativa',
-    empresaContratada: 'Engenharia & Empreendimentos Poty Ltda',
-    orcamentoPdfSimulado: 'ORCAMENTO_140_2026_SEDUC_REV03.pdf',
-    memorialDescritivoPdfSimulado: 'MEMORIAL_DESCRITIVO_JOAO_CLIMACO_2026.pdf',
-    observacoes: [
-      { id: 'obs-1', data: '2026-10-18', autor: 'Fiscal de Obras GPR', texto: 'Aguardando materiais da empresa para avanço da cobertura.' },
-      { id: 'obs-2', data: '2026-09-10', autor: 'Fiscal de Obras GPR', texto: 'Concluída a tubulação subterrânea de esgoto dos banheiros PCD.' }
-    ]
-  },
-  {
-    id: 'os-141',
-    numeroOS: '141/2026-SEDUC',
-    escolaId: 'inep-22027661',
-    escolaNome: 'CETI PROF PINHEIRO MACHADO',
-    greId: 'gre-21',
-    municipio: 'TERESINA',
-    objeto: 'Recuperação emergencial estrutural das vigas e pilares do bloco administrativo, reforma da cobertura e escoramento preventivo.',
-    valorOrcamento: 345000.00,
-    percentualMedicao: 40,
-    dataInicio: '2026-07-01',
-    prazoFinal: '2026-12-30',
-    status: 'ativa',
-    empresaContratada: 'Engenharia & Empreendimentos Poty Ltda',
-    orcamentoPdfSimulado: 'ORCAMENTO_141_2026_SEDUC_PINHEIRO.pdf',
-    memorialDescritivoPdfSimulado: 'MEMORIAL_PINHEIRO_MACHADO_2026.pdf',
-    observacoes: [
-      { id: 'obs-3', data: '2026-10-22', autor: 'Fiscal de Obras GPR', texto: 'Escoramento metálico concluído. Aguardando entrega de perfis metálicos.' }
-    ]
-  },
-  {
-    id: 'os-089',
-    numeroOS: 'OS Nº 089/2026 - SEDUC',
-    escolaId: 'inep-22022376',
-    escolaNome: 'CETI ZACARIAS DE GOIS',
-    greId: 'gre-04',
-    municipio: 'TERESINA',
-    objeto: 'Restauração patrimonial do pavilhão central, subestação abrigada de 300 kVA e climatização total de 24 salas de aula.',
-    valorOrcamento: 1120400.00,
-    percentualMedicao: 82,
-    dataInicio: '2026-03-01',
-    prazoFinal: '2026-11-30',
-    status: 'ativa',
-    empresaContratada: 'Nordeste Construções e Restauro Ltda',
-    orcamentoPdfSimulado: 'ORCAMENTO_089_2026_LICEU_SEDUC.pdf',
-    memorialDescritivoPdfSimulado: 'MEMORIAL_LICEU_PIAUAIENSE_RESTAURO.pdf',
-    observacoes: [
-      { id: 'obs-10', data: '2026-10-25', autor: 'Fiscal de Obras GPR', texto: 'Subestação instalada aguardando energização pela Equatorial Piauí. Climatização em 90%.' }
-    ]
-  },
-  {
-    id: 'os-042',
-    numeroOS: 'OS Nº 042/2025 - SEDUC',
-    escolaId: 'inep-22082298',
-    escolaNome: 'CETI DIRCEU MENDES ARCOVERDE',
-    greId: 'gre-09',
-    municipio: 'PICOS',
-    objeto: 'Construção da quadra coberta padrão FNDE com vestiários e iluminação em LED.',
-    valorOrcamento: 650000.00,
-    percentualMedicao: 100,
-    dataInicio: '2025-08-10',
-    prazoFinal: '2026-04-15',
-    status: 'historico',
-    empresaContratada: 'Construtora Vale do Canindé',
-    orcamentoPdfSimulado: 'ORCAMENTO_042_2025_PICOS.pdf',
-    memorialDescritivoPdfSimulado: 'MEMORIAL_QUADRA_PICOS.pdf',
-    observacoes: [
-      { id: 'obs-20', data: '2026-04-20', autor: 'Fiscal de Obras GPR', texto: 'Termo de Recebimento Provisório e Definitivo assinado. 100% das medições quitadas.' }
-    ]
-  }
-];
+export const INITIAL_OS: OrdemServico[] = ordensServicoAtaJson as OrdemServico[];
 
 export const INITIAL_ALERTAS: AlertaUrgente[] = [
   {

@@ -1,11 +1,17 @@
-import { Escola } from '../types';
+import { Escola, OrdemServico } from '../types';
 
 export const SEDUC_SHEET_ID = '1SHZdGIlPEgu_M9U0IRak9hyGbc7lsZLXuhNz7pJfNdc';
 export const SEDUC_INEP_GID = '89902018';
+export const SEDUC_ATA_GID = '671056752';
 
 export function getInepCsvExportUrl(): string {
   const ts = Date.now();
   return `https://docs.google.com/spreadsheets/d/${SEDUC_SHEET_ID}/export?format=csv&gid=${SEDUC_INEP_GID}&t=${ts}`;
+}
+
+export function getAtaCsvExportUrl(): string {
+  const ts = Date.now();
+  return `https://docs.google.com/spreadsheets/d/${SEDUC_SHEET_ID}/export?format=csv&gid=${SEDUC_ATA_GID}&t=${ts}`;
 }
 
 /**
@@ -157,6 +163,113 @@ export async function syncInepFromGoogleSheets(): Promise<Escola[]> {
   const parsed = parseInepCsvToSchools(csvText);
   if (parsed.length === 0) {
     throw new Error('Nenhuma escola com situação "EM USO" encontrada na resposta.');
+  }
+  return parsed;
+}
+
+/**
+ * Converte o CSV da aba de Ata de Manutenção para objetos OrdemServico.
+ */
+export function parseAtaCsvToOS(csvText: string, schools: Escola[]): OrdemServico[] {
+  const rows = parseCSV(csvText);
+  if (rows.length < 2) return [];
+
+  const schoolByInep = new Map<string, Escola>();
+  schools.forEach((s) => {
+    if (s.inep) schoolByInep.set(s.inep, s);
+    schoolByInep.set(s.id, s);
+  });
+
+  const osList: OrdemServico[] = [];
+
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    const inep = r[5] ? r[5].trim() : '';
+    const numeroOS = r[10] ? r[10].trim() : '';
+    const rawEscolaNome = r[7] ? r[7].trim() : '';
+
+    if (!inep && !numeroOS && !rawEscolaNome) continue;
+
+    const matchedSchool = schoolByInep.get(inep);
+    const escolaId = matchedSchool ? matchedSchool.id : (inep ? `inep-${inep}` : `manual-os-${i}`);
+    const escolaNome = matchedSchool ? matchedSchool.nome : (rawEscolaNome || 'Escola SEDUC');
+    const greId = matchedSchool ? matchedSchool.greId : extractGreId(r[4] || '', r[8] || '');
+    const municipio = matchedSchool ? matchedSchool.municipio : (r[8] ? r[8].trim() : 'PIAUÍ');
+
+    const rawStatus = (r[17] || '').toUpperCase();
+    let status: 'ativa' | 'historico' | 'aguardando' = 'ativa';
+    if (rawStatus === 'CONCLUÍDA' || rawStatus.includes('FINALIZADA') || rawStatus === 'CANCELADA') {
+      status = 'historico';
+    } else if (rawStatus === 'EXECUÇÃO' || rawStatus === 'A INICIAR' || rawStatus === 'AGUARDANDO SALDO') {
+      status = 'ativa';
+    }
+
+    const valorClean = (r[9] || '').replace(/[^\d,\.-]/g, '').replace(/\./g, '').replace(',', '.');
+    const valor = parseFloat(valorClean) || 0;
+
+    let percentual = 0;
+    if (r[19]) {
+      const num = parseFloat(r[19].replace(/[^\d\.]/g, ''));
+      if (!isNaN(num)) percentual = Math.min(100, Math.max(0, num));
+    } else if (rawStatus === 'CONCLUÍDA') {
+      percentual = 100;
+    } else if (rawStatus === 'EXECUÇÃO') {
+      percentual = 50;
+    }
+
+    const objeto = r[24] && r[24].length > 3 ? r[24].trim() : 'Serviços de Manutenção Predial e Reparos Estruturais';
+    const construtora = r[14] ? r[14].trim() : 'Empresa Contratada SEDUC';
+    const fiscal = r[13] ? r[13].trim() : 'Fiscal GPR';
+    const obs = r[21] ? r[21].trim() : '';
+
+    const observacoes = obs
+      ? [
+          {
+            id: `obs-csv-${i}`,
+            data: r[20] || r[11] || new Date().toLocaleDateString('pt-BR'),
+            texto: obs,
+            autor: fiscal
+          }
+        ]
+      : [];
+
+    osList.push({
+      id: `os-ata-${r[0] || i}`,
+      numeroOS: numeroOS || `OS-${r[0] || i}/SEDUC`,
+      escolaId,
+      escolaNome,
+      greId: greId || 'gre-01',
+      municipio,
+      objeto,
+      valorOrcamento: valor,
+      percentualMedicao: percentual,
+      dataInicio: r[15] || r[11] || '2025-01-01',
+      prazoFinal: r[16] || '2026-12-31',
+      status,
+      empresaContratada: construtora,
+      orcamentoPdfSimulado: `orcamento_${inep || i}.pdf`,
+      memorialDescritivoPdfSimulado: `memorial_${inep || i}.pdf`,
+      osPdfUrl: r[26] ? r[26].trim() : undefined,
+      observacoes
+    });
+  }
+
+  return osList;
+}
+
+/**
+ * Busca e sincroniza as Ordens de Serviço da Ata de Manutenção diretamente do Google Sheets.
+ */
+export async function syncAtaFromGoogleSheets(schools: Escola[]): Promise<OrdemServico[]> {
+  const url = getAtaCsvExportUrl();
+  const response = await fetch(url, { cache: 'no-store' });
+  if (!response.ok) {
+    throw new Error(`Falha ao acessar planilha de Ata de Manutenção (${response.status})`);
+  }
+  const csvText = await response.text();
+  const parsed = parseAtaCsvToOS(csvText, schools);
+  if (parsed.length === 0) {
+    throw new Error('Nenhuma ordem de serviço válida encontrada na planilha.');
   }
   return parsed;
 }
