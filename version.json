@@ -1,16 +1,13 @@
 {
-  "version": "1.0.13",
-  "buildNumber": 14,
+  "version": "1.0.14",
+  "buildNumber": 15,
   "releaseDate": "2026-11-13",
   "minRequiredVersion": "1.0.0",
   "downloadUrl": "https://github.com/Wisterly/fiscalizacao-seduc/releases/download/apk-latest/Fiscal.IA.apk",
   "changelog": [
-    "Novo Módulo de Rotas Inteligentes de Vistoria com Sub-Abas: Rota por Trajeto e Rota por Prioridade",
-    "Origem fixa em Teresina - PI com seletor de 21 GREs e identificação automática da Cidade-Polo de pernoite",
-    "Seletor com 4 regimes de diárias: 1.5 (bate e volta até 22h), 2.5, 3.5 e 4.5 diárias (pernoites na sede às 19h-20h)",
-    "Física de deslocamento em caminhonete S10/Hilux a 140 km/h com trava anti-sobrecarga matemática",
-    "Matriz Hierárquica de Demandas: Arielma (Grau 3), Anik (Grau 2), Naila (Grau 1) e Diretora Escolar analisada via relatório técnico",
-    "Compatibilização em 4 níveis (Urgente, Prioridade, Requer Atenção, Razoável) com degradação sucessiva de criticidade",
-    "Exportação e formatação oficial do plano diário completo com cópia em 1 clique para WhatsApp"
+    "Sincronização definitiva do ícone do aplicativo com a logo oficial do projeto (Fiscaliz.IA.lab - GPR)",
+    "Ícone adaptativo Android (API 26+) com zona segura de 72% e fundo preto nativo (#000000)",
+    "Splash screens com a logo oficial centralizada em alta definição em todas as densidades (Portrait e Landscape)",
+    "Inclusão do Web App Manifest (PWA) e atualização de todas as densidades (mdpi, hdpi, xhdpi, xxhdpi, xxxhdpi)"
   ]
 }

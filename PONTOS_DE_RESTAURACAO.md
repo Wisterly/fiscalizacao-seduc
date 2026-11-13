@@ -29,6 +29,21 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.019] — Unificação e Sincronização Definitiva do Ícone do Aplicativo com a Logo Oficial 3D (Fiscaliz.IA.lab - GPR)
+- **Data/Hora:** 2026-11-13 10:30 (UTC-3)
+- **Escopos Definidos:**
+  - `PR.019` (Geral): Sincronização 100% fiel do ícone do aplicativo com a logo oficial 3D do projeto (capacete branco da SEDUC Piauí, prancheta de fiscalização e checklist dourado). Configuração do Web App Manifest PWA com ícones de múltiplas resoluções e metadados de sistema. Atualização do script mestre de geração `sync-app-icons.ps1`.
+  - `PR.019.1` (Desktop / Web): Ícones de favicon em PNG de alta resolução (`app-icon.png` e `favicon.png`), integração do `manifest.json` com background `#090D16` e alinhamento visual rigoroso com o cabeçalho oficial `Fiscal.IA.lab - GPR`.
+  - `PR.019.2` (Mobile / Android): Correção estrutural do ícone adaptativo Android (API 26+). Configuração da cor de fundo nativa em preto `#000000` em `ic_launcher_background.xml` e geração do `ic_launcher_foreground.png` centralizado na zona segura de 72% para evitar cortes em qualquer launcher de fabricante (Samsung, Xiaomi, Pixel, Motorola). Atualização de todas as densidades legadas (`mipmap-mdpi`, `hdpi`, `xhdpi`, `xxhdpi`, `xxxhdpi`) para ícones quadrados e redondos (`ic_launcher_round.png`), além de 11 resoluções de Splash Screen (Portrait e Landscape).
+- **Tags Git:** `PR.019`, `PR.019.1`, `PR.019.2`
+- **Arquivo Local do APK:** `c:\Users\KayroPaula\OneDrive - Secretaria de Educação do Estado do Piaui\Documentos\Antigravity\FiscaIA.lab - GPR\Fiscal.IA.apk`
+- **Comando de Restauração Rápida:**
+  ```bash
+  git checkout PR.019
+  ```
+
+---
+
 ### [PR.018] — Módulo de Rotas Inteligentes: Sub-Abas (Trajeto vs Prioridade), Seletor de GREs, Diárias (1.5 a 4.5), Trava Anti-Sobrecarga (140 km/h) & Exportação WhatsApp
 - **Data/Hora:** 2026-11-13 00:25 (UTC-3)
 - **Escopos Definidos:**
