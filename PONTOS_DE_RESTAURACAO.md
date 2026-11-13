@@ -29,6 +29,21 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.022] — Correção Definitiva do Ícone Android: Expurgamento de Vetores Legados em Drawable e Prioridade Total aos Ícones Adaptativos 3D
+- **Data/Hora:** 2026-11-13 13:20 (UTC-3)
+- **Escopos Definidos:**
+  - `PR.022` (Geral): Identificação e correção da sobreposição de recursos no empacotador AAPT do Android. Exclusão definitiva dos vetores legados de template `drawable-v24/ic_launcher_foreground.xml` e `drawable/ic_launcher_background.xml` que estavam sobrepondo silenciosamente as imagens de alta resolução em `mipmap-*/ic_launcher_foreground.png`.
+  - `PR.022.1` (Desktop / Web): Atualização do script de sincronização automatizada `sync-app-icons.ps1` com trava que impede a recriação acidental de vetores legados.
+  - `PR.022.2` (Mobile / Android): Garantia de que 100% dos dispositivos Android (desde Android 8 até Android 15+) renderizem com máxima fidelidade o ícone oficial 3D (capacete branco SEDUC, prancheta e checklist dourado) e o fundo preto `#000000`, gerando a nova versão v1.0.17 (Build 18).
+- **Tags Git:** `PR.022`, `PR.022.1`, `PR.022.2`
+- **Arquivo Local do APK:** `c:\Users\KayroPaula\OneDrive - Secretaria de Educação do Estado do Piaui\Documentos\Antigravity\FiscaIA.lab - GPR\Fiscal.IA.apk`
+- **Comando de Restauração Rápida:**
+  ```bash
+  git checkout PR.022
+  ```
+
+---
+
 ### [PR.021] — Formatação Oficial UGERF / GPR do Roteiro WhatsApp com Campo de Data e Pessoas na Rota
 - **Data/Hora:** 2026-11-13 12:25 (UTC-3)
 - **Escopos Definidos:**

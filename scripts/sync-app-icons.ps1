@@ -6,6 +6,17 @@ $resDir = Resolve-Path "android\app\src\main\res"
 Write-Host "Iniciando atualizacao completa de icones do aplicativo..." -ForegroundColor Cyan
 
 # 1. Atualizar cor de fundo do icone adaptativo para preto (#000000)
+# Remover vetores antigos conflitantes em drawable que sobrepunham os icones PNG
+if (Test-Path "$resDir\drawable\ic_launcher_background.xml") {
+    Remove-Item "$resDir\drawable\ic_launcher_background.xml" -Force
+}
+if (Test-Path "$resDir\drawable-v24\ic_launcher_foreground.xml") {
+    Remove-Item "$resDir\drawable-v24\ic_launcher_foreground.xml" -Force
+}
+if (Test-Path "$resDir\drawable-v24") {
+    Remove-Item "$resDir\drawable-v24" -Recurse -Force -ErrorAction SilentlyContinue
+}
+
 $bgXmlContent = @"
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
@@ -13,7 +24,7 @@ $bgXmlContent = @"
 </resources>
 "@
 Set-Content -Path "$resDir\values\ic_launcher_background.xml" -Value $bgXmlContent -Encoding UTF8
-Write-Host "-> ic_launcher_background.xml atualizado para #000000" -ForegroundColor Green
+Write-Host "-> ic_launcher_background.xml atualizado para #000000 e vetores legados removidos" -ForegroundColor Green
 
 # Funcao para redimensionar imagem simples
 function Resize-Image {

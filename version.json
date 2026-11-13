@@ -1,13 +1,14 @@
 {
-  "version": "1.0.16",
-  "buildNumber": 17,
+  "version": "1.0.17",
+  "buildNumber": 18,
   "releaseDate": "2026-11-13",
   "minRequiredVersion": "1.0.0",
   "downloadUrl": "https://github.com/Wisterly/fiscalizacao-seduc/releases/download/apk-latest/Fiscal.IA.apk",
   "changelog": [
+    "Correção definitiva do ícone Android: remoção dos vetores legados de drawable que sobrepunham a logo oficial 3D",
+    "Garantia de exibição nativa da logo oficial 3D nos celulares Android 8 até 15+",
     "Formatação Oficial UGERF / GPR de exportação para WhatsApp exatamente conforme especificado",
-    "Campo de Data / Período da Viagem integrado ao cabeçalho (ex: *Data:* XX/XX á XX/XX)",
-    "Cabeçalho unificado: *ROTEIRO DE VISTORIAS — UGERF / GPR*, *GRE:*, *Diárias:*, *👥 Equipe:* e *Total de Escolas:*",
-    "Listagem diária estrita por cidade e escola: 📍 *Cidade* — Nome da Escola"
+    "Campos de Data e Equipe de Campo integrados com persistência offline",
+    "Opção de retirar escolas sugeridas com recálculo automático"
   ]
 }
