@@ -20,7 +20,10 @@ import {
   Flame,
   Award,
   Search,
-  X
+  X,
+  Users,
+  Trash2,
+  RotateCcw
 } from 'lucide-react';
 import { Escola, GRE, RotaVistoria } from '../../types';
 import { 
@@ -60,6 +63,39 @@ export const RotasView: React.FC<RotasViewProps> = ({
   const [modalGreAberto, setModalGreAberto] = useState(false);
   const [filtroGreBusca, setFiltroGreBusca] = useState('');
 
+  // Equipe / Pessoas na Rota (Persistido no localStorage)
+  const [equipeRota, setEquipeRota] = useState<string>(() => {
+    try {
+      return localStorage.getItem('seduc_rotas_equipe') || '';
+    } catch {
+      return '';
+    }
+  });
+
+  const handleEquipeChange = (val: string) => {
+    setEquipeRota(val);
+    try {
+      localStorage.setItem('seduc_rotas_equipe', val);
+    } catch (err) {
+      console.error('Erro ao salvar equipe no localStorage:', err);
+    }
+  };
+
+  // Escolas sugeridas pelo sistema que o usuário optou por retirar da rota
+  const [escolasRemovidasIds, setEscolasRemovidasIds] = useState<string[]>([]);
+
+  const handleRemoverEscola = (escolaId: string) => {
+    setEscolasRemovidasIds(prev => prev.includes(escolaId) ? prev : [...prev, escolaId]);
+  };
+
+  const handleRestaurarEscola = (escolaId: string) => {
+    setEscolasRemovidasIds(prev => prev.filter(id => id !== escolaId));
+  };
+
+  const handleRestaurarTodas = () => {
+    setEscolasRemovidasIds([]);
+  };
+
   // Identifica GRE Ativa
   const greAtiva = useMemo(() => {
     return gres.find(g => g.id === selectedGreId) || gres[0] || {
@@ -72,14 +108,20 @@ export const RotasView: React.FC<RotasViewProps> = ({
     };
   }, [gres, selectedGreId]);
 
+  // Escolas elegíveis para a rota (excluindo as que o usuário retirou)
+  const escolasElegiveis = useMemo(() => {
+    if (escolasRemovidasIds.length === 0) return schools;
+    return schools.filter(s => !escolasRemovidasIds.includes(s.id));
+  }, [schools, escolasRemovidasIds]);
+
   // Gera o Plano de Viagem Inteligente usando o Motor Algorítmico
   const planoViagem: PlanoViagem = useMemo(() => {
-    return gerarPlanoDeViagem(subTab, schools, greAtiva, selectedDiaria);
-  }, [subTab, schools, greAtiva, selectedDiaria]);
+    return gerarPlanoDeViagem(subTab, escolasElegiveis, greAtiva, selectedDiaria);
+  }, [subTab, escolasElegiveis, greAtiva, selectedDiaria]);
 
-  // Handler de Cópia para WhatsApp
+  // Handler de Cópia para WhatsApp (Sem horários, apenas cidades e escolas, com a equipe)
   const handleCopiarWhatsApp = async () => {
-    const texto = formatarPlanoParaWhatsApp(planoViagem);
+    const texto = formatarPlanoParaWhatsApp(planoViagem, equipeRota);
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(texto);
@@ -316,6 +358,40 @@ export const RotasView: React.FC<RotasViewProps> = ({
           </div>
         </div>
 
+        {/* 4. CAMPO DE PESSOAS NA ROTA (EQUIPE DE CAMPO) */}
+        <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3 sm:p-4 space-y-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+            <label className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+              <Users className="w-4 h-4 text-amber-400" />
+              <span>Equipe de Campo / Pessoas na Rota</span>
+            </label>
+            <span className="text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 self-start sm:self-auto">
+              Exportado no WhatsApp
+            </span>
+          </div>
+          <div className="relative">
+            <input
+              type="text"
+              value={equipeRota}
+              onChange={(e) => handleEquipeChange(e.target.value)}
+              placeholder="Digite os nomes da equipe (ex: Eng. Carlos Silva, Fiscal Marcos, Motorista João)"
+              className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all pr-9"
+            />
+            {equipeRota && (
+              <button
+                onClick={() => handleEquipeChange('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1 rounded-lg transition-colors"
+                title="Limpar campo"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+          <p className="text-[11px] text-slate-400">
+            Adicione os nomes dos fiscais, engenheiros e motorista. Eles serão incluídos no cabeçalho da exportação para o WhatsApp.
+          </p>
+        </div>
+
         {/* Banner Explicativo da Sub-Aba Ativa */}
         {subTab === 'prioridade' ? (
           <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 text-xs text-red-200 flex items-start gap-2.5">
@@ -398,6 +474,34 @@ export const RotasView: React.FC<RotasViewProps> = ({
           <div className="text-[11px] text-slate-500 mt-0.5">Teresina - PI</div>
         </div>
       </div>
+
+      {/* ===================================================================== */}
+      {/* BANNER DE ESCOLAS RETIRADAS DA ROTA (SE HOUVER)                       */}
+      {/* ===================================================================== */}
+      {escolasRemovidasIds.length > 0 && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center shrink-0">
+              <AlertTriangle className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="text-sm font-bold text-white flex items-center gap-2">
+                <span>{escolasRemovidasIds.length} escola(s) retirada(s) das sugestões</span>
+              </div>
+              <p className="text-xs text-slate-400 mt-0.5">
+                O itinerário e os cálculos foram reotimizados automaticamente sem as unidades retiradas.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleRestaurarTodas}
+            className="px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-bold text-xs border border-amber-500/40 flex items-center justify-center gap-2 transition-all self-start sm:self-auto"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Restaurar Todas as Sugestões</span>
+          </button>
+        </div>
+      )}
 
       {/* ===================================================================== */}
       {/* CRONOGRAMA POR DIA (TIMELINE DE PARADAS)                             */}
@@ -613,6 +717,16 @@ export const RotasView: React.FC<RotasViewProps> = ({
                             <ChevronRight className="w-3.5 h-3.5" />
                           </button>
                         )}
+
+                        {/* Botão de Tirar da Rota */}
+                        <button
+                          onClick={() => handleRemoverEscola(parada.escola!.id)}
+                          className="px-2.5 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-300 hover:text-red-200 text-xs font-semibold flex items-center gap-1.5 border border-red-500/30 transition-colors"
+                          title="Tirar esta escola sugerida da rota"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                          <span>Tirar da Rota</span>
+                        </button>
                       </div>
                     )}
                   </div>
@@ -685,6 +799,7 @@ export const RotasView: React.FC<RotasViewProps> = ({
                       key={gre.id}
                       onClick={() => {
                         setSelectedGreId(gre.id);
+                        setEscolasRemovidasIds([]);
                         setModalGreAberto(false);
                       }}
                       className={`p-3 rounded-xl border text-left transition-all relative flex flex-col justify-between ${

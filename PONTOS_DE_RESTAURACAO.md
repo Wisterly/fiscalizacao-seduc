@@ -29,6 +29,21 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.020] — Customização de Rotas: Exclusão de Escolas Sugeridas, Exportação Limpa WhatsApp (Cidades e Escolas) & Campo de Equipe de Campo
+- **Data/Hora:** 2026-11-13 11:05 (UTC-3)
+- **Escopos Definidos:**
+  - `PR.020` (Geral): Flexibilização e customização avançada do Módulo de Rotas Inteligentes (`RotasView.tsx` e `rotasEngine.ts`). Inclusão do botão "Tirar da Rota" em cada parada de escola sugerida, permitindo ao engenheiro/fiscal retirar unidades com recálculo automático do itinerário e métricas (Km e tempo). Banner interativo de recuperação com botão "Restaurar Todas as Sugestões". Novo campo de texto no app para informar a Equipe de Campo / Pessoas na Rota, persistido no dispositivo via `localStorage`. Nova formatação oficial de exportação para WhatsApp: remoção completa de horários e inclusão estrita apenas de Cidades e Nomes das Escolas organizadas por dia, com cabeçalho contendo a equipe de campo e resumo da rota.
+  - `PR.020.1` (Desktop / Web): Layout responsivo do campo de equipe com botão de limpeza rápida, feedback visual imediato ao excluir/restaurar escolas sugeridas e sincronização com a área de transferência para envio ao WhatsApp Web.
+  - `PR.020.2` (Mobile / Android): Botão tátil de exclusão adaptado a telas pequenas, campo de equipe otimizado para teclado virtual móvel com persistência offline e compatibilização nativa Capacitor v1.0.15 (Build 16).
+- **Tags Git:** `PR.020`, `PR.020.1`, `PR.020.2`
+- **Arquivo Local do APK:** `c:\Users\KayroPaula\OneDrive - Secretaria de Educação do Estado do Piaui\Documentos\Antigravity\FiscaIA.lab - GPR\Fiscal.IA.apk`
+- **Comando de Restauração Rápida:**
+  ```bash
+  git checkout PR.020
+  ```
+
+---
+
 ### [PR.019] — Unificação e Sincronização Definitiva do Ícone do Aplicativo com a Logo Oficial 3D (Fiscaliz.IA.lab - GPR)
 - **Data/Hora:** 2026-11-13 10:30 (UTC-3)
 - **Escopos Definidos:**

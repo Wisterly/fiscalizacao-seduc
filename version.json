@@ -1,13 +1,13 @@
 {
-  "version": "1.0.14",
-  "buildNumber": 15,
+  "version": "1.0.15",
+  "buildNumber": 16,
   "releaseDate": "2026-11-13",
   "minRequiredVersion": "1.0.0",
   "downloadUrl": "https://github.com/Wisterly/fiscalizacao-seduc/releases/download/apk-latest/Fiscal.IA.apk",
   "changelog": [
-    "Sincronização definitiva do ícone do aplicativo com a logo oficial do projeto (Fiscaliz.IA.lab - GPR)",
-    "Ícone adaptativo Android (API 26+) com zona segura de 72% e fundo preto nativo (#000000)",
-    "Splash screens com a logo oficial centralizada em alta definição em todas as densidades (Portrait e Landscape)",
-    "Inclusão do Web App Manifest (PWA) e atualização de todas as densidades (mdpi, hdpi, xhdpi, xxhdpi, xxxhdpi)"
+    "Opção de retirar escolas sugeridas pelo sistema com recálculo dinâmico da rota",
+    "Exportação para WhatsApp limpa: sem horários, listando apenas cidades e nomes das escolas",
+    "Novo campo persistente de Equipe de Campo / Pessoas na Rota incluído no cabeçalho do WhatsApp",
+    "Banner de restauração de escolas sugeridas e sincronização automática"
   ]
 }

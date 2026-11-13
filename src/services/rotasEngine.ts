@@ -977,44 +977,45 @@ export function gerarPlanoDeViagem(
 
 /**
  * Formata o plano de viagem para compartilhamento no WhatsApp
+ * Sem horários: lista apenas cidades e o nome das escolas, incluindo a equipe de campo informada.
  */
-export function formatarPlanoParaWhatsApp(plano: PlanoViagem): string {
+export function formatarPlanoParaWhatsApp(plano: PlanoViagem, equipe?: string): string {
   const emojiTipo = plano.tipoRota === 'prioridade' ? '🚨' : '🛣️';
   let txt = `*${emojiTipo} ROTEIRO OFICIAL DE VISTORIAS — FISCAL.IA.LAB (SEDUC-PI)*\n`;
   txt += `*Jurisdição:* ${plano.gre.nome}\n`;
-  txt += `*Cidade-Polo de Pernoite:* ${plano.cidadePolo}\n`;
+  if (plano.cidadePolo && plano.diaria !== '1.5') {
+    txt += `*Cidade-Polo de Pernoite:* ${plano.cidadePolo}\n`;
+  }
   txt += `*Regime de Diárias:* ${plano.diaria} diárias\n`;
   txt += `*Tipo de Rota:* ${plano.tipoRota === 'prioridade' ? 'Rota por Prioridade (Hierarquia & Criticidade)' : 'Rota por Trajeto (Otimização Geográfica)'}\n`;
-  txt += `*Veículo & Velocidade:* ${plano.veiculoInfo} • ${plano.velocidadeCruzeiro}\n`;
-  txt += `*Resumo:* ${plano.totalKm} km rodados • ${plano.totalEscolasAtendidas} escolas atendidas\n`;
+  txt += `*Veículo:* ${plano.veiculoInfo}\n`;
+
+  if (equipe && equipe.trim()) {
+    txt += `*👥 Equipe de Campo:* ${equipe.trim()}\n`;
+  }
+
+  txt += `*Total de Escolas:* ${plano.totalEscolasAtendidas}\n`;
   txt += `-------------------------------------------\n\n`;
 
   plano.dias.forEach((d) => {
     txt += `*📅 ${d.titulo.toUpperCase()}*\n`;
-    txt += `Horário: ${d.horarioInicio} às ${d.horarioTerminoPrevisto} | Destino/Pernoite: ${d.cidadePernoiteOuDestino}\n`;
-    txt += `Km do dia: ${d.totalKmDia} km\n\n`;
+    
+    // Obter apenas as vistorias em escolas
+    const vistorias = d.paradas.filter(p => p.tipo === 'vistoria' && p.escola);
 
-    d.paradas.forEach((p) => {
-      if (p.tipo === 'partida') {
-        txt += `  🚩 *${p.horarioPartida}* — ${p.localNome} (${p.cidade})\n`;
-      } else if (p.tipo === 'pernoite') {
-        txt += `  🏨 *${p.horarioChegada}* — ${p.localNome}\n`;
-      } else if (p.tipo === 'retorno') {
-        txt += `  🏁 *${p.horarioChegada}* — ${p.localNome}\n`;
-      } else if (p.tipo === 'vistoria' && p.escola) {
-        const badge = p.analisePrioridade
-          ? `[${p.analisePrioridade.statusCompatibilizado.toUpperCase()} - Grau ${p.analisePrioridade.grauFinal}]`
-          : '';
-        txt += `  🏫 *${p.horarioChegada} às ${p.horarioPartida}* — ${p.escola.nome} (${p.escola.municipio})\n`;
-        if (badge) txt += `     ${badge}\n`;
-        if (p.analisePrioridade?.justificativaIA?.[0]) {
-          txt += `     Motivo: ${p.analisePrioridade.justificativaIA[0]}\n`;
+    if (vistorias.length === 0) {
+      txt += `  _Deslocamento / Retorno (Sem vistorias agendadas)_\n`;
+    } else {
+      vistorias.forEach((p) => {
+        if (p.escola) {
+          const cidade = p.escola.municipio || p.cidade;
+          txt += `  📍 *${cidade}* — ${p.escola.nome}\n`;
         }
-      }
-    });
+      });
+    }
     txt += `\n`;
   });
 
-  txt += `_Gerado automaticamente pelo Motor de Inteligência de Roteirização do Fiscal.IA.lab (GPR SEDUC-PI)._`;
+  txt += `_Fiscal.IA.lab — Gerência de Manutenção e Obras (SEDUC-PI)_`;
   return txt;
 }
