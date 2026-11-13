@@ -29,6 +29,21 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.016] — Geolocalizações do PDF (08ª e 15ª GREs), Botão Vidro Translúcido, Módulo Híbrido de OS, Orçamentos e Histórico
+- **Data/Hora:** 2026-11-12 23:15 (UTC-3)
+- **Escopos Definidos:**
+  - `PR.016` (Geral): Extração de 100% das 53 escolas e sedes da 08ª e 15ª GREs do PDF oficial `GEOCALIZAÇÃO_DAS_ESCOLAS.pdf` com integração unívoca por INEP e links diretos ao Google Maps. Criação da fonte mestra `schoolsGeodataConfig.json` e `ordensServicoConfig.json`. Unificação definitiva do cabeçalho superior para **`Fiscal.IA.lab - GPR`**. Redesign de alta precisão do botão **`Novo Relatório Fotográfico`** em vidro meio transparente com borda prismática e reflexo superior chanfrado sem o `+`. Implantação da nova seção **`SchoolOSSection`** no perfil de cada escola com abas de OSs em Execução e Histórico Concluído, barra de medição física interativa e modal híbrido **`AttachOSModal`** para download direto, upload manual de PDF (OS e Orçamento Descritivo) e vinculação de pastas do Google Drive.
+  - `PR.016.1` (Desktop / Web): Visualização expandida de contratos e orçamentos, alternância entre Planilha Orçamentária, Memorial Descritivo e OS no modal de prévia, e sincronização contínua com banco local.
+  - `PR.016.2` (Mobile / Android): Upload local de PDFs direto pelo celular com armazenamento offline, link direto para pastas do Drive, abertura com 1 toque no Google Maps, compilação nativa via Gradle e geração do instalador **`Fiscal.IA.apk`** v1.0.11 (Build 12).
+- **Tags Git:** `PR.016`, `PR.016.1`, `PR.016.2`
+- **Arquivo Local do APK:** `c:\Users\Lenovo\Documents\antigravity\LAB - GPR\Fiscal.IA.lab - GPR\Fiscal.IA.apk`
+- **Comando de Restauração Rápida:**
+  ```bash
+  git checkout PR.016
+  ```
+
+---
+
 ### [PR.015] — Engrenagem de Configurações da Escola, Cabeçalho Fiscaliz.IA.lab, Botão Vidro Furtacor & Exclusão Múltipla
 - **Data/Hora:** 2026-11-12 02:01 (UTC-3)
 - **Escopos Definidos:**

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Settings, User, Phone, MapPin, Navigation, FileText, Save, Loader2 } from 'lucide-react';
+import { X, Settings, User, Phone, MapPin, Navigation, FileText, Save, Loader2, FolderOpen } from 'lucide-react';
 import { Escola, ConservacaoStatus } from '../../types';
 
 interface EditSchoolModalProps {
@@ -24,6 +24,8 @@ export const EditSchoolModal: React.FC<EditSchoolModalProps> = ({
   const [telefone, setTelefone] = useState(school.telefone || '');
   const [endereco, setEndereco] = useState(school.endereco || '');
   const [coordenadas, setCoordenadas] = useState(school.coordenadas || '');
+  const [linkMaps, setLinkMaps] = useState(school.linkMaps || '');
+  const [linkPastaDocumentos, setLinkPastaDocumentos] = useState(school.linkPastaDocumentos || '');
   const [observacoesGerais, setObservacoesGerais] = useState(school.observacoesGerais || '');
   const [statusConservacao, setStatusConservacao] = useState<ConservacaoStatus>(school.statusConservacao);
   const [capturingGps, setCapturingGps] = useState(false);
@@ -40,7 +42,9 @@ export const EditSchoolModal: React.FC<EditSchoolModalProps> = ({
       (pos) => {
         const lat = pos.coords.latitude.toFixed(6);
         const lng = pos.coords.longitude.toFixed(6);
-        setCoordenadas(`${lat}, ${lng}`);
+        const newCoords = `${lat}, ${lng}`;
+        setCoordenadas(newCoords);
+        setLinkMaps(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(newCoords)}`);
         setCapturingGps(false);
       },
       () => {
@@ -53,12 +57,17 @@ export const EditSchoolModal: React.FC<EditSchoolModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const finalCoords = coordenadas.trim() || undefined;
+    const finalLinkMaps = linkMaps.trim() || (finalCoords ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(finalCoords)}` : undefined);
+    
     onSave({
       ...school,
       diretora: diretora.trim() || undefined,
       telefone: telefone.trim() || undefined,
       endereco: endereco.trim() || school.municipio,
-      coordenadas: coordenadas.trim() || undefined,
+      coordenadas: finalCoords,
+      linkMaps: finalLinkMaps,
+      linkPastaDocumentos: linkPastaDocumentos.trim() || undefined,
       observacoesGerais: observacoesGerais.trim() || undefined,
       statusConservacao
     });
@@ -172,7 +181,25 @@ export const EditSchoolModal: React.FC<EditSchoolModalProps> = ({
             )}
           </div>
 
-          {/* 5. Estado de Conservação */}
+          {/* 5. Pasta de Documentos e OSs no Google Drive */}
+          <div>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1.5 flex items-center gap-1.5">
+              <FolderOpen className="w-3.5 h-3.5 text-amber-400" />
+              Pasta de Documentos no Google Drive
+            </label>
+            <input
+              type="url"
+              placeholder="https://drive.google.com/drive/folders/..."
+              value={linkPastaDocumentos}
+              onChange={(e) => setLinkPastaDocumentos(e.target.value)}
+              className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-900/80 border border-white/10 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+            />
+            <p className="text-[10px] text-slate-400 mt-1">
+              Cole o link da pasta do Drive onde estão os PDFs de OS e orçamentos desta escola.
+            </p>
+          </div>
+
+          {/* 6. Estado de Conservação */}
           <div>
             <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-300 mb-1.5">
               Estado de Conservação da Unidade

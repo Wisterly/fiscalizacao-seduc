@@ -24,7 +24,7 @@ import {
 
 const STORAGE_KEYS = {
   GRES: 'seduc_fiscal_gres_v4',
-  SCHOOLS: 'seduc_fiscal_schools_inep_v4',
+  SCHOOLS: 'seduc_fiscal_schools_inep_v5',
   AMBIENTES: 'seduc_fiscal_ambientes_v1',
   OS: 'seduc_fiscal_os_v1',
   ALERTAS: 'seduc_fiscal_alertas_v1',
@@ -74,18 +74,47 @@ class StorageService {
   // --- Escolas ---
   getSchools(): Escola[] {
     const saved = this.getItem<Escola[]>(STORAGE_KEYS.SCHOOLS, INITIAL_SCHOOLS);
-    // Enriquece registros já salvos caso novas coordenadas oficiais tenham sido adicionadas à base inicial
-    const seedCoords = new Map(
-      INITIAL_SCHOOLS.filter(s => s.coordenadas).map(s => [s.id, s.coordenadas!])
-    );
+    
+    // Mapeamento dos dados oficiais do seed / geodata
+    const seedMap = new Map<string, Escola>();
+    INITIAL_SCHOOLS.forEach(s => {
+      seedMap.set(s.id, s);
+      if (s.inep) seedMap.set(s.inep, s);
+    });
+
     let changed = false;
     const enriched = saved.map(s => {
-      if (!s.coordenadas && seedCoords.has(s.id)) {
+      const seed = seedMap.get(s.id) || (s.inep ? seedMap.get(s.inep) : undefined);
+      if (!seed) return s;
+
+      let schoolChanged = false;
+      const updated = { ...s };
+
+      // Se o seed tem linkMaps e a escola salva não tem (ou é diferente), atualiza
+      if (seed.linkMaps && (!updated.linkMaps || updated.linkMaps !== seed.linkMaps)) {
+        updated.linkMaps = seed.linkMaps;
+        schoolChanged = true;
+      }
+
+      // Se o seed tem coordenadas oficiais atualizadas pelo PDF/configuração
+      if (seed.coordenadas && (!updated.coordenadas || (!updated.isManual && updated.coordenadas !== seed.coordenadas))) {
+        updated.coordenadas = seed.coordenadas;
+        schoolChanged = true;
+      }
+
+      // Se o endereço oficial foi enriquecido
+      if (seed.endereco && (!updated.endereco || updated.endereco === updated.municipio)) {
+        updated.endereco = seed.endereco;
+        schoolChanged = true;
+      }
+
+      if (schoolChanged) {
         changed = true;
-        return { ...s, coordenadas: seedCoords.get(s.id) };
+        return updated;
       }
       return s;
     });
+
     if (changed) {
       this.setItem(STORAGE_KEYS.SCHOOLS, enriched);
     }

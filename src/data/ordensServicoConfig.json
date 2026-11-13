@@ -1,0 +1,190 @@
+{
+  "_descricao": "Base Oficial de Ordens de Serviço (OS) e Orçamentos da SEDUC Piauí (GPR Lab Engenharia). Alimenta automaticamente os cards de cada escola com histórico e status de medição.",
+  "_schema": {
+    "numeroOS": "Número oficial da OS (ex: 140/2026-SEDUC)",
+    "inep": "Código INEP da escola correspondente",
+    "escolaId": "Identificador da escola (inep-XXXXXXXX ou id da escola)",
+    "escolaNome": "Nome da Unidade Escolar",
+    "greId": "Identificador da GRE (ex: gre-08, gre-15, gre-01)",
+    "municipio": "Município da escola",
+    "objeto": "Descrição do objeto da obra ou reforma",
+    "valorOrcamento": "Valor contratual em R$",
+    "percentualMedicao": "Percentual de avanço físico medido (0 a 100)",
+    "status": "ativa (em andamento) ou historico (concluída)",
+    "empresaContratada": "Razão social da construtora",
+    "dataInicio": "Data da ordem de início (AAAA-MM-DD)",
+    "prazoFinal": "Data prevista ou concluída (AAAA-MM-DD)",
+    "osPdfUrl": "Link direto para o PDF da OS (Drive ou servidor)",
+    "orcamentoPdfUrl": "Link direto para o PDF do Orçamento Descritivo (Drive ou servidor)"
+  },
+  "ordensServico": [
+    {
+      "id": "os-140",
+      "numeroOS": "140/2026-SEDUC",
+      "inep": "22026924",
+      "escolaId": "inep-22026924",
+      "escolaNome": "U. E. João Clímaco d'Almeida",
+      "greId": "gre-01",
+      "municipio": "Teresina",
+      "objeto": "Reforma geral do pavilhão administrativo, reforma completa de banheiros e nova cobertura metálica da quadra poliesportiva.",
+      "valorOrcamento": 485900.50,
+      "percentualMedicao": 65,
+      "dataInicio": "2026-05-10",
+      "prazoFinal": "2026-12-15",
+      "status": "ativa",
+      "empresaContratada": "Engenharia e Construções Delta Ltda",
+      "orcamentoPdfSimulado": "orcamento_ue_joao_climaco.pdf",
+      "memorialDescritivoPdfSimulado": "memorial_ue_joao_climaco.pdf",
+      "osPdfUrl": "",
+      "orcamentoPdfUrl": "",
+      "observacoes": [
+        {
+          "id": "obs-1",
+          "data": "2026-10-24",
+          "texto": "Avanço de 65% na cobertura metálica com telhas termoacústicas. Estruturas prontas para emboço.",
+          "autor": "Eng. Fiscal SEDUC"
+        }
+      ]
+    },
+    {
+      "id": "os-141",
+      "numeroOS": "141/2026-SEDUC",
+      "inep": "22027661",
+      "escolaId": "inep-22027661",
+      "escolaNome": "U. E. Dep. Pinheiro Machado",
+      "greId": "gre-01",
+      "municipio": "Teresina",
+      "objeto": "Manutenção preventiva de cobertura, recuperação estrutural de pilares e reforma elétrica geral.",
+      "valorOrcamento": 320400.00,
+      "percentualMedicao": 40,
+      "dataInicio": "2026-07-01",
+      "prazoFinal": "2026-11-30",
+      "status": "ativa",
+      "empresaContratada": "Construtora Horizonte Piauí",
+      "orcamentoPdfSimulado": "orcamento_pinheiro_machado.pdf",
+      "memorialDescritivoPdfSimulado": "memorial_pinheiro_machado.pdf",
+      "osPdfUrl": "",
+      "orcamentoPdfUrl": "",
+      "observacoes": [
+        {
+          "id": "obs-2",
+          "data": "2026-10-18",
+          "texto": "Recuperação dos pilares concluída. Iniciada revisão da fiação elétrica.",
+          "autor": "Eng. Fiscal SEDUC"
+        }
+      ]
+    },
+    {
+      "id": "os-089",
+      "numeroOS": "089/2025-SEDUC",
+      "inep": "22022376",
+      "escolaId": "inep-22022376",
+      "escolaNome": "CETI Zacarias de Góis",
+      "greId": "gre-01",
+      "municipio": "Teresina",
+      "objeto": "Construção de refeitório modelo FNDE e adequação de acessibilidade.",
+      "valorOrcamento": 512000.00,
+      "percentualMedicao": 100,
+      "dataInicio": "2025-02-15",
+      "prazoFinal": "2025-09-30",
+      "status": "historico",
+      "empresaContratada": "Piauí Edificações Eireli",
+      "orcamentoPdfSimulado": "orcamento_ceti_zacarias.pdf",
+      "memorialDescritivoPdfSimulado": "memorial_ceti_zacarias.pdf",
+      "osPdfUrl": "",
+      "orcamentoPdfUrl": "",
+      "observacoes": [
+        {
+          "id": "obs-3",
+          "data": "2025-09-30",
+          "texto": "Obra 100% finalizada com termo de recebimento definitivo assinado.",
+          "autor": "Fiscal Titular GPR"
+        }
+      ]
+    },
+    {
+      "id": "os-042",
+      "numeroOS": "042/2026-SEDUC",
+      "inep": "22134018",
+      "escolaId": "inep-22134018",
+      "escolaNome": "CETI FAMILIA AGRICOLA DOM EDILBERTO III",
+      "greId": "gre-08",
+      "municipio": "CAJAZEIRAS DO PIAUÍ",
+      "objeto": "Implantação de poço tubular com dessalinizador, reforma de alojamento e cobertura termoacústica da oficina de campo.",
+      "valorOrcamento": 298500.00,
+      "percentualMedicao": 55,
+      "dataInicio": "2026-06-20",
+      "prazoFinal": "2026-12-20",
+      "status": "ativa",
+      "empresaContratada": "Terra Forte Engenharia Agrícola",
+      "orcamentoPdfSimulado": "orcamento_dom_edilberto_3.pdf",
+      "memorialDescritivoPdfSimulado": "memorial_dom_edilberto_3.pdf",
+      "osPdfUrl": "",
+      "orcamentoPdfUrl": "",
+      "observacoes": [
+        {
+          "id": "obs-4",
+          "data": "2026-10-12",
+          "texto": "Perfuração do poço concluída com vazão satisfatória. Estrutura do alojamento em alvenaria.",
+          "autor": "Fiscal Regional 08ª GRE"
+        }
+      ]
+    },
+    {
+      "id": "os-031",
+      "numeroOS": "031/2025-SEDUC",
+      "inep": "22134018",
+      "escolaId": "inep-22134018",
+      "escolaNome": "CETI FAMILIA AGRICOLA DOM EDILBERTO III",
+      "greId": "gre-08",
+      "municipio": "CAJAZEIRAS DO PIAUÍ",
+      "objeto": "Pintura geral e recuperação dos banheiros de alunos.",
+      "valorOrcamento": 115000.00,
+      "percentualMedicao": 100,
+      "dataInicio": "2025-03-01",
+      "prazoFinal": "2025-06-15",
+      "status": "historico",
+      "empresaContratada": "Nordeste Reformas e Pinturas",
+      "orcamentoPdfSimulado": "orcamento_historico_dom_edilberto.pdf",
+      "memorialDescritivoPdfSimulado": "memorial_historico_dom_edilberto.pdf",
+      "osPdfUrl": "",
+      "orcamentoPdfUrl": "",
+      "observacoes": [
+        {
+          "id": "obs-5",
+          "data": "2025-06-15",
+          "texto": "Pintura e louças sanitárias entregues em conformidade.",
+          "autor": "Fiscal 08ª GRE"
+        }
+      ]
+    },
+    {
+      "id": "os-065",
+      "numeroOS": "065/2026-SEDUC",
+      "inep": "22138056",
+      "escolaId": "inep-22138056",
+      "escolaNome": "CETI JOAQUIM ANTÔNIO LUSTOSA",
+      "greId": "gre-15",
+      "municipio": "CORRENTE",
+      "objeto": "Climatização completa com subestação abrigada de 150 kVA e troca de piso cerâmico.",
+      "valorOrcamento": 410800.00,
+      "percentualMedicao": 75,
+      "dataInicio": "2026-04-10",
+      "prazoFinal": "2026-11-28",
+      "status": "ativa",
+      "empresaContratada": "EletroPiauí Montagens e Obras",
+      "orcamentoPdfSimulado": "orcamento_joaquim_lustosa.pdf",
+      "memorialDescritivoPdfSimulado": "memorial_joaquim_lustosa.pdf",
+      "osPdfUrl": "",
+      "orcamentoPdfUrl": "",
+      "observacoes": [
+        {
+          "id": "obs-6",
+          "data": "2026-10-22",
+          "texto": "Subestação instalada pela concessionária Equatorial. Fiação das salas em andamento.",
+          "autor": "Fiscal 15ª GRE"
+        }
+      ]
+    }
+  ]
+}

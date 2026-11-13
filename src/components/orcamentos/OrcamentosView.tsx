@@ -8,16 +8,20 @@ import {
   AlertCircle,
   FileCode,
   Sliders,
-  X
+  X,
+  Paperclip,
+  Download
 } from 'lucide-react';
 import { OrdemServico, GRE, Escola } from '../../types';
 import { DocumentPreviewModal } from './DocumentPreviewModal';
+import { AttachOSModal } from './AttachOSModal';
 
 interface OrcamentosViewProps {
   ordensServico: OrdemServico[];
   gres: GRE[];
   schools: Escola[];
   onUpdateMedicao: (osId: string, novoPercentual: number, novaObservacao?: string) => void;
+  onSaveOS?: (os: OrdemServico) => void;
   targetOsId?: string;
   onBack?: () => void;
 }
@@ -27,6 +31,7 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
   gres,
   schools,
   onUpdateMedicao,
+  onSaveOS,
   targetOsId,
   onBack
 }) => {
@@ -46,6 +51,9 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
 
   // Modal de documento (Orçamento ou Memorial)
   const [previewDoc, setPreviewDoc] = useState<{ os: OrdemServico; tipo: 'orcamento' | 'memorial' } | null>(null);
+
+  // Modal de Anexo e Edição de OS
+  const [attachModalOS, setAttachModalOS] = useState<OrdemServico | null>(null);
 
   // Lista única de municípios para o dropdown
   const todosMunicipios = Array.from(
@@ -258,6 +266,16 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
                           <FileText className="w-3.5 h-3.5 text-cyan-400" />
                           Memorial Descritivo
                         </button>
+                        <button
+                          onClick={() => {
+                            setCardMenuOpenId(null);
+                            setAttachModalOS(os);
+                          }}
+                          className="w-full px-3 py-1.5 text-left text-xs text-amber-300 hover:bg-slate-800 rounded-lg flex items-center gap-2"
+                        >
+                          <Paperclip className="w-3.5 h-3.5 text-amber-400" />
+                          Anexar / Links de Arquivos
+                        </button>
                       </div>
                     )}
                   </div>
@@ -392,6 +410,32 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
           os={previewDoc.os}
           tipo={previewDoc.tipo}
           onClose={() => setPreviewDoc(null)}
+        />
+      )}
+
+      {/* Modal de Anexo e Edição de Arquivos da OS */}
+      {attachModalOS && (
+        <AttachOSModal
+          os={attachModalOS}
+          school={
+            schools.find((s) => s.id === attachModalOS.escolaId) || {
+              id: attachModalOS.escolaId,
+              nome: attachModalOS.escolaNome,
+              greId: attachModalOS.greId,
+              municipio: attachModalOS.municipio,
+              endereco: attachModalOS.municipio,
+              statusConservacao: 'regular',
+              dataUltimaVistoria: 'Sem vistoria',
+              diasSemVisita: 0,
+              demandasUrgentesCount: 0,
+              temOsAtiva: true
+            }
+          }
+          onSave={(savedOS) => {
+            if (onSaveOS) onSaveOS(savedOS);
+            setAttachModalOS(null);
+          }}
+          onClose={() => setAttachModalOS(null)}
         />
       )}
     </div>

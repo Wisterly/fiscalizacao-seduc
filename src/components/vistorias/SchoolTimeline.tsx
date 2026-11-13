@@ -16,9 +16,12 @@ import {
   Check,
   X
 } from 'lucide-react';
-import { Escola, Levantamento, GRE } from '../../types';
+import { Escola, Levantamento, GRE, OrdemServico } from '../../types';
 import { StatusConservacaoBadge } from '../common/Badge';
 import { EditSchoolModal } from './EditSchoolModal';
+import { SchoolOSSection } from './SchoolOSSection';
+import { DocumentPreviewModal } from '../orcamentos/DocumentPreviewModal';
+import { storage } from '../../services/storageService';
 
 interface SchoolTimelineProps {
   school: Escola;
@@ -30,6 +33,9 @@ interface SchoolTimelineProps {
   onUpdateSchool: (updatedSchool: Escola) => void;
   onDeleteLevantamentos?: (ids: string[]) => void;
   onVerOS?: (osId: string) => void;
+  ordensServico?: OrdemServico[];
+  onSaveOS?: (os: OrdemServico) => void;
+  onUpdateMedicaoOS?: (osId: string, novoPercentual: number) => void;
 }
 
 const LONG_PRESS_MS = 450;
@@ -44,9 +50,41 @@ export const SchoolTimeline: React.FC<SchoolTimelineProps> = ({
   onVisualizarLevantamento,
   onUpdateSchool,
   onDeleteLevantamentos,
-  onVerOS
+  onVerOS,
+  ordensServico: propOrdensServico,
+  onSaveOS: propOnSaveOS,
+  onUpdateMedicaoOS: propOnUpdateMedicaoOS
 }) => {
   const [showEditModal, setShowEditModal] = useState(false);
+  const [localOrdensServico, setLocalOrdensServico] = useState<OrdemServico[]>(() =>
+    propOrdensServico || storage.getOrdensServico()
+  );
+  const [previewDoc, setPreviewDoc] = useState<{ os: OrdemServico; tipo: 'orcamento' | 'memorial' } | null>(null);
+
+  useEffect(() => {
+    if (propOrdensServico) {
+      setLocalOrdensServico(propOrdensServico);
+    }
+  }, [propOrdensServico]);
+
+  const handleSaveOS = (os: OrdemServico) => {
+    const list = storage.getOrdensServico();
+    const exists = list.some((item) => item.id === os.id);
+    const updated = exists ? list.map((item) => (item.id === os.id ? os : item)) : [os, ...list];
+    try {
+      localStorage.setItem('seduc_fiscal_os_v1', JSON.stringify(updated));
+    } catch (e) {
+      console.error(e);
+    }
+    setLocalOrdensServico(updated);
+    if (propOnSaveOS) propOnSaveOS(os);
+  };
+
+  const handleUpdateMedicao = (osId: string, novoPercentual: number) => {
+    const updated = storage.updateMedicaoOS(osId, novoPercentual);
+    setLocalOrdensServico(updated);
+    if (propOnUpdateMedicaoOS) propOnUpdateMedicaoOS(osId, novoPercentual);
+  };
 
   // Estados de seleção múltipla por pressionamento longo (Long Press)
   const [selectionMode, setSelectionMode] = useState(false);
@@ -149,11 +187,11 @@ export const SchoolTimeline: React.FC<SchoolTimelineProps> = ({
     setSelectedIds(new Set());
   };
 
-  const mapsUrl = school.coordenadas
+  const mapsUrl = school.linkMaps || (school.coordenadas
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(school.coordenadas)}`
     : school.endereco
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${school.endereco}, ${school.municipio}, PI`)}`
-    : null;
+    : null);
 
   return (
     <div className="w-full">
@@ -299,24 +337,39 @@ export const SchoolTimeline: React.FC<SchoolTimelineProps> = ({
               onClick={() => onVerOS(school.osId!)}
               className="text-[11px] font-bold text-amber-300 hover:text-amber-200 px-2.5 py-1 rounded-lg bg-amber-500/15 border border-amber-500/30 active-press"
             >
-              Ver OS & Medição
+              Ver na Central Geral
             </button>
           </div>
         )}
       </div>
 
-      {/* Botão Premium em Vidro Fosco Translúcido & Borda Furtacor Minimalista (sem símbolo +) */}
+      {/* Seção Completa de Gestão de Ordens de Serviço & Orçamentos com Histórico e Anexos */}
+      <SchoolOSSection
+        school={school}
+        ordensServico={localOrdensServico}
+        onSaveOS={handleSaveOS}
+        onOpenDocPreview={(os, tipo) => setPreviewDoc({ os, tipo })}
+        onUpdateMedicao={handleUpdateMedicao}
+      />
+
+      {/* Botão Novo Relatório Fotográfico - Vidro Meio Transparente Premium com Borda Prismática/Furtacor (sem símbolo +) */}
       <div className="mb-4">
-        <div className="p-[1.5px] rounded-2xl border-furtacor shadow-[0_0_22px_rgba(249,115,22,0.22),0_0_14px_rgba(6,182,212,0.2)] active-press">
+        <div className="p-[1.8px] rounded-2xl bg-gradient-to-r from-cyan-500/80 via-amber-400/90 to-orange-500/80 shadow-[0_4px_24px_rgba(245,158,11,0.25),0_1px_10px_rgba(6,182,212,0.22)] active-press">
           <button
             type="button"
             onClick={onNovoLevantamento}
-            className="relative w-full py-3.5 px-4 rounded-[14.5px] bg-[#0B1426]/70 hover:bg-[#101C36]/80 backdrop-blur-2xl text-white font-extrabold text-sm flex items-center justify-center overflow-hidden transition-all"
+            className="group relative w-full py-3.5 px-4 rounded-[14px] bg-slate-950/60 hover:bg-slate-900/70 backdrop-blur-2xl text-white font-black text-sm flex items-center justify-center overflow-hidden transition-all duration-300 border border-white/20 hover:border-white/30"
           >
-            {/* Reflexo vítreo sutil no topo interno */}
-            <div className="absolute top-0 inset-x-4 h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent pointer-events-none" />
-            <div className="absolute inset-0 bg-gradient-to-b from-white/[0.07] to-transparent pointer-events-none" />
-            <span className="relative z-10 tracking-tight drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+            {/* Camada interna de vidro líquido translúcido */}
+            <div className="absolute inset-0 bg-gradient-to-b from-white/[0.14] via-white/[0.04] to-transparent pointer-events-none" />
+            
+            {/* Reflexo luminoso no chanfro superior do vidro */}
+            <div className="absolute top-0 inset-x-6 h-[1.5px] bg-gradient-to-r from-transparent via-white/80 to-transparent pointer-events-none group-hover:inset-x-2 transition-all duration-500" />
+            
+            {/* Brilho prismático sutil no rodapé */}
+            <div className="absolute bottom-0 inset-x-10 h-[1px] bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent pointer-events-none" />
+
+            <span className="relative z-10 tracking-tight text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] select-none">
               Novo Relatório Fotográfico
             </span>
           </button>
@@ -541,6 +594,15 @@ export const SchoolTimeline: React.FC<SchoolTimelineProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal de Pré-Visualização / Download de Orçamento e Memorial Descritivo */}
+      {previewDoc && (
+        <DocumentPreviewModal
+          os={previewDoc.os}
+          tipo={previewDoc.tipo}
+          onClose={() => setPreviewDoc(null)}
+        />
       )}
     </div>
   );

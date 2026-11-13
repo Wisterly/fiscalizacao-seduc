@@ -205,6 +205,18 @@ export function App() {
     setOrdensServico(updated);
   };
 
+  const handleSaveOS = (os: OrdemServico) => {
+    const list = storage.getOrdensServico();
+    const exists = list.some(item => item.id === os.id);
+    const updated = exists ? list.map(item => item.id === os.id ? os : item) : [os, ...list];
+    try {
+      localStorage.setItem('seduc_fiscal_os_v1', JSON.stringify(updated));
+    } catch (e) {
+      console.error(e);
+    }
+    setOrdensServico(updated);
+  };
+
   // --- Handlers de Demandas ---
   const handleToggleDemandaConcluida = (id: string) => {
     const updated = storage.toggleDemandaConcluida(id);
@@ -409,6 +421,9 @@ export function App() {
                     setSubView('orcamentos');
                     setTargetOsId(osId);
                   }}
+                  ordensServico={ordensServico}
+                  onSaveOS={handleSaveOS}
+                  onUpdateMedicaoOS={handleUpdateMedicaoOS}
                 />
               )}
             </div>

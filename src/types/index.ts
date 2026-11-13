@@ -32,6 +32,7 @@ export interface Escola {
   demandasUrgentesCount: number;
   temOsAtiva: boolean;
   osId?: string;
+  linkPastaDocumentos?: string;
 }
 
 export interface Ambiente {
@@ -83,6 +84,14 @@ export interface OrdemServico {
   empresaContratada: string;
   orcamentoPdfSimulado: string;
   memorialDescritivoPdfSimulado: string;
+  // Suporte híbrido a download, anexo manual e links externos (Drive/Cloud)
+  osPdfUrl?: string;
+  osPdfBlob?: string;
+  osPdfNome?: string;
+  orcamentoPdfUrl?: string;
+  orcamentoPdfBlob?: string;
+  orcamentoPdfNome?: string;
+  tipoStatus?: 'em_execucao' | 'finalizada' | 'aguardando' | 'paralisada';
   observacoes: Array<{
     id: string;
     data: string;

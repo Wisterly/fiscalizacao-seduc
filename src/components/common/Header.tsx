@@ -57,7 +57,7 @@ export const Header: React.FC<HeaderProps> = ({
         ) : (
           /* Header Principal (como Tela Esquerda da Referência) */
           <div className="flex items-center justify-between max-w-md mx-auto">
-            {/* Canto Superior Esquerdo: Menu Hambúrguer + Logo 3D + Nome Fiscaliz.IA */}
+            {/* Canto Superior Esquerdo: Menu Hambúrguer + Logo 3D + Nome do Aplicativo (Fiscal.IA.lab - GPR) */}
             <div className="flex items-center gap-2.5 min-w-0">
               <button
                 onClick={onOpenMenu}
@@ -70,7 +70,7 @@ export const Header: React.FC<HeaderProps> = ({
               <div className="relative flex-shrink-0">
                 <img
                   src="/app-icon.png"
-                  alt="Fiscaliz.IA.lab"
+                  alt="Fiscal.IA.lab - GPR"
                   className="w-8 h-8 rounded-xl object-cover border border-amber-500/30 shadow-glass-glow-gold bg-slate-900"
                 />
               </div>
@@ -78,7 +78,7 @@ export const Header: React.FC<HeaderProps> = ({
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
                   <h1 className="text-sm font-extrabold text-white tracking-tight leading-none truncate">
-                    Fiscaliz.IA.lab
+                    Fiscal.IA.lab
                   </h1>
                   <span className="text-[9px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.2 rounded border border-amber-500/20">
                     GPR

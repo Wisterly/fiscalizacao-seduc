@@ -1,14 +1,14 @@
 {
-  "version": "1.0.10",
-  "buildNumber": 11,
+  "version": "1.0.11",
+  "buildNumber": 12,
   "releaseDate": "2026-11-12",
   "minRequiredVersion": "1.0.0",
   "downloadUrl": "https://github.com/Wisterly/fiscalizacao-seduc/releases/download/apk-latest/Fiscal.IA.apk",
   "changelog": [
-    "Cabeçalho superior atualizado para exibir oficialmente o nome do aplicativo: Fiscaliz.IA.lab",
-    "Engrenagem de configurações em cada escola para informar direção, telefone, endereço, GPS e notas",
-    "Importação base de 676 Plus Codes de localização da planilha INEP com link direto para Google Maps",
-    "Botão 'Novo Relatório Fotográfico' redesenhado sem símbolo '+' em vidro fosco e borda furtacor minimalista",
-    "Pressionamento longo (segurar) nos relatórios para seleção múltipla e exclusão em lote via lixeira"
+    "Integração oficial das 53 localizações e links Maps extraídos diretamente do PDF enviado pelo usuário (08ª e 15ª GREs)",
+    "Criação do arquivo mestre de configuração 'src/data/schoolsGeodataConfig.json' para mapeamento contínuo de endereços e coordenadas",
+    "Cabeçalho unificado com o nome oficial do projeto: Fiscal.IA.lab (GPR)",
+    "Redesign ultra-premium do botão 'Novo Relatório Fotográfico' em vidro translúcido com borda prismática e reflexo superior",
+    "Enriquecimento automático da base local com persistência de dados e links dinâmicos para o Google Maps"
   ]
 }
