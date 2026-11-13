@@ -29,6 +29,21 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.018] — Módulo de Rotas Inteligentes: Sub-Abas (Trajeto vs Prioridade), Seletor de GREs, Diárias (1.5 a 4.5), Trava Anti-Sobrecarga (140 km/h) & Exportação WhatsApp
+- **Data/Hora:** 2026-11-13 00:25 (UTC-3)
+- **Escopos Definidos:**
+  - `PR.018` (Geral): Implantação completa da arquitetura do Super Prompt de Rotas Inteligentes de Vistoria (`rotasEngine.ts` e `RotasView.tsx`). Sub-abas `Rota por Trajeto` (otimização geográfica de corredor contínuo e menor tempo de rodovia) e `Rota por Prioridade` (matriz hierárquica e análise técnica). Origem fixa em Teresina - PI e seletor com as 21 GREs oficiais do Piauí com identificação automática da Cidade-Polo da regional. Seletor de diárias com 4 opções exatas (`1.5`, `2.5`, `3.5` e `4.5` diárias) respeitando janelas de horário rígidas: bate e volta até 22:00h no modo 1.5; chegada na Cidade-Polo entre 19:00h e 20:00h para jantar e pernoite nos modos 2.5, 3.5 e 4.5. Física de deslocamento baseada em caminhonete S10/Hilux a 140 km/h de cruzeiro rodoviário com trava anti-sobrecarga matemática que corta inclusão de novas escolas quando o tempo estoura o limite. Matriz hierárquica: Arielma (Superintendente - Grau 3 fixo), Anik (Diretora - Grau 2 fixo), Naila (Gerente - Grau 1 fixo) e Diretora da Escola (grau dinâmico cruzado com o relatório técnico de obras). Compatibilização em 4 níveis (Urgente, Prioridade, Requer Atenção e Razoável) e degradação obrigatória de criticidade. Exportação e formatação oficial do itinerário com cópia em 1 clique para WhatsApp.
+  - `PR.018.1` (Desktop / Web): Visualização executiva com KPI cards de Km rodado, tempo de rodovia a 140 km/h, total de escolas na rota, pernoite na sede regional e horário final de retorno a Teresina. Modal de seleção rápida das 21 GREs com filtro em tempo real. Botão "Ver Unidade" em cada parada da escola que abre instantaneamente a visualização detalhada e vistoria da escola.
+  - `PR.018.2` (Mobile / Android): Layout responsivo otimizado para smartphone de campo, microinterações a 60fps nas sub-abas, botão flutuante e de topo para exportar roteiro para o WhatsApp, links diretos para abrir o Google Maps de cada escola da rota, sincronização Capacitor e geração do instalador nativo **`Fiscal.IA.apk`** v1.0.13 (Build 14).
+- **Tags Git:** `PR.018`, `PR.018.1`, `PR.018.2`
+- **Arquivo Local do APK:** `c:\Users\Lenovo\Documents\antigravity\LAB - GPR\Fiscal.IA.lab - GPR\Fiscal.IA.apk`
+- **Comando de Restauração Rápida:**
+  ```bash
+  git checkout PR.018
+  ```
+
+---
+
 ### [PR.017] — Integração Completa da Ata de Manutenção SEDUC (2.850 Ordens de Serviço), Sincronização ao Vivo & Gestão Híbrida
 - **Data/Hora:** 2026-11-12 23:55 (UTC-3)
 - **Escopos Definidos:**

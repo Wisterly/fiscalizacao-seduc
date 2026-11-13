@@ -372,6 +372,13 @@ export function App() {
                 gres={gres}
                 onSaveRota={handleSaveRota}
                 onConcluirRota={handleConcluirRota}
+                onSelectSchool={(school) => {
+                  const targetGre = gres.find(g => g.id === school.greId) || null;
+                  setSelectedGre(targetGre);
+                  setSelectedSchool(school);
+                  setSubView('none');
+                  setActiveTab('vistorias');
+                }}
               />
             </div>
           )}

@@ -1,292 +1,723 @@
-import React, { useState } from 'react';
-import { Compass, Sparkles, Copy, Check, Calendar, MapPin, AlertTriangle, Plus, Trash2, ArrowRight } from 'lucide-react';
-import { RotaVistoria, Escola, GRE, RotaItem } from '../../types';
-import { AIService } from '../../services/aiService';
+import React, { useState, useMemo } from 'react';
+import { 
+  Compass, 
+  MapPin, 
+  Navigation, 
+  Clock, 
+  Calendar, 
+  Copy, 
+  Check, 
+  AlertTriangle, 
+  Car, 
+  Gauge, 
+  ShieldAlert, 
+  ChevronRight, 
+  Building2, 
+  ExternalLink, 
+  Filter, 
+  Moon, 
+  Sun,
+  Flame,
+  Award,
+  Search,
+  X
+} from 'lucide-react';
+import { Escola, GRE, RotaVistoria } from '../../types';
+import { 
+  DiariaOption, 
+  PlanoViagem, 
+  gerarPlanoDeViagem, 
+  formatarPlanoParaWhatsApp,
+  ResultadoAnalisePrioridade 
+} from '../../services/rotasEngine';
 
 interface RotasViewProps {
-  rotas: RotaVistoria[];
   schools: Escola[];
   gres: GRE[];
-  onSaveRota: (rota: RotaVistoria) => void;
-  onConcluirRota: (rotaId: string) => void;
+  rotas?: RotaVistoria[];
+  onSaveRota?: (rota: RotaVistoria) => void;
+  onConcluirRota?: (rotaId: string) => void;
+  onSelectSchool?: (school: Escola) => void;
 }
 
 export const RotasView: React.FC<RotasViewProps> = ({
-  rotas,
   schools,
   gres,
-  onSaveRota,
-  onConcluirRota
+  onSelectSchool
 }) => {
-  const [selectedGreId, setSelectedGreId] = useState<string>('gre-19'); // Teresina Centro/Norte
-  const [copiedSuccess, setCopiedSuccess] = useState(false);
-  const [showCriarModal, setShowCriarModal] = useState(false);
+  // Estado das Sub-Abas: Trajeto vs Prioridade
+  const [subTab, setSubTab] = useState<'trajeto' | 'prioridade'>('trajeto');
 
-  // IA - Gera sugestão inteligente calculando scores em tempo real
-  const greAtiva = gres.find(g => g.id === selectedGreId) || gres[0];
-  const sugestoesIA = AIService.gerarSugestaoRotaIA(schools, greAtiva);
+  // Parâmetros de Viagem
+  // Seleciona preferencialmente a 8ª GRE (Oeiras) ou a primeira disponível
+  const [selectedGreId, setSelectedGreId] = useState<string>(() => {
+    const gre8 = gres.find(g => g.numero === 8 || g.id === 'gre-08');
+    return gre8 ? gre8.id : (gres[0]?.id || 'gre-08');
+  });
 
-  // Rota ativa
-  const rotaAtiva = rotas[0];
+  const [selectedDiaria, setSelectedDiaria] = useState<DiariaOption>('2.5');
+  const [copiadoWhatsapp, setCopiadoWhatsapp] = useState(false);
+  const [modalGreAberto, setModalGreAberto] = useState(false);
+  const [filtroGreBusca, setFiltroGreBusca] = useState('');
 
+  // Identifica GRE Ativa
+  const greAtiva = useMemo(() => {
+    return gres.find(g => g.id === selectedGreId) || gres[0] || {
+      id: 'gre-08',
+      numero: 8,
+      nome: '08ª GRE - Oeiras',
+      sede: 'Oeiras',
+      municipios: ['Oeiras', 'Santo Inácio do Piauí', 'Santa Rosa do Piauí'],
+      isFavorite: false
+    };
+  }, [gres, selectedGreId]);
+
+  // Gera o Plano de Viagem Inteligente usando o Motor Algorítmico
+  const planoViagem: PlanoViagem = useMemo(() => {
+    return gerarPlanoDeViagem(subTab, schools, greAtiva, selectedDiaria);
+  }, [subTab, schools, greAtiva, selectedDiaria]);
+
+  // Handler de Cópia para WhatsApp
   const handleCopiarWhatsApp = async () => {
-    if (!rotaAtiva) return;
-
-    const itensFormatados = rotaAtiva.itens.map(it => {
-      const esc = schools.find(s => s.id === it.escolaId);
-      return {
-        escolaNome: esc ? esc.nome : 'Escola SEDUC',
-        municipio: esc ? esc.municipio : 'Piauí',
-        diaSugerido: it.diaSugerido,
-        motivoUrgencia: it.motivoUrgencia
-      };
-    });
-
-    const textoFormatado = AIService.formatarRotaParaWhatsApp(
-      rotaAtiva.titulo,
-      rotaAtiva.mesReferencia,
-      greAtiva?.nome || 'Jurisdição SEDUC Piauí',
-      itensFormatados
-    );
-
+    const texto = formatarPlanoParaWhatsApp(planoViagem);
     try {
-      if (navigator.clipboard) {
-        await navigator.clipboard.writeText(textoFormatado);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(texto);
       } else {
-        // Fallback textarea
-        const textArea = document.createElement('textarea');
-        textArea.value = textoFormatado;
-        document.body.appendChild(textArea);
-        textArea.select();
+        const ta = document.createElement('textarea');
+        ta.value = texto;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
         document.execCommand('copy');
-        document.body.removeChild(textArea);
+        document.body.removeChild(ta);
       }
-      setCopiedSuccess(true);
-      setTimeout(() => setCopiedSuccess(false), 3000);
-    } catch (e) {
-      console.error('Erro ao copiar para clipboard:', e);
+      setCopiadoWhatsapp(true);
+      setTimeout(() => setCopiadoWhatsapp(false), 3000);
+    } catch (err) {
+      console.error('Erro ao copiar texto do WhatsApp:', err);
     }
   };
 
-  const handleDarOkRota = (rotaId: string) => {
-    onConcluirRota(rotaId);
-  };
+  // Cores e Ícones dos Status Compatibilizados
+  const renderStatusBadge = (analise?: ResultadoAnalisePrioridade) => {
+    if (!analise) return null;
+    const { statusCompatibilizado, grauFinal } = analise;
 
-  const handleGerarNovaRotaComIA = () => {
-    const novosItens: RotaItem[] = sugestoesIA.map((sug, idx) => ({
-      escolaId: sug.escola.id,
-      diaSugerido: sug.diaSugerido,
-      ordem: idx + 1,
-      motivoUrgencia: sug.motivo
-    }));
-
-    const novaRota: RotaVistoria = {
-      id: `rota-${Date.now()}`,
-      titulo: `Roteiro Inteligente - ${greAtiva.nome}`,
-      mesReferencia: 'Novembro/Dezembro 2026',
-      greId: greAtiva.id,
-      itens: novosItens,
-      status: 'planejada',
-      resumoIA: `Roteiro gerado pelo motor de IA considerando ${sugestoesIA.length} escolas com alto risco estrutural ou longo período sem visita.`
-    };
-
-    onSaveRota(novaRota);
-    alert('Nova rota otimizada pela IA gerada com sucesso!');
+    switch (statusCompatibilizado) {
+      case 'Urgente':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-red-500/20 text-red-300 border border-red-500/40">
+            <Flame className="w-3.5 h-3.5 text-red-400 animate-pulse" />
+            URGENTE (Grau {grauFinal})
+          </span>
+        );
+      case 'Prioridade':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+            PRIORIDADE (Grau {grauFinal})
+          </span>
+        );
+      case 'Requer Atenção':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-500/20 text-yellow-300 border border-yellow-500/40">
+            <ShieldAlert className="w-3.5 h-3.5 text-yellow-400" />
+            REQUER ATENÇÃO (Grau {grauFinal})
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+            <Check className="w-3.5 h-3.5 text-emerald-400" />
+            RAZOÁVEL (Rotina)
+          </span>
+        );
+    }
   };
 
   return (
-    <div className="w-full pb-20">
-      {/* Topo do Módulo */}
-      <div className="px-4 pt-2 mb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-teal-500/15 border border-teal-500/30 flex items-center justify-center text-teal-400 shadow-glass-glow-turq">
-              <Compass className="w-4 h-4" />
+    <div className="space-y-6 pb-20">
+      {/* ===================================================================== */}
+      {/* HEADER PRINCIPAL COM SUB-ABAS (TRAJETO vs PRIORIDADE)                */}
+      {/* ===================================================================== */}
+      <div className="bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-amber-600 to-yellow-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
+              <Compass className="w-6 h-6 text-white" />
             </div>
             <div>
-              <div className="flex items-center gap-1.5">
-                <h2 className="text-sm font-bold text-white tracking-tight leading-none">
-                  Planejador Inteligente de Rotas
-                </h2>
-                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-teal-500/15 text-teal-300 border border-teal-500/30 font-bold flex items-center gap-1 animate-ai-glow">
-                  <Sparkles className="w-2.5 h-2.5" />
-                  IA
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                  Planejamento de Rotas Inteligentes
+                </h1>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                  GPR / SEDUC-PI
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 mt-0.5">
-                Cruzamento preditivo: Dias sem visita + Estado crítico + Demandas
+              <p className="text-xs sm:text-sm text-slate-400">
+                Otimização rodoviária a 140 km/h, matriz hierárquica e controle rígido de pernoite.
               </p>
             </div>
           </div>
+
+          {/* Botão de Exportação para WhatsApp */}
+          <button
+            onClick={handleCopiarWhatsApp}
+            className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all shadow-lg ${
+              copiadoWhatsapp
+                ? 'bg-emerald-600 text-white shadow-emerald-600/30 ring-2 ring-emerald-400'
+                : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/25 active:scale-95'
+            }`}
+          >
+            {copiadoWhatsapp ? (
+              <>
+                <Check className="w-4 h-4 text-white" />
+                <span>Roteiro Copiado para WhatsApp!</span>
+              </>
+            ) : (
+              <>
+                <Copy className="w-4 h-4 text-white" />
+                <span>Exportar Roteiro WhatsApp</span>
+              </>
+            )}
+          </button>
+        </div>
+
+        {/* NAVEGAÇÃO ENTRE AS DUAS SUB-ABAS (Super Prompt) */}
+        <div className="grid grid-cols-2 gap-2 mt-4 p-1.5 bg-slate-950/60 rounded-xl border border-slate-800">
+          <button
+            onClick={() => setSubTab('trajeto')}
+            className={`flex items-center justify-center gap-2.5 py-3 px-4 rounded-lg font-bold text-sm transition-all ${
+              subTab === 'trajeto'
+                ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/30 scale-[1.01]'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+            }`}
+          >
+            <Navigation className="w-4 h-4" />
+            <div className="text-left">
+              <div className="leading-tight">Rota por Trajeto</div>
+              <div className="text-[10px] font-normal opacity-80 hidden sm:block">
+                Otimização geográfica e corredor contínuo
+              </div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => setSubTab('prioridade')}
+            className={`flex items-center justify-center gap-2.5 py-3 px-4 rounded-lg font-bold text-sm transition-all ${
+              subTab === 'prioridade'
+                ? 'bg-red-500 text-white shadow-md shadow-red-500/30 scale-[1.01]'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+            }`}
+          >
+            <ShieldAlert className="w-4 h-4" />
+            <div className="text-left">
+              <div className="leading-tight">Rota por Prioridade</div>
+              <div className="text-[10px] font-normal opacity-80 hidden sm:block">
+                Matriz hierárquica & análise técnica
+              </div>
+            </div>
+          </button>
         </div>
       </div>
 
-      {/* Seletor de Jurisdição / GRE */}
-      <div className="px-4 mb-3">
-        <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-          Jurisdição para Otimização de Rota:
-        </label>
-        <select
-          value={selectedGreId}
-          onChange={(e) => setSelectedGreId(e.target.value)}
-          className="w-full text-xs bg-slate-900/90 border border-white/10 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-teal-400"
-        >
-          {gres.map((g) => (
-            <option key={g.id} value={g.id}>
-              {g.nome} (Sede: {g.sede})
-            </option>
-          ))}
-        </select>
+      {/* ===================================================================== */}
+      {/* CONTROLES DA VIAGEM: GRE, DIÁRIAS, VEÍCULO E REGRAS OPERACIONAIS    */}
+      {/* ===================================================================== */}
+      <div className="bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* 1. SELETOR DE GRE (com acesso ao Seletor Oficial das 21 GREs) */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+              <span>Jurisdição Regional (GRE)</span>
+              <span className="text-[10px] text-amber-400 font-normal">21 Regionais</span>
+            </label>
+            <div className="flex gap-2">
+              <div className="flex-1 bg-slate-950/80 border border-slate-800 rounded-xl px-3 py-2.5 flex items-center justify-between">
+                <div>
+                  <div className="text-sm font-bold text-white flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span>{greAtiva.nome}</span>
+                  </div>
+                  <div className="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5">
+                    <span>Sede / Pernoite:</span>
+                    <strong className="text-amber-300">{greAtiva.sede}</strong>
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => setModalGreAberto(true)}
+                className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl border border-slate-700 text-xs font-bold flex items-center gap-1.5 transition-colors shrink-0"
+                title="Trocar GRE"
+              >
+                <Filter className="w-3.5 h-3.5 text-amber-400" />
+                <span>Trocar</span>
+              </button>
+            </div>
+          </div>
+
+          {/* 2. SELETOR DE DIÁRIAS (1.5, 2.5, 3.5 e 4.5 exatas) */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+              <span>Regime de Diárias</span>
+              <span className="text-[10px] text-slate-400 font-normal">4 opções</span>
+            </label>
+            <div className="grid grid-cols-4 gap-1.5 bg-slate-950/80 p-1 rounded-xl border border-slate-800">
+              {(['1.5', '2.5', '3.5', '4.5'] as DiariaOption[]).map((opt) => (
+                <button
+                  key={opt}
+                  onClick={() => setSelectedDiaria(opt)}
+                  className={`py-2 px-1 rounded-lg text-xs font-bold transition-all ${
+                    selectedDiaria === opt
+                      ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/25 scale-[1.02]'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                  }`}
+                >
+                  {opt} d
+                </button>
+              ))}
+            </div>
+            <p className="text-[11px] text-slate-400 italic">
+              {selectedDiaria === '1.5' && '⚡ Bate e volta no mesmo dia (teto retorno: até 22:00h em Teresina).'}
+              {selectedDiaria === '2.5' && `🏨 1 dia de rota com pernoite em ${greAtiva.sede} (19h-20h) + volta Dia 2.`}
+              {selectedDiaria === '3.5' && `🔄 Rota estruturada com pernoite em ${greAtiva.sede} (19h-20h) e giro no Dia 2.`}
+              {selectedDiaria === '4.5' && `🏕️ Imersão completa (2 pernoites em ${greAtiva.sede} e retorno no Dia 3).`}
+            </p>
+          </div>
+
+          {/* 3. PARÂMETRO VEÍCULO & ORIGEM */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+              Veículo & Ponto de Partida
+            </label>
+            <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-2.5 space-y-1.5">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-400 flex items-center gap-1.5">
+                  <Car className="w-3.5 h-3.5 text-amber-400" />
+                  Veículo:
+                </span>
+                <span className="font-bold text-white">S10 / Hilux (4x4)</span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-400 flex items-center gap-1.5">
+                  <Gauge className="w-3.5 h-3.5 text-emerald-400" />
+                  Cruzeiro Rodoviário:
+                </span>
+                <span className="font-bold text-emerald-400">140 km/h</span>
+              </div>
+              <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-800/80">
+                <span className="text-slate-500">Origem Fixa:</span>
+                <span className="font-semibold text-slate-300">Teresina - PI</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Banner Explicativo da Sub-Aba Ativa */}
+        {subTab === 'prioridade' ? (
+          <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 text-xs text-red-200 flex items-start gap-2.5">
+            <ShieldAlert className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+            <div>
+              <strong className="text-red-300">Matriz Hierárquica Ativada:</strong> A rota começa obrigatoriamente pela obra mais crítica (🔴 Urgente - Grau 3) e degrada sucessivamente até 🟢 Razoável. O algoritmo cruzou as demandas da <strong>Superintendente Arielma (Grau 3)</strong>, <strong>Diretora Anik (Grau 2)</strong>, <strong>Gerente Naila (Grau 1)</strong> e as vistorias das Diretoras Escolares analisadas com base no relatório técnico de obras.
+            </div>
+          </div>
+        ) : (
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 text-xs text-amber-200 flex items-start gap-2.5">
+            <Navigation className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+            <div>
+              <strong className="text-amber-300">Corredor Geográfico Otimizado:</strong> Rota montada com menor deslocamento contínuo em estrada saindo de Teresina, atingindo as escolas da <strong>{greAtiva.nome}</strong> no eixo de ida e pernoitando rigorosamente em <strong>{greAtiva.sede}</strong> entre 19:00h e 20:00h para o jantar.
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Card da Rota Ativa / Roteiro Vigente */}
-      {rotaAtiva && (
-        <div className="px-4 mb-4">
-          <div className="p-4 rounded-2xl bg-gradient-to-br from-teal-950/40 via-slate-900/70 to-slate-950/90 border border-teal-500/30 backdrop-blur-xl shadow-glass relative overflow-hidden">
-            <div className="flex items-start justify-between gap-2 mb-2">
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-teal-400">
-                  Roteiro de Vistorias Recomendado
+      {/* ===================================================================== */}
+      {/* RESUMO EXECUTIVO (KPI CARDS DA VIAGEM)                                */}
+      {/* ===================================================================== */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        {/* Km Total */}
+        <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 shadow-lg">
+          <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
+            <Navigation className="w-4 h-4 text-amber-400" />
+            <span>Deslocamento</span>
+          </div>
+          <div className="text-xl sm:text-2xl font-black text-white mt-1.5">
+            {planoViagem.totalKm} <span className="text-xs font-normal text-slate-400">km</span>
+          </div>
+          <div className="text-[11px] text-slate-500 mt-0.5">Ida, giro e retorno</div>
+        </div>
+
+        {/* Tempo de Estrada */}
+        <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 shadow-lg">
+          <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
+            <Clock className="w-4 h-4 text-blue-400" />
+            <span>Tempo Estrada</span>
+          </div>
+          <div className="text-xl sm:text-2xl font-black text-white mt-1.5">
+            {planoViagem.tempoEstradaHoras}
+          </div>
+          <div className="text-[11px] text-slate-500 mt-0.5">Cruzeiro a 140 km/h</div>
+        </div>
+
+        {/* Escolas Atendidas */}
+        <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 shadow-lg">
+          <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
+            <Building2 className="w-4 h-4 text-emerald-400" />
+            <span>Escolas na Rota</span>
+          </div>
+          <div className="text-xl sm:text-2xl font-black text-emerald-400 mt-1.5">
+            {planoViagem.totalEscolasAtendidas}
+          </div>
+          <div className="text-[11px] text-slate-500 mt-0.5">Trava anti-sobrecarga ativa</div>
+        </div>
+
+        {/* Cidade-Polo de Pernoite */}
+        <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 shadow-lg">
+          <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
+            <Moon className="w-4 h-4 text-purple-400" />
+            <span>Cidade-Polo</span>
+          </div>
+          <div className="text-lg sm:text-xl font-black text-white mt-1.5 truncate" title={planoViagem.cidadePolo}>
+            {planoViagem.cidadePolo}
+          </div>
+          <div className="text-[11px] text-purple-300/80 mt-0.5">Pernoite e Jantar (19h-20h)</div>
+        </div>
+
+        {/* Horário Final */}
+        <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 shadow-lg col-span-2 sm:col-span-1">
+          <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
+            <Calendar className="w-4 h-4 text-yellow-400" />
+            <span>Retorno Previsto</span>
+          </div>
+          <div className="text-xl sm:text-2xl font-black text-yellow-400 mt-1.5">
+            {planoViagem.horarioFinalPrevisto}
+          </div>
+          <div className="text-[11px] text-slate-500 mt-0.5">Teresina - PI</div>
+        </div>
+      </div>
+
+      {/* ===================================================================== */}
+      {/* CRONOGRAMA POR DIA (TIMELINE DE PARADAS)                             */}
+      {/* ===================================================================== */}
+      <div className="space-y-6">
+        {planoViagem.dias.map((dia) => (
+          <div
+            key={dia.diaNumero}
+            className="bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-2xl overflow-hidden shadow-xl"
+          >
+            {/* Header do Dia */}
+            <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 p-4 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex items-center gap-3">
+                <span className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center font-black text-sm">
+                  D{dia.diaNumero}
                 </span>
-                <h3 className="font-extrabold text-sm text-white mt-0.5 leading-snug">
-                  {rotaAtiva.titulo}
-                </h3>
-                <p className="text-[11px] text-slate-300">
-                  {rotaAtiva.mesReferencia} • {rotaAtiva.itens.length} Unidades Programadas
-                </p>
+                <div>
+                  <h3 className="text-base sm:text-lg font-bold text-white">
+                    {dia.titulo}
+                  </h3>
+                  <div className="text-xs text-slate-400 flex items-center gap-3 mt-0.5">
+                    <span>{dia.dataDescritiva}</span>
+                    <span>•</span>
+                    <span>Horário: <strong>{dia.horarioInicio}</strong> às <strong>{dia.horarioTerminoPrevisto}</strong></span>
+                  </div>
+                </div>
               </div>
 
-              <span className={`px-2.5 py-1 rounded-xl text-[10px] font-bold uppercase tracking-wider border ${
-                rotaAtiva.status === 'concluida'
-                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
-                  : 'bg-teal-500/20 text-teal-300 border-teal-500/30'
-              }`}>
-                {rotaAtiva.status === 'concluida' ? 'Concluída' : 'Planejada'}
-              </span>
+              <div className="flex items-center gap-3 text-xs bg-slate-900/80 px-3 py-1.5 rounded-xl border border-slate-800 self-start sm:self-auto">
+                <span className="text-slate-400">Km do Dia: <strong className="text-white">{dia.totalKmDia} km</strong></span>
+                <span>•</span>
+                <span className="text-slate-400">Destino: <strong className="text-amber-300">{dia.cidadePernoiteOuDestino}</strong></span>
+              </div>
             </div>
 
-            {/* Resumo da IA */}
-            <p className="text-xs text-slate-300 bg-black/25 p-2.5 rounded-xl mb-3 leading-relaxed border border-white/5">
-              🤖 <strong>Análise da IA:</strong> {rotaAtiva.resumoIA}
-            </p>
-
-            {/* Lista das Escolas da Rota com Dias */}
-            <div className="space-y-2 mb-4">
-              {rotaAtiva.itens.map((it, idx) => {
-                const esc = schools.find(s => s.id === it.escolaId);
+            {/* Lista de Paradas / Timeline */}
+            <div className="p-4 sm:p-5 divide-y divide-slate-800/60">
+              {dia.paradas.map((parada, pIdx) => {
+                const isPartida = parada.tipo === 'partida';
+                const isPernoite = parada.tipo === 'pernoite';
+                const isRetorno = parada.tipo === 'retorno';
+                const isVistoria = parada.tipo === 'vistoria';
 
                 return (
                   <div
-                    key={idx}
-                    className="p-2.5 rounded-xl bg-slate-900/80 border border-white/5 flex items-start justify-between gap-2"
+                    key={pIdx}
+                    className={`py-4 first:pt-0 last:pb-0 flex flex-col md:flex-row md:items-start justify-between gap-4 transition-colors rounded-xl px-2.5 ${
+                      isVistoria ? 'hover:bg-slate-800/30' : 'bg-slate-950/40 my-1'
+                    }`}
                   >
-                    <div className="flex items-start gap-2 min-w-0">
-                      <span className="w-5 h-5 rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/30 text-[10px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
-                        {idx + 1}
-                      </span>
-                      <div className="min-w-0">
-                        <div className="font-bold text-xs text-white truncate">
-                          {esc ? esc.nome : 'Escola SEDUC'}
+                    {/* Horário & Indicador da Timeline */}
+                    <div className="flex items-start gap-3 md:w-56 shrink-0">
+                      <div className="flex flex-col items-center">
+                        <div
+                          className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs shadow-md ${
+                            isPartida
+                              ? 'bg-blue-500/20 text-blue-400 border border-blue-500/40'
+                              : isPernoite
+                              ? 'bg-purple-500/20 text-purple-400 border border-purple-500/40'
+                              : isRetorno
+                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                              : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                          }`}
+                        >
+                          {isPartida && '🚩'}
+                          {isPernoite && '🏨'}
+                          {isRetorno && '🏁'}
+                          {isVistoria && parada.ordem}
                         </div>
-                        <div className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
-                          <MapPin className="w-2.5 h-2.5 text-teal-400" />
-                          <span>{esc?.municipio || 'PI'}</span>
-                          <span>•</span>
-                          <span className="text-teal-300 font-medium">{it.diaSugerido}</span>
+                        {pIdx < dia.paradas.length - 1 && (
+                          <div className="w-0.5 h-12 bg-slate-800 my-1 hidden md:block" />
+                        )}
+                      </div>
+
+                      <div>
+                        <div className="text-sm font-black text-white flex items-center gap-1.5">
+                          <span>{parada.horarioChegada}</span>
+                          {parada.horarioPartida !== parada.horarioChegada && (
+                            <>
+                              <span className="text-slate-500 text-xs font-normal">às</span>
+                              <span>{parada.horarioPartida}</span>
+                            </>
+                          )}
                         </div>
-                        <div className="text-[10px] text-orange-400/90 mt-0.5">
-                          ⚠️ {it.motivoUrgencia}
+                        <div className="text-[11px] text-slate-400 mt-0.5">
+                          {isVistoria && (
+                            <span className="text-amber-400 font-semibold">
+                              ⏱️ Vistoria de {parada.tempoPermanenciaMin} min
+                            </span>
+                          )}
+                          {isPartida && 'Saída Oficial'}
+                          {isPernoite && 'Pernoite & Jantar'}
+                          {isRetorno && 'Encerramento'}
                         </div>
+                        {parada.distanciaTrechoKm > 0 && (
+                          <div className="text-[10px] text-slate-500 mt-0.5">
+                            🛣️ Trecho: {parada.distanciaTrechoKm} km (~{parada.tempoDeslocamentoMin} min)
+                          </div>
+                        )}
                       </div>
                     </div>
+
+                    {/* Conteúdo Central da Parada */}
+                    <div className="flex-1 space-y-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h4 className="text-base font-bold text-white">
+                          {parada.localNome}
+                        </h4>
+                        <span className="px-2 py-0.5 rounded-md text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700 flex items-center gap-1">
+                          <MapPin className="w-3 h-3 text-amber-400" />
+                          {parada.cidade}
+                        </span>
+
+                        {/* Status Compatibilizado na Rota por Prioridade */}
+                        {isVistoria && renderStatusBadge(parada.analisePrioridade)}
+                      </div>
+
+                      {/* Observação Geral */}
+                      {parada.observacao && (
+                        <p className="text-xs text-slate-400">
+                          {parada.observacao}
+                        </p>
+                      )}
+
+                      {/* DETALHES DE CRITICIDADE E HIERARQUIA (Super Prompt) */}
+                      {isVistoria && parada.escola && (
+                        <div className="bg-slate-950/70 border border-slate-800/80 rounded-xl p-3 space-y-2">
+                          {/* Tags de Origem da Demanda */}
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            {parada.escola.demandas.map((dem, dIdx) => {
+                              let tagClass = 'bg-slate-800 text-slate-300 border-slate-700';
+                              if (dem.origem === 'Arielma (Superintendente)') {
+                                tagClass = 'bg-red-500/20 text-red-300 border-red-500/40 font-bold';
+                              } else if (dem.origem === 'Anik (Diretora)') {
+                                tagClass = 'bg-amber-500/20 text-amber-300 border-amber-500/40 font-bold';
+                              } else if (dem.origem === 'Naila (Gerente)') {
+                                tagClass = 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40 font-semibold';
+                              } else if (dem.origem === 'Diretora da Escola') {
+                                tagClass = 'bg-blue-500/20 text-blue-300 border-blue-500/40';
+                              }
+
+                              return (
+                                <span
+                                  key={dIdx}
+                                  className={`px-2 py-0.5 rounded text-[11px] border ${tagClass}`}
+                                  title={dem.descricao}
+                                >
+                                  {dem.origem}
+                                </span>
+                              );
+                            })}
+
+                            {/* Tags Técnicas do Relatório */}
+                            {parada.escola.relatorio.obraParada && (
+                              <span className="px-2 py-0.5 rounded text-[11px] bg-red-600/30 text-red-200 border border-red-500/50 font-bold">
+                                🛑 Obra Parada
+                              </span>
+                            )}
+                            {parada.escola.relatorio.possuiProblemaGrave && (
+                              <span className="px-2 py-0.5 rounded text-[11px] bg-orange-600/30 text-orange-200 border border-orange-500/50 font-semibold">
+                                ⚠️ Patologia Grave
+                              </span>
+                            )}
+                            {parada.escola.diasSemVistoria >= 30 && (
+                              <span className="px-2 py-0.5 rounded text-[11px] bg-slate-800 text-amber-300 border border-amber-500/30">
+                                ⏳ {parada.escola.diasSemVistoria} dias sem vistoria
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Justificativa da IA */}
+                          {parada.analisePrioridade?.justificativaIA && (
+                            <div className="text-[11px] text-slate-400 space-y-0.5 pt-1">
+                              {parada.analisePrioridade.justificativaIA.map((just, jIdx) => (
+                                <div key={jIdx} className="flex items-center gap-1.5">
+                                  <span className="text-amber-400">•</span>
+                                  <span>{just}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Ações Rápidas da Parada */}
+                    {isVistoria && parada.escola && (
+                      <div className="flex md:flex-col items-center gap-2 self-end md:self-center shrink-0">
+                        {parada.escola.linkMaps && (
+                          <a
+                            href={parada.escola.linkMaps}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-1.5 border border-slate-700 transition-colors"
+                            title="Abrir no Google Maps"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5 text-blue-400" />
+                            <span>Maps</span>
+                          </a>
+                        )}
+
+                        {onSelectSchool && (
+                          <button
+                            onClick={() => {
+                              const originalSchool = schools.find(s => s.id === parada.escola?.id);
+                              if (originalSchool) {
+                                onSelectSchool(originalSchool);
+                              }
+                            }}
+                            className="px-2.5 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-bold flex items-center gap-1 border border-amber-500/40 transition-colors"
+                          >
+                            <span>Ver Unidade</span>
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}
             </div>
+          </div>
+        ))}
+      </div>
 
-            {/* BOTÕES DE AÇÃO: Copiar WhatsApp & Dar OK */}
-            <div className="grid grid-cols-2 gap-2 pt-1 border-t border-white/[0.08]">
-              {/* Botão Copiar Rota para WhatsApp */}
+      {/* ===================================================================== */}
+      {/* MODAL DE SELEÇÃO RÁPIDA DAS 21 GREs (Mesmo padrão de Vistorias)       */}
+      {/* ===================================================================== */}
+      {modalGreAberto && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+            {/* Header do Modal */}
+            <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <Compass className="w-5 h-5 text-amber-400" />
+                  <span>Selecione a Gerência Regional (GRE)</span>
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  As 21 GREs oficiais do Piauí com suas sedes e cidades-polo de pernoite.
+                </p>
+              </div>
               <button
-                onClick={handleCopiarWhatsApp}
-                className="py-2.5 px-3 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center justify-center gap-1.5 active-press transition-all shadow-glass"
+                onClick={() => setModalGreAberto(false)}
+                className="w-8 h-8 rounded-lg bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition-colors"
               >
-                {copiedSuccess ? (
-                  <>
-                    <Check className="w-4 h-4 text-emerald-400" />
-                    <span>Copiado!</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-4 h-4" />
-                    <span>Copiar WhatsApp</span>
-                  </>
-                )}
+                <X className="w-4 h-4" />
               </button>
+            </div>
 
-              {/* Botão Dar OK (Rota Concluída) */}
-              <button
-                onClick={() => handleDarOkRota(rotaAtiva.id)}
-                disabled={rotaAtiva.status === 'concluida'}
-                className="py-2.5 px-3 rounded-xl bg-teal-500 hover:bg-teal-400 disabled:opacity-50 text-slate-950 text-xs font-extrabold flex items-center justify-center gap-1.5 active-press transition-all shadow-glass-glow-turq"
-              >
-                <Check className="w-4 h-4 stroke-[2.5]" />
-                <span>{rotaAtiva.status === 'concluida' ? 'Concluída' : 'Dar OK (Concluída)'}</span>
-              </button>
+            {/* Barra de Pesquisa */}
+            <div className="p-4 border-b border-slate-800/80 bg-slate-950/40">
+              <div className="relative">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Buscar GRE por número, nome ou município sede (ex: Oeiras, Corrente, Floriano, Picos)..."
+                  value={filtroGreBusca}
+                  onChange={(e) => setFiltroGreBusca(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2 bg-slate-900 border border-slate-800 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                />
+              </div>
+            </div>
+
+            {/* Grade das 21 GREs */}
+            <div className="p-4 sm:p-5 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              {[...gres]
+                .sort((a, b) => a.numero - b.numero)
+                .filter(g => {
+                  if (!filtroGreBusca) return true;
+                  const term = filtroGreBusca.toLowerCase();
+                  return (
+                    g.nome.toLowerCase().includes(term) ||
+                    g.sede.toLowerCase().includes(term) ||
+                    String(g.numero).includes(term) ||
+                    g.municipios?.some(m => m.toLowerCase().includes(term))
+                  );
+                })
+                .map((gre) => {
+                  const isSelected = gre.id === selectedGreId;
+                  const totalEsc = schools.filter(s => s.greId === gre.id).length;
+
+                  return (
+                    <button
+                      key={gre.id}
+                      onClick={() => {
+                        setSelectedGreId(gre.id);
+                        setModalGreAberto(false);
+                      }}
+                      className={`p-3 rounded-xl border text-left transition-all relative flex flex-col justify-between ${
+                        isSelected
+                          ? 'bg-amber-500/20 border-amber-500 shadow-lg shadow-amber-500/20 ring-1 ring-amber-500'
+                          : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 hover:bg-slate-800/40'
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="text-xs font-black text-amber-400">
+                            {String(gre.numero).padStart(2, '0')}ª GRE
+                          </span>
+                          {isSelected && (
+                            <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+                          )}
+                        </div>
+                        <div className="text-sm font-bold text-white mt-1 leading-snug line-clamp-1">
+                          {gre.sede}
+                        </div>
+                      </div>
+
+                      <div className="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+                        <span>{totalEsc} escolas</span>
+                        <span className="text-amber-400/80 font-medium">Pólo</span>
+                      </div>
+                    </button>
+                  );
+                })}
             </div>
           </div>
         </div>
       )}
-
-      {/* Seção: Sugestões Dinâmicas do Motor de IA */}
-      <div className="px-4">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-teal-400" />
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">
-              Escolas com Maior Criticidade no Piauí
-            </h3>
-          </div>
-
-          <button
-            onClick={handleGerarNovaRotaComIA}
-            className="text-[11px] font-bold text-teal-300 hover:text-teal-200 px-2.5 py-1 rounded-xl bg-teal-500/15 border border-teal-500/30 active-press"
-          >
-            Regenerar com IA
-          </button>
-        </div>
-
-        <div className="space-y-2">
-          {sugestoesIA.map((sug, idx) => (
-            <div
-              key={sug.escola.id}
-              className="p-3 rounded-2xl bg-slate-900/50 border border-white/5 backdrop-blur-xl flex items-center justify-between gap-3"
-            >
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5">
-                  <span className="font-bold text-xs text-white truncate">{sug.escola.nome}</span>
-                  <span className="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-orange-500/20 text-orange-300 border border-orange-500/30">
-                    Score {sug.score}/100
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-400 mt-0.5 truncate">
-                  {sug.escola.municipio} • {sug.motivo}
-                </p>
-                <p className="text-[10px] text-teal-300 mt-0.5 font-medium">
-                  📅 Sugestão de dia: {sug.diaSugerido}
-                </p>
-              </div>
-
-              <div className="text-right flex-shrink-0">
-                <span className="text-[10px] font-bold text-slate-400 block">Última Visita</span>
-                <span className="text-xs font-semibold text-slate-200">
-                  {sug.escola.diasSemVisita}d atrás
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 };
