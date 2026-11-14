@@ -1,15 +1,14 @@
 {
-  "version": "1.0.18",
-  "buildNumber": 19,
-  "releaseDate": "2026-11-13",
+  "version": "1.0.19",
+  "buildNumber": 20,
+  "releaseDate": "2026-11-14",
   "minRequiredVersion": "1.0.0",
   "downloadUrl": "https://github.com/Wisterly/fiscalizacao-seduc/releases/download/apk-latest/Fiscal.IA.apk",
   "changelog": [
-    "Gestão Inteligente do Botão / Gesto Voltar no Android: histórico de abas e telas sem fechamento acidental",
-    "Trava de segurança na tela inicial com duplo toque rápido para sair e toast de aviso",
-    "Bate e Volta para 1.5 e 2.5 diárias com saída às 06:00h e chegada entre 21:00h e 22:00h sem sobrecarga",
-    "Duração em 2 dias (3.5 diárias) e 3 dias (4.5 diárias) com pernoites rigorosamente entre 19:00h e 20:00h",
-    "Seletor de Duração em Campo com opção de compactar rotas longas para 2 dias ou 1 dia",
-    "Cálculo e Comparativo Google Maps & Waze (~75 km/h) versus Simulação S10/Hilux a 140 km/h (~125 km/h efetivo)"
+    "Seletor de GRE oficial das 21 regionais como primeira tela na Central de Demandas, Orçamentos & OS e Rotas",
+    "Filtro inteligente de escolas por GRE ao cadastrar Nova Demanda com pesquisa instantânea e rolagem suave",
+    "Demandas exibidas e filtradas por regional selecionada com botão direto de 'Trocar GRE'",
+    "Filtro por municípios da GRE em Orçamentos e OS integrado à planilha da Ata de Manutenção",
+    "Navegação integrada ao botão/gesto Voltar do Android: retorna ao Seletor de GRE antes de fechar a aba"
   ]
 }

@@ -1,15 +1,17 @@
-import React, { useState } from 'react';
-import { X, CheckSquare, Calendar, Bell, UserCheck, AlertTriangle, Check } from 'lucide-react';
-import { Demanda, ResponsavelTipo, Escola } from '../../types';
+import React, { useState, useMemo } from 'react';
+import { X, CheckSquare, Calendar, Bell, UserCheck, AlertTriangle, Check, Search, Building2, MapPin } from 'lucide-react';
+import { Demanda, ResponsavelTipo, Escola, GRE } from '../../types';
 
 interface NewDemandaModalProps {
   schools: Escola[];
+  gre?: GRE | null;
   onAddDemanda: (demanda: Omit<Demanda, 'id' | 'concluida' | 'dataCriacao'>) => void;
   onClose: () => void;
 }
 
 export const NewDemandaModal: React.FC<NewDemandaModalProps> = ({
   schools,
+  gre,
   onAddDemanda,
   onClose
 }) => {
@@ -25,7 +27,8 @@ export const NewDemandaModal: React.FC<NewDemandaModalProps> = ({
   });
   const [alertFrequency, setAlertFrequency] = useState<'todos_os_dias' | 'dias_semana'>('todos_os_dias');
   const [diasSemana, setDiasSemana] = useState<string[]>(['Seg', 'Ter', 'Qua', 'Qui', 'Sex']);
-  const [escolaId, setEscolaId] = useState<string>(schools[0]?.id || '');
+  const [escolaId, setEscolaId] = useState<string>('');
+  const [buscaEscola, setBuscaEscola] = useState('');
 
   const diasDisponiveis = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'];
 
@@ -37,11 +40,22 @@ export const NewDemandaModal: React.FC<NewDemandaModalProps> = ({
     }
   };
 
+  // Escolas filtradas pela pesquisa em tempo real
+  const escolasFiltradas = useMemo(() => {
+    if (!buscaEscola.trim()) return schools;
+    const term = buscaEscola.toLowerCase().trim();
+    return schools.filter(s => 
+      s.nome.toLowerCase().includes(term) || 
+      s.municipio.toLowerCase().includes(term) ||
+      (s.inep && s.inep.includes(term))
+    );
+  }, [schools, buscaEscola]);
+
+  const escolaSelecionadaObj = schools.find(s => s.id === escolaId);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!titulo.trim()) return;
-
-    const targetSchool = schools.find(s => s.id === escolaId);
 
     onAddDemanda({
       titulo: titulo.trim(),
@@ -52,8 +66,8 @@ export const NewDemandaModal: React.FC<NewDemandaModalProps> = ({
       dataLimite,
       alertFrequency,
       diasSemana,
-      escolaId: targetSchool ? targetSchool.id : undefined,
-      escolaNome: targetSchool ? targetSchool.nome : undefined
+      escolaId: escolaSelecionadaObj ? escolaSelecionadaObj.id : undefined,
+      escolaNome: escolaSelecionadaObj ? escolaSelecionadaObj.nome : undefined
     });
 
     onClose();
@@ -70,7 +84,9 @@ export const NewDemandaModal: React.FC<NewDemandaModalProps> = ({
             </div>
             <div>
               <h3 className="font-bold text-white text-xs">Nova Demanda ou Alerta Programado</h3>
-              <p className="text-[10px] text-slate-400">SEDUC Piauí • Central de Prazos</p>
+              <p className="text-[10px] text-slate-400">
+                {gre ? `${gre.nome} • Sede: ${gre.sede}` : 'SEDUC Piauí • Central de Prazos'}
+              </p>
             </div>
           </div>
           <button
@@ -89,7 +105,7 @@ export const NewDemandaModal: React.FC<NewDemandaModalProps> = ({
             </label>
             <input
               type="text"
-              placeholder="Ex: Falar com a Naila sobre trinca na escola X"
+              placeholder="Ex: Falar com a Naila sobre cobertura da escola"
               value={titulo}
               onChange={(e) => setTitulo(e.target.value)}
               className="w-full text-xs bg-slate-800/90 border border-white/10 rounded-xl px-3 py-2 text-white placeholder-slate-400 focus:outline-none focus:border-orange-400"
@@ -147,22 +163,101 @@ export const NewDemandaModal: React.FC<NewDemandaModalProps> = ({
             </div>
           </div>
 
-          <div>
-            <label className="block text-[11px] font-semibold text-slate-300 mb-1">
-              Vincular a uma Escola (Opcional):
-            </label>
-            <select
-              value={escolaId}
-              onChange={(e) => setEscolaId(e.target.value)}
-              className="w-full text-xs bg-slate-800/90 border border-white/10 rounded-xl px-2.5 py-2 text-white focus:outline-none"
-            >
-              <option value="">Nenhuma / Geral SEDUC</option>
-              {schools.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.nome} ({s.municipio})
-                </option>
-              ))}
-            </select>
+          {/* VINCULAR A UMA ESCOLA COM PESQUISA E LISTA ROLÁVEL (Super Ajuste) */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="block text-[11px] font-bold text-slate-300">
+                Vincular a uma Escola {gre ? `da ${gre.nome}` : ''}:
+              </label>
+              {escolaSelecionadaObj && (
+                <button
+                  type="button"
+                  onClick={() => setEscolaId('')}
+                  className="text-[10px] text-amber-400 hover:text-amber-300"
+                >
+                  Desvincular
+                </button>
+              )}
+            </div>
+
+            {/* Caixinha de Pesquisa de Escola */}
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Pesquisar escola pelo nome ou município..."
+                value={buscaEscola}
+                onChange={(e) => setBuscaEscola(e.target.value)}
+                className="w-full pl-8 pr-7 py-1.5 bg-slate-800/90 border border-white/10 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-orange-400"
+              />
+              {buscaEscola && (
+                <button
+                  type="button"
+                  onClick={() => setBuscaEscola('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+
+            {/* Lista Rolável / Scrollável de Escolas da GRE */}
+            <div className="max-h-40 overflow-y-auto space-y-1 p-1 bg-slate-900/90 border border-white/10 rounded-xl select-none">
+              {/* Opção Geral (Sem Escola) */}
+              <button
+                type="button"
+                onClick={() => setEscolaId('')}
+                className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between transition-colors ${
+                  escolaId === ''
+                    ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30'
+                    : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
+                }`}
+              >
+                <span>Nenhuma / Geral da {gre ? gre.nome : 'SEDUC'}</span>
+                {escolaId === '' && <Check className="w-3.5 h-3.5 text-amber-400" />}
+              </button>
+
+              {escolasFiltradas.length === 0 ? (
+                <div className="p-3 text-center text-[11px] text-slate-500">
+                  Nenhuma escola encontrada para &quot;{buscaEscola}&quot;.
+                </div>
+              ) : (
+                escolasFiltradas.map((s) => {
+                  const isSelected = escolaId === s.id;
+                  return (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => setEscolaId(s.id)}
+                      className={`w-full text-left px-2.5 py-2 rounded-lg text-xs flex items-center justify-between gap-2 transition-all ${
+                        isSelected
+                          ? 'bg-orange-500/20 text-white font-bold border border-orange-500/40 ring-1 ring-orange-500/40'
+                          : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+                      }`}
+                    >
+                      <div className="truncate flex-1">
+                        <div className="truncate font-medium">{s.nome}</div>
+                        <div className="text-[10px] text-slate-400 flex items-center gap-1.5 mt-0.5">
+                          <MapPin className="w-2.5 h-2.5 text-amber-400" />
+                          <span>{s.municipio}</span>
+                          {s.statusConservacao === 'critico' && (
+                            <span className="text-red-400 font-bold">• Crítico</span>
+                          )}
+                          {s.temOsAtiva && (
+                            <span className="text-emerald-400 font-semibold">• OS Ativa</span>
+                          )}
+                        </div>
+                      </div>
+                      {isSelected && (
+                        <div className="w-5 h-5 rounded-full bg-orange-500/20 border border-orange-500/40 flex items-center justify-center shrink-0">
+                          <Check className="w-3.5 h-3.5 text-orange-400" />
+                        </div>
+                      )}
+                    </button>
+                  );
+                })
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-2">
@@ -188,75 +283,78 @@ export const NewDemandaModal: React.FC<NewDemandaModalProps> = ({
                 onChange={(e) => setPrioridade(e.target.value as 'alta' | 'media' | 'baixa')}
                 className="w-full text-xs bg-slate-800/90 border border-white/10 rounded-xl px-2.5 py-2 text-white focus:outline-none"
               >
-                <option value="alta">Alta / Urgente</option>
-                <option value="media">Média</option>
-                <option value="baixa">Baixa</option>
+                <option value="alta">🔴 Alta Prioridade</option>
+                <option value="media">🟡 Média</option>
+                <option value="baixa">🟢 Baixa</option>
               </select>
             </div>
           </div>
 
-          {/* Programação de Alertas no Celular */}
-          <div className="p-3 rounded-2xl bg-slate-800/40 border border-white/10 space-y-2.5">
-            <div className="flex items-center gap-1.5 text-xs font-bold text-orange-400">
-              <Bell className="w-3.5 h-3.5" />
-              <span>Programação de Alertas no Celular</span>
-            </div>
-
-            <div className="flex gap-2">
-              <label className="flex items-center gap-1.5 cursor-pointer text-slate-300">
-                <input
-                  type="radio"
-                  name="freq"
-                  checked={alertFrequency === 'todos_os_dias'}
-                  onChange={() => setAlertFrequency('todos_os_dias')}
-                  className="text-orange-500 bg-slate-900"
-                />
-                <span className="text-[11px]">Todos os dias</span>
-              </label>
-
-              <label className="flex items-center gap-1.5 cursor-pointer text-slate-300 ml-2">
-                <input
-                  type="radio"
-                  name="freq"
-                  checked={alertFrequency === 'dias_semana'}
-                  onChange={() => setAlertFrequency('dias_semana')}
-                  className="text-orange-500 bg-slate-900"
-                />
-                <span className="text-[11px]">Dias da semana específicos</span>
-              </label>
+          {/* Frequência do Alerta */}
+          <div className="pt-2 border-t border-white/10">
+            <label className="block text-[11px] font-semibold text-slate-300 mb-1 flex items-center gap-1">
+              <Bell className="w-3.5 h-3.5 text-orange-400" />
+              Notificação / Frequência do Alerta:
+            </label>
+            <div className="grid grid-cols-2 gap-2 mb-2">
+              <button
+                type="button"
+                onClick={() => setAlertFrequency('todos_os_dias')}
+                className={`py-1.5 px-2 rounded-xl text-xs font-semibold border transition-all ${
+                  alertFrequency === 'todos_os_dias'
+                    ? 'bg-orange-500/20 border-orange-500 text-orange-300'
+                    : 'bg-slate-800/60 border-white/10 text-slate-400'
+                }`}
+              >
+                Todos os Dias
+              </button>
+              <button
+                type="button"
+                onClick={() => setAlertFrequency('dias_semana')}
+                className={`py-1.5 px-2 rounded-xl text-xs font-semibold border transition-all ${
+                  alertFrequency === 'dias_semana'
+                    ? 'bg-orange-500/20 border-orange-500 text-orange-300'
+                    : 'bg-slate-800/60 border-white/10 text-slate-400'
+                }`}
+              >
+                Dias Selecionados
+              </button>
             </div>
 
             {alertFrequency === 'dias_semana' && (
-              <div className="pt-1">
-                <span className="block text-[10px] text-slate-400 mb-1">Selecione os dias:</span>
-                <div className="flex gap-1">
-                  {diasDisponiveis.map((d) => (
-                    <button
-                      key={d}
-                      type="button"
-                      onClick={() => toggleDia(d)}
-                      className={`flex-1 py-1 text-[10px] font-bold rounded-lg border transition-all ${
-                        diasSemana.includes(d)
-                          ? 'bg-orange-500 text-white border-orange-400'
-                          : 'bg-slate-900 text-slate-400 border-white/5'
-                      }`}
-                    >
-                      {d}
-                    </button>
-                  ))}
-                </div>
+              <div className="flex gap-1.5 justify-between">
+                {diasDisponiveis.map((dia) => (
+                  <button
+                    key={dia}
+                    type="button"
+                    onClick={() => toggleDia(dia)}
+                    className={`flex-1 py-1 text-center rounded-lg text-[10px] font-bold transition-all ${
+                      diasSemana.includes(dia)
+                        ? 'bg-orange-500 text-slate-950'
+                        : 'bg-slate-800 text-slate-400'
+                    }`}
+                  >
+                    {dia}
+                  </button>
+                ))}
               </div>
             )}
           </div>
 
-          {/* Botão de Conclusão */}
-          <div className="pt-1">
+          {/* Botões de Ação */}
+          <div className="pt-2 flex gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-2.5 rounded-xl border border-white/10 text-xs font-bold text-slate-400 hover:text-white"
+            >
+              Cancelar
+            </button>
             <button
               type="submit"
-              className="w-full py-3 rounded-2xl bg-orange-500 hover:bg-orange-400 text-slate-950 font-extrabold text-xs active-press shadow-glass-glow-orange flex items-center justify-center gap-1.5 transition-all"
+              className="flex-1 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-400 text-slate-950 font-bold text-xs shadow-glass-glow-orange active-press"
             >
-              <Check className="w-4 h-4 stroke-[2.5]" />
-              Cadastrar Demanda & Ativar Alertas
+              Cadastrar Demanda
             </button>
           </div>
         </form>

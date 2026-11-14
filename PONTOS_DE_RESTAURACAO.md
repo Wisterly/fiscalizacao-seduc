@@ -29,6 +29,21 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.024] — Padronização Universal do Seletor de GRE (21 Regionais) na Central de Demandas, Orçamentos/OS e Rotas, Busca Dinâmica de Escolas e Navegação Hierárquica
+- **Data/Hora:** 2026-11-14 00:20 (UTC-3)
+- **Escopos Definidos:**
+  - `PR.024` (Geral): Padronização universal em todos os módulos da aplicação (Central de Demandas, Orçamentos & OS, Rotas de Vistoria e Vistorias/Levantamento) onde a primeira tela obrigatória é o Seletor de GRE oficial das 21 regionais da SEDUC-PI. Cada módulo opera de forma contextualizada na regional escolhida, com botão superior direto de "Trocar GRE" a qualquer momento.
+  - `PR.024.1` (Desktop / Web): Refatoração da Central de Demandas (`DemandasView.tsx` e `NewDemandaModal.tsx`): o cadastro de nova demanda filtra automaticamente e exibe exclusivamente as escolas pertencentes à GRE selecionada. Inclusão de campo de pesquisa instantânea (`Search`) por nome da escola ou município, barra rolável ergonômica com feedback de seleção, e opção de demanda geral para a regional ("Nenhuma / Geral da GRE"). Em Orçamentos e OS, o seletor de municípios é alimentado dinamicamente com os municípios da GRE selecionada, integrado aos dados da planilha da Ata de Manutenção.
+  - `PR.024.2` (Mobile / Android): Integração da navegação hierárquica ao botão e gesto Voltar físico/nativo do Android (`CapApp.addListener('backButton')`): se o usuário estiver dentro de Demandas, Orçamentos ou Rotas com uma GRE ativa, apertar "Voltar" retorna instantaneamente à tela de seleção das 21 GREs daquele módulo, descendo um nível na árvore sem fechar o módulo ou o aplicativo. Sincronização Capacitor e geração do instalador nativo **`Fiscal.IA.apk`** v1.0.19 (Build 20).
+- **Tags Git:** `PR.024`, `PR.024.1`, `PR.024.2`
+- **Arquivo Local do APK:** `c:\Users\Lenovo\Documents\antigravity\LAB - GPR\Fiscal.IA.lab - GPR\Fiscal.IA.apk`
+- **Comando de Restauração Rápida:**
+  ```bash
+  git checkout PR.024
+  ```
+
+---
+
 ### [PR.023] — Interceptação Inteligente do Botão Voltar (Android & Web) com Duplo Toque para Sair, Bate e Volta Otimizado (1.5 e 2.5 d) & Comparativo Maps/Waze vs Hilux 140km/h
 - **Data/Hora:** 2026-11-13 23:58 (UTC-3)
 - **Escopos Definidos:**

@@ -8,13 +8,19 @@ interface GreSelectorProps {
   selectedGreId: string | null;
   onSelectGre: (gre: GRE) => void;
   onToggleFavorite?: (greId: string) => void;
+  titulo?: string;
+  subtitulo?: string;
+  badgeTexto?: string;
 }
 
 export const GreSelector: React.FC<GreSelectorProps> = ({
   gres,
   schools,
   selectedGreId,
-  onSelectGre
+  onSelectGre,
+  titulo = '1. Selecionar a GRE',
+  subtitulo,
+  badgeTexto = '21 Regiões'
 }) => {
   // Ordena rigorosamente de 1 a 21
   const sortedGres = [...gres].sort((a, b) => a.numero - b.numero);
@@ -69,16 +75,23 @@ export const GreSelector: React.FC<GreSelectorProps> = ({
 
   return (
     <div className="w-full flex flex-col justify-start select-none pb-4">
-      {/* Título Superior: 1. Selecionar a GRE */}
+      {/* Título Superior */}
       <div className="flex items-center gap-2 mb-3 px-1">
         <div className="w-6 h-6 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center flex-shrink-0 shadow-[0_0_10px_rgba(245,158,11,0.25)]">
           <MapPin className="w-3.5 h-3.5 text-amber-400 stroke-[2.5]" />
         </div>
-        <h2 className="text-sm sm:text-base font-extrabold text-white tracking-tight leading-none">
-          1. Selecionar a GRE
-        </h2>
+        <div>
+          <h2 className="text-sm sm:text-base font-extrabold text-white tracking-tight leading-none">
+            {titulo}
+          </h2>
+          {subtitulo && (
+            <p className="text-[11px] text-slate-400 mt-0.5">
+              {subtitulo}
+            </p>
+          )}
+        </div>
         <span className="ml-auto text-[10px] font-semibold text-amber-400/90 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
-          21 Regiões
+          {badgeTexto}
         </span>
       </div>
 

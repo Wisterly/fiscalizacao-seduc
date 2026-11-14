@@ -1,11 +1,30 @@
 import React, { useState } from 'react';
-import { AlertOctagon, Plus, CheckCircle2, Circle, Clock, Trash2, Calendar, UserCheck, Bell, Filter, Search } from 'lucide-react';
-import { Demanda, Escola, ResponsavelTipo } from '../../types';
+import { 
+  AlertOctagon, 
+  Plus, 
+  CheckCircle2, 
+  Circle, 
+  Clock, 
+  Trash2, 
+  Calendar, 
+  UserCheck, 
+  Bell, 
+  Filter, 
+  Search,
+  ArrowLeft,
+  MapPin,
+  Building2
+} from 'lucide-react';
+import { Demanda, Escola, GRE, ResponsavelTipo } from '../../types';
 import { NewDemandaModal } from './NewDemandaModal';
+import { GreSelector } from '../vistorias/GreSelector';
 
 interface DemandasViewProps {
   demandas: Demanda[];
   schools: Escola[];
+  gres: GRE[];
+  selectedGre: GRE | null;
+  onSelectGre: (gre: GRE | null) => void;
   onToggleConcluida: (id: string) => void;
   onDeleteDemanda: (id: string) => void;
   onAddDemanda: (demanda: Omit<Demanda, 'id' | 'concluida' | 'dataCriacao'>) => void;
@@ -14,6 +33,9 @@ interface DemandasViewProps {
 export const DemandasView: React.FC<DemandasViewProps> = ({
   demandas,
   schools,
+  gres,
+  selectedGre,
+  onSelectGre,
   onToggleConcluida,
   onDeleteDemanda,
   onAddDemanda
@@ -23,7 +45,33 @@ export const DemandasView: React.FC<DemandasViewProps> = ({
   const [filtroStatus, setFiltroStatus] = useState<'pendentes' | 'concluidas' | 'todas'>('pendentes');
   const [searchTerm, setSearchTerm] = useState('');
 
+  // SE NÃO HOUVER GRE SELECIONADA: Mostra a primeira tela com o GreSelector oficial!
+  if (!selectedGre) {
+    return (
+      <div className="w-full pb-20 pt-1 px-4 animate-fadeIn">
+        <GreSelector
+          gres={gres}
+          schools={schools}
+          selectedGreId={null}
+          titulo="1. Selecionar a GRE para Demandas"
+          subtitulo="Escolha a regional para acompanhar pendências e cadastrar novas demandas"
+          badgeTexto="21 Regiões"
+          onSelectGre={(gre) => onSelectGre(gre)}
+        />
+      </div>
+    );
+  }
+
+  // Escolas da GRE selecionada
+  const schoolsDaGre = schools.filter(s => s.greId === selectedGre.id);
+  const idsEscolasDaGre = new Set(schoolsDaGre.map(s => s.id));
+
+  // Filtra as demandas para a GRE ativa
   const filteredDemandas = demandas.filter(d => {
+    // Pertence à GRE ativa se estiver vinculada a uma escola da GRE ou se for geral
+    const pertenceAGre = d.escolaId ? idsEscolasDaGre.has(d.escolaId) : true;
+    if (!pertenceAGre) return false;
+
     const matchesStatus =
       filtroStatus === 'todas' ||
       (filtroStatus === 'pendentes' && !d.concluida) ||
@@ -40,30 +88,62 @@ export const DemandasView: React.FC<DemandasViewProps> = ({
     return matchesStatus && matchesResp && matchesSearch;
   });
 
-  const pendentesCount = demandas.filter(d => !d.concluida).length;
+  const pendentesCount = demandas.filter(d => {
+    const pertence = d.escolaId ? idsEscolasDaGre.has(d.escolaId) : true;
+    return pertence && !d.concluida;
+  }).length;
 
   return (
-    <div className="w-full pb-20">
+    <div className="w-full pb-20 animate-fadeIn">
+      {/* Barra Superior de Identificação da GRE e Botão Trocar GRE */}
+      <div className="px-4 pt-2 mb-2">
+        <div className="flex items-center justify-between gap-2 p-2 rounded-2xl bg-slate-900/80 border border-white/10 backdrop-blur-md">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onSelectGre(null)}
+              className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center gap-1 text-xs font-bold border border-slate-700 transition-colors shrink-0"
+              title="Voltar ao Seletor de GREs"
+            >
+              <ArrowLeft className="w-3.5 h-3.5 text-amber-400" />
+              <span>Trocar GRE</span>
+            </button>
+            <div className="truncate">
+              <span className="text-xs font-extrabold text-white flex items-center gap-1.5 truncate">
+                <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span>{selectedGre.nome}</span>
+              </span>
+              <span className="text-[10px] text-amber-300/80 block truncate">
+                Sede: {selectedGre.sede} • {schoolsDaGre.length} escolas
+              </span>
+            </div>
+          </div>
+
+          <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20 shrink-0">
+            {String(selectedGre.numero).padStart(2, '0')}ª GRE
+          </span>
+        </div>
+      </div>
+
       {/* Topo do Módulo */}
-      <div className="px-4 pt-2 mb-3">
-        <div className="flex items-center justify-between">
+      <div className="px-4 mb-3">
+        <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-xl bg-orange-500/15 border border-orange-500/30 flex items-center justify-center text-orange-400 shadow-glass-glow-orange">
               <AlertOctagon className="w-4 h-4" />
             </div>
             <div>
               <h2 className="text-sm font-bold text-white tracking-tight leading-none">
-                Central de Demandas & Prazos
+                Demandas & Prazos
               </h2>
               <p className="text-[11px] text-slate-400 mt-0.5">
-                {pendentesCount} {pendentesCount === 1 ? 'pendência ativa' : 'pendências ativas'} • Alertas programados
+                {pendentesCount} {pendentesCount === 1 ? 'pendência ativa' : 'pendências ativas'} nesta regional
               </p>
             </div>
           </div>
 
           <button
             onClick={() => setShowNewModal(true)}
-            className="inline-flex items-center gap-1 text-xs font-bold text-slate-950 px-3 py-1.5 rounded-xl bg-orange-500 hover:bg-orange-400 active-press shadow-glass-glow-orange transition-all"
+            className="inline-flex items-center gap-1 text-xs font-bold text-slate-950 px-3 py-1.5 rounded-xl bg-orange-500 hover:bg-orange-400 active-press shadow-glass-glow-orange transition-all shrink-0"
           >
             <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
             Nova Demanda
@@ -131,8 +211,9 @@ export const DemandasView: React.FC<DemandasViewProps> = ({
       {/* Lista de Demandas */}
       <div className="px-4 space-y-2.5">
         {filteredDemandas.length === 0 ? (
-          <div className="p-6 rounded-2xl bg-slate-900/40 border border-white/5 text-center text-xs text-slate-400">
-            Nenhuma demanda encontrada para os critérios selecionados.
+          <div className="p-6 rounded-2xl bg-slate-900/40 border border-white/5 text-center text-xs text-slate-400 space-y-1">
+            <div className="font-semibold text-slate-300">Nenhuma demanda cadastrada para a {selectedGre.nome}.</div>
+            <p className="text-[11px] text-slate-500">Clique em &quot;Nova Demanda&quot; para cadastrar uma pendência vinculada às escolas desta regional.</p>
           </div>
         ) : (
           filteredDemandas.map((dem) => {
@@ -195,12 +276,12 @@ export const DemandasView: React.FC<DemandasViewProps> = ({
                   {/* Configuração de Alerta e Prazo */}
                   <div className="p-2 rounded-xl bg-black/20 border border-white/5 flex items-center justify-between text-[10px] text-slate-400 mb-2.5 flex-wrap gap-1">
                     <span className="flex items-center gap-1">
-                      <Clock className="w-3 h-3 text-orange-400" />
+                      <Clock className="w-3.5 h-3.5 text-orange-400" />
                       Prazo: <strong className="text-slate-200">{dem.dataLimite}</strong>
                     </span>
 
                     <span className="flex items-center gap-1 text-slate-300">
-                      <Bell className="w-3 h-3 text-orange-400" />
+                      <Bell className="w-3.5 h-3.5 text-orange-400" />
                       {dem.alertFrequency === 'todos_os_dias'
                         ? 'Alerta: Todos os dias'
                         : `Alerta: ${dem.diasSemana.join(', ')}`}
@@ -232,10 +313,11 @@ export const DemandasView: React.FC<DemandasViewProps> = ({
         )}
       </div>
 
-      {/* Modal para Nova Demanda */}
+      {/* Modal para Nova Demanda (com as escolas da GRE selecionada) */}
       {showNewModal && (
         <NewDemandaModal
-          schools={schools}
+          schools={schoolsDaGre}
+          gre={selectedGre}
           onAddDemanda={onAddDemanda}
           onClose={() => setShowNewModal(false)}
         />

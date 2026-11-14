@@ -24,9 +24,11 @@ import {
   Users,
   Timer,
   Zap,
-  SlidersHorizontal
+  SlidersHorizontal,
+  ArrowLeft
 } from 'lucide-react';
 import { Escola, GRE, RotaVistoria } from '../../types';
+import { GreSelector } from '../vistorias/GreSelector';
 import { 
   DiariaOption, 
   PlanoViagem, 
@@ -38,6 +40,8 @@ import {
 interface RotasViewProps {
   schools: Escola[];
   gres: GRE[];
+  selectedGre?: GRE | null;
+  onSelectGre?: (gre: GRE | null) => void;
   rotas?: RotaVistoria[];
   onSaveRota?: (rota: RotaVistoria) => void;
   onConcluirRota?: (rotaId: string) => void;
@@ -47,16 +51,23 @@ interface RotasViewProps {
 export const RotasView: React.FC<RotasViewProps> = ({
   schools,
   gres,
+  selectedGre,
+  onSelectGre,
   onSelectSchool
 }) => {
+  const [internalSelectedGre, setInternalSelectedGre] = useState<GRE | null>(null);
+  const activeGre = selectedGre !== undefined ? selectedGre : internalSelectedGre;
+
+  const setActiveGre = (g: GRE | null) => {
+    if (onSelectGre) {
+      onSelectGre(g);
+    } else {
+      setInternalSelectedGre(g);
+    }
+  };
+
   // Estado das Sub-Abas: Trajeto vs Prioridade
   const [subTab, setSubTab] = useState<'trajeto' | 'prioridade'>('trajeto');
-
-  // Parâmetros de Viagem
-  const [selectedGreId, setSelectedGreId] = useState<string>(() => {
-    const gre8 = gres.find(g => g.numero === 8 || g.id === 'gre-08');
-    return gre8 ? gre8.id : (gres[0]?.id || 'gre-08');
-  });
 
   const [selectedDiaria, setSelectedDiaria] = useState<DiariaOption>('1.5');
   const [duracaoDiasCustom, setDuracaoDiasCustom] = useState<number | undefined>(undefined);
@@ -111,28 +122,37 @@ export const RotasView: React.FC<RotasViewProps> = ({
     setEscolasRemovidasIds([]);
   };
 
-  // Identifica GRE Ativa
-  const greAtiva = useMemo(() => {
-    return gres.find(g => g.id === selectedGreId) || gres[0] || {
-      id: 'gre-08',
-      numero: 8,
-      nome: '08ª GRE - Oeiras',
-      sede: 'Oeiras',
-      municipios: ['Oeiras', 'Santo Inácio do Piauí', 'Santa Rosa do Piauí'],
-      isFavorite: false
-    };
-  }, [gres, selectedGreId]);
-
   // Escolas elegíveis para a rota (excluindo as que o usuário retirou)
   const escolasElegiveis = useMemo(() => {
-    if (escolasRemovidasIds.length === 0) return schools;
-    return schools.filter(s => !escolasRemovidasIds.includes(s.id));
-  }, [schools, escolasRemovidasIds]);
+    if (!activeGre) return [];
+    const base = schools.filter(s => s.greId === activeGre.id);
+    if (escolasRemovidasIds.length === 0) return base;
+    return base.filter(s => !escolasRemovidasIds.includes(s.id));
+  }, [schools, activeGre, escolasRemovidasIds]);
 
   // Gera o Plano de Viagem Inteligente com suporte a compactação de dias e comparativo Google Maps/Waze
   const planoViagem: PlanoViagem = useMemo(() => {
-    return gerarPlanoDeViagem(subTab, escolasElegiveis, greAtiva, selectedDiaria, duracaoDiasCustom);
-  }, [subTab, escolasElegiveis, greAtiva, selectedDiaria, duracaoDiasCustom]);
+    if (!activeGre) {
+      return {
+        tipoRota: subTab,
+        gre: gres[0] || { id: 'gre-01', numero: 1, nome: '01ª GRE', sede: 'Parnaíba', municipios: [], isFavorite: false },
+        diaria: selectedDiaria,
+        cidadePolo: 'Parnaíba',
+        duracaoDiasReal: 1,
+        duracoesDisponiveis: [1],
+        totalKm: 0,
+        tempoEstradaHoras: '0h',
+        tempoEstradaGoogleMapsHoras: '0h',
+        economiaTotalEstradaHoras: '0h',
+        totalEscolasAtendidas: 0,
+        veiculoInfo: 'S10 / Hilux',
+        velocidadeCruzeiro: '140 km/h',
+        horarioFinalPrevisto: '21:00h',
+        dias: []
+      };
+    }
+    return gerarPlanoDeViagem(subTab, escolasElegiveis, activeGre, selectedDiaria, duracaoDiasCustom);
+  }, [subTab, escolasElegiveis, activeGre, selectedDiaria, duracaoDiasCustom, gres]);
 
   // Handler de alteração de diária (redefine a duração personalizada)
   const handleSelectDiaria = (novaDiaria: DiariaOption) => {
@@ -200,6 +220,24 @@ export const RotasView: React.FC<RotasViewProps> = ({
     }
   };
 
+  // SE NÃO HOUVER GRE SELECIONADA: Mostra a primeira tela com o GreSelector oficial!
+  if (!activeGre) {
+    return (
+      <div className="w-full pb-20 pt-1 px-4 animate-fadeIn">
+        <GreSelector
+          gres={gres}
+          schools={schools}
+          selectedGreId={null}
+          titulo="1. Selecionar a GRE para Rotas de Vistoria"
+          subtitulo="Escolha a regional para planejar o roteiro otimizado por trajeto ou prioridade"
+          badgeTexto="21 Regiões"
+          onSelectGre={setActiveGre}
+        />
+      </div>
+    );
+  }
+
+  const greAtiva = activeGre;
   const isBateVolta = planoViagem.duracaoDiasReal === 1;
 
   return (
@@ -314,11 +352,11 @@ export const RotasView: React.FC<RotasViewProps> = ({
                 </div>
               </div>
               <button
-                onClick={() => setModalGreAberto(true)}
-                className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl border border-slate-700 text-xs font-bold flex items-center gap-1.5 transition-colors shrink-0"
-                title="Trocar GRE"
+                onClick={() => setActiveGre(null)}
+                className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl border border-slate-700 text-xs font-bold flex items-center gap-1.5 transition-colors shrink-0"
+                title="Voltar ao Seletor de GREs"
               >
-                <Filter className="w-3.5 h-3.5 text-amber-400" />
+                <ArrowLeft className="w-3.5 h-3.5 text-amber-400" />
                 <span>Trocar</span>
               </button>
             </div>
@@ -886,14 +924,14 @@ export const RotasView: React.FC<RotasViewProps> = ({
                   );
                 })
                 .map((gre) => {
-                  const isSelected = gre.id === selectedGreId;
+                  const isSelected = gre.id === greAtiva.id;
                   const totalEsc = schools.filter(s => s.greId === gre.id).length;
 
                   return (
                     <button
                       key={gre.id}
                       onClick={() => {
-                        setSelectedGreId(gre.id);
+                        setActiveGre(gre);
                         setModalGreAberto(false);
                       }}
                       className={`p-3 rounded-xl border text-left transition-all relative flex flex-col justify-between ${

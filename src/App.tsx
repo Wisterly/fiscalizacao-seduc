@@ -69,6 +69,11 @@ export function App() {
   const [selectedGre, setSelectedGre] = useState<GRE | null>(null);
   const [selectedSchool, setSelectedSchool] = useState<Escola | null>(null);
 
+  // Seletores de GRE para os módulos Demandas, Orçamentos e Rotas
+  const [selectedDemandasGre, setSelectedDemandasGre] = useState<GRE | null>(null);
+  const [selectedOrcamentosGre, setSelectedOrcamentosGre] = useState<GRE | null>(null);
+  const [selectedRotasGre, setSelectedRotasGre] = useState<GRE | null>(null);
+
   // Modais de Vistoria
   const [schoolForNewLevantamento, setSchoolForNewLevantamento] = useState<Escola | null>(null);
   const [reportModalData, setReportModalData] = useState<{ levantamento: Levantamento; school?: Escola } | null>(null);
@@ -117,25 +122,51 @@ export function App() {
       return true;
     }
 
-    // 2. Se estiver no perfil de uma escola, volta para a lista da GRE
+    // 2. Se estiver no perfil de uma escola (Vistorias), volta para a lista da GRE
     if (selectedSchool) {
       setSelectedSchool(null);
       return true;
     }
 
-    // 3. Se estiver na lista de escolas de uma GRE, volta para o seletor das 21 GREs
+    // 3. Se estiver na lista de escolas de uma GRE (Vistorias), volta para o seletor das 21 GREs
     if (selectedGre) {
       setSelectedGre(null);
       return true;
     }
 
-    // 4. Se estiver em uma subview (ex: 'rotas' ou 'orcamentos'), volta para a tela inicial do módulo
+    // 4. Se estiver em Rotas com GRE selecionada, volta para o seletor de GRE de Rotas
+    if (subView === 'rotas') {
+      if (selectedRotasGre) {
+        setSelectedRotasGre(null);
+        return true;
+      }
+      setSubView('none');
+      return true;
+    }
+
+    // 5. Se estiver em Orçamentos com GRE selecionada, volta para o seletor de GRE de Orçamentos
+    if (subView === 'orcamentos') {
+      if (selectedOrcamentosGre) {
+        setSelectedOrcamentosGre(null);
+        return true;
+      }
+      setSubView('none');
+      return true;
+    }
+
+    // 6. Se estiver na Central de Demandas com uma GRE selecionada, volta para o seletor de GRE de Demandas
+    if (activeTab === 'demandas' && selectedDemandasGre) {
+      setSelectedDemandasGre(null);
+      return true;
+    }
+
+    // 7. Se estiver em uma subview genérica, fecha a subview
     if (subView !== 'none') {
       setSubView('none');
       return true;
     }
 
-    // 5. Se estiver em outra aba que não seja a 'inicio', volta para a última aba visitada
+    // 8. Se estiver em outra aba que não seja a 'inicio', volta para a última aba visitada
     if (activeTab !== 'inicio') {
       setTabHistory(prev => {
         if (prev.length > 1) {
@@ -152,7 +183,7 @@ export function App() {
       return true;
     }
 
-    // 6. Está na aba inicial ('inicio') e na tela inicial do app:
+    // 9. Está na aba inicial ('inicio') e na tela inicial do app:
     // Regra do duplo toque para sair!
     const now = Date.now();
     if (now - lastBackPressRef.current < 2000) {
@@ -177,6 +208,9 @@ export function App() {
     updateModalData,
     selectedSchool,
     selectedGre,
+    selectedDemandasGre,
+    selectedOrcamentosGre,
+    selectedRotasGre,
     subView,
     activeTab
   ]);
@@ -480,9 +514,17 @@ export function App() {
                 ordensServico={ordensServico}
                 gres={gres}
                 schools={schools}
+                selectedGre={selectedOrcamentosGre}
+                onSelectGre={setSelectedOrcamentosGre}
                 onUpdateMedicao={handleUpdateMedicaoOS}
                 targetOsId={targetOsId}
-                onBack={() => setSubView('none')}
+                onBack={() => {
+                  if (selectedOrcamentosGre) {
+                    setSelectedOrcamentosGre(null);
+                  } else {
+                    setSubView('none');
+                  }
+                }}
               />
             </div>
           )}
@@ -496,6 +538,8 @@ export function App() {
                 rotas={rotas}
                 schools={schools}
                 gres={gres}
+                selectedGre={selectedRotasGre}
+                onSelectGre={setSelectedRotasGre}
                 onSaveRota={handleSaveRota}
                 onConcluirRota={handleConcluirRota}
                 onSelectSchool={(school) => {
@@ -570,6 +614,9 @@ export function App() {
               <DemandasView
                 demandas={demandas}
                 schools={schools}
+                gres={gres}
+                selectedGre={selectedDemandasGre}
+                onSelectGre={setSelectedDemandasGre}
                 onToggleConcluida={handleToggleDemandaConcluida}
                 onDeleteDemanda={handleDeleteDemanda}
                 onAddDemanda={handleAddDemanda}

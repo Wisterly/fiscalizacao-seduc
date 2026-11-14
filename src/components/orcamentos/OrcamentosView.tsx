@@ -11,11 +11,14 @@ import {
   X,
   Paperclip,
   Download,
-  RefreshCw
+  RefreshCw,
+  ArrowLeft,
+  MapPin
 } from 'lucide-react';
 import { OrdemServico, GRE, Escola } from '../../types';
 import { DocumentPreviewModal } from './DocumentPreviewModal';
 import { AttachOSModal } from './AttachOSModal';
+import { GreSelector } from '../vistorias/GreSelector';
 import { syncAtaFromGoogleSheets } from '../../services/sheetsSyncService';
 import { storage } from '../../services/storageService';
 
@@ -23,6 +26,8 @@ interface OrcamentosViewProps {
   ordensServico: OrdemServico[];
   gres: GRE[];
   schools: Escola[];
+  selectedGre?: GRE | null;
+  onSelectGre?: (gre: GRE | null) => void;
   onUpdateMedicao: (osId: string, novoPercentual: number, novaObservacao?: string) => void;
   onSaveOS?: (os: OrdemServico) => void;
   targetOsId?: string;
@@ -33,14 +38,26 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
   ordensServico,
   gres,
   schools,
+  selectedGre,
+  onSelectGre,
   onUpdateMedicao,
   onSaveOS,
   targetOsId,
   onBack
 }) => {
-  // Filtros principais conforme imagem de referência: GRE 01 e Teresina
-  const [selectedGreId, setSelectedGreId] = useState<string>('gre-01');
-  const [selectedMunicipio, setSelectedMunicipio] = useState<string>('Teresina');
+  const [internalSelectedGre, setInternalSelectedGre] = useState<GRE | null>(null);
+  const activeGre = selectedGre !== undefined ? selectedGre : internalSelectedGre;
+
+  const setActiveGre = (g: GRE | null) => {
+    if (onSelectGre) {
+      onSelectGre(g);
+    } else {
+      setInternalSelectedGre(g);
+    }
+    setSelectedMunicipio('todos');
+  };
+
+  const [selectedMunicipio, setSelectedMunicipio] = useState<string>('todos');
   const [abaStatus, setAbaStatus] = useState<'ativa' | 'historico'>('ativa');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -77,15 +94,37 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
     }
   };
 
-  // Lista única de municípios para o dropdown
-  const todosMunicipios = Array.from(
-    new Set(ordensServico.map((os) => os.municipio).concat(schools.map((s) => s.municipio)))
+  // SE NÃO HOUVER GRE SELECIONADA: Mostra a primeira tela com o GreSelector oficial!
+  if (!activeGre) {
+    return (
+      <div className="w-full pb-20 pt-1 px-4 animate-fadeIn">
+        <GreSelector
+          gres={gres}
+          schools={schools}
+          selectedGreId={null}
+          titulo="1. Selecionar a GRE para Orçamentos e OS"
+          subtitulo="Acompanhe ordens de serviço, contratos da ata e medições físicas"
+          badgeTexto="21 Regiões"
+          onSelectGre={setActiveGre}
+        />
+      </div>
+    );
+  }
+
+  // Municípios da GRE selecionada
+  const municipiosDaGre = Array.from(
+    new Set(
+      ordensServico
+        .filter((os) => os.greId === activeGre.id)
+        .map((os) => os.municipio)
+        .concat(schools.filter((s) => s.greId === activeGre.id).map((s) => s.municipio))
+    )
   ).sort();
 
-  // Filtragem das Ordens de Serviço
+  // Filtragem das Ordens de Serviço estritamente para a GRE selecionada
   const osFiltradas = ordensServico.filter((os) => {
     const matchesAba = os.status === abaStatus;
-    const matchesGre = selectedGreId === 'todas' || os.greId === selectedGreId;
+    const matchesGre = os.greId === activeGre.id;
     const matchesMun = selectedMunicipio === 'todos' || os.municipio === selectedMunicipio;
     const matchesSearch =
       !searchTerm ||
@@ -109,50 +148,51 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
     setNovaObservacao('');
   };
 
-  // Nome legível da GRE selecionada
-  const selectedGreName =
-    selectedGreId === 'todas'
-      ? 'Todas as GREs'
-      : gres.find((g) => g.id === selectedGreId)?.nome || 'GRE 01';
-
   return (
-    <div className="w-full pb-20 pt-1">
-      {/* 1. SELETORES SUPERIORES LADO A LADO (GRE e MUNICÍPIO) */}
-      <div className="px-4 mb-3">
-        <div className="grid grid-cols-2 gap-2.5">
-          {/* Seletor de GRE */}
-          <div className="relative">
-            <select
-              value={selectedGreId}
-              onChange={(e) => setSelectedGreId(e.target.value)}
-              className="w-full appearance-none bg-slate-900/80 border border-white/10 rounded-2xl px-3.5 py-2.5 pr-8 text-xs font-semibold text-white focus:outline-none focus:border-amber-400 backdrop-blur-md cursor-pointer shadow-sm"
+    <div className="w-full pb-20 pt-1 animate-fadeIn">
+      {/* 1. SELETORES SUPERIORES (GRE e MUNICÍPIO) */}
+      <div className="px-4 mb-3 space-y-2">
+        <div className="flex items-center justify-between gap-2 p-2 rounded-2xl bg-slate-900/80 border border-white/10 backdrop-blur-md">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setActiveGre(null)}
+              className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center gap-1 text-xs font-bold border border-slate-700 transition-colors shrink-0"
+              title="Voltar ao Seletor de GREs"
             >
-              <option value="todas">Todas as GREs</option>
-              {gres.map((g) => (
-                <option key={g.id} value={g.id} className="bg-slate-900 text-white">
-                  {g.nome.length > 20 ? `${g.nome.slice(0, 18)}...` : g.nome}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-3 pointer-events-none" />
+              <ArrowLeft className="w-3.5 h-3.5 text-amber-400" />
+              <span>Trocar GRE</span>
+            </button>
+            <div className="truncate">
+              <span className="text-xs font-extrabold text-white flex items-center gap-1.5 truncate">
+                <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span>{activeGre.nome}</span>
+              </span>
+              <span className="text-[10px] text-amber-300/80 block truncate">
+                Sede: {activeGre.sede}
+              </span>
+            </div>
           </div>
 
-          {/* Seletor de Município */}
-          <div className="relative">
-            <select
-              value={selectedMunicipio}
-              onChange={(e) => setSelectedMunicipio(e.target.value)}
-              className="w-full appearance-none bg-slate-900/80 border border-white/10 rounded-2xl px-3.5 py-2.5 pr-8 text-xs font-semibold text-white focus:outline-none focus:border-amber-400 backdrop-blur-md cursor-pointer shadow-sm"
-            >
-              <option value="todos">Todos os Municípios</option>
-              {todosMunicipios.map((m) => (
-                <option key={m} value={m} className="bg-slate-900 text-white">
-                  {m}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-3 pointer-events-none" />
-          </div>
+          <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20 shrink-0">
+            {String(activeGre.numero).padStart(2, '0')}ª GRE
+          </span>
+        </div>
+
+        {/* Seletor de Município da GRE */}
+        <div className="relative">
+          <select
+            value={selectedMunicipio}
+            onChange={(e) => setSelectedMunicipio(e.target.value)}
+            className="w-full appearance-none bg-slate-900/80 border border-white/10 rounded-2xl px-3.5 py-2.5 pr-8 text-xs font-semibold text-white focus:outline-none focus:border-amber-400 backdrop-blur-md cursor-pointer shadow-sm"
+          >
+            <option value="todos">Todos os Municípios ({activeGre.nome})</option>
+            {municipiosDaGre.map((mun) => (
+              <option key={mun} value={mun} className="bg-slate-900 text-white">
+                {mun}
+              </option>
+            ))}
+          </select>
+          <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-3 pointer-events-none" />
         </div>
       </div>
 
