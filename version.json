@@ -1,14 +1,15 @@
 {
-  "version": "1.0.19",
-  "buildNumber": 20,
+  "version": "1.0.20",
+  "buildNumber": 21,
   "releaseDate": "2026-11-14",
   "minRequiredVersion": "1.0.0",
   "downloadUrl": "https://github.com/Wisterly/fiscalizacao-seduc/releases/download/apk-latest/Fiscal.IA.apk",
   "changelog": [
-    "Seletor de GRE oficial das 21 regionais como primeira tela na Central de Demandas, Orçamentos & OS e Rotas",
-    "Filtro inteligente de escolas por GRE ao cadastrar Nova Demanda com pesquisa instantânea e rolagem suave",
-    "Demandas exibidas e filtradas por regional selecionada com botão direto de 'Trocar GRE'",
-    "Filtro por municípios da GRE em Orçamentos e OS integrado à planilha da Ata de Manutenção",
-    "Navegação integrada ao botão/gesto Voltar do Android: retorna ao Seletor de GRE antes de fechar a aba"
+    "Calendário Interativo de Viagem com seleção de mês/ano e cálculo de retorno exato (o meio é a volta)",
+    "Matriz oficial de diárias SEDUC: 1.5d (2 dias), 2.5d (3 dias), 3.5d (4 dias), 4.5d (5 dias) e compactação para bate e volta",
+    "Limpeza total dos dados fictícios de exemplo: aplicativo 100% limpo pronto para cadastro de demandas e vistorias reais",
+    "Verificação ultrarrápida de atualizações na inicialização reduzida de 8s para menos de 2s",
+    "Gesto Pull-to-Refresh em todas as abas: arraste para baixo elástico, spinner de carregamento e check verde de confirmação",
+    "Otimização de bundle e carregamento modular com split de chunks (React, Capacitor e Core)"
   ]
 }

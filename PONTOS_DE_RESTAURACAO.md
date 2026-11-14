@@ -29,6 +29,21 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.025] — Calendário Interativo de Viagem com Matriz Real de Diárias SEDUC, Reset Completo de Mocks, Varredura Rápida (<2s), Gesto Pull-to-Refresh com Check Verde e Otimização de Chunks
+- **Data/Hora:** 2026-11-14 01:45 (UTC-3)
+- **Escopos Definidos:**
+  - `PR.025` (Geral): Limpeza total e reset de todos os dados fictícios e exemplos em `seedData.ts` e `storageService.ts` (demandas, alertas, tarefas, levantamentos fotográficos mockados e rotas fictícias zerados, mantendo unicamente a base oficial das 21 GREs, escolas INEP e ordens de serviço da Ata de Manutenção). Varredura de atualização OTA na inicialização reduzida de 8s para no máximo 1.5s a 2s.
+  - `PR.025.1` (Desktop / Web): Implementação do Calendário Interativo de Rotas (`CalendarioRotaModal.tsx`) com navegação de mês/ano, seleção da data de saída e cálculo automático do retorno respeitando rigorosamente a matriz operacional da SEDUC ("o meio é a volta"): 1.5d (2 dias de viagem: ex. 16 a 17), 2.5d (3 dias: ex. 16 a 18), 3.5d (4 dias: ex. 16 a 19), 4.5d (5 dias: ex. 16 a 20) com recálculo automático em tempo real ao alterar a quantidade de diárias ou ao compactar dias em campo.
+  - `PR.025.2` (Mobile / Android): Integração universal do gesto Pull-to-Refresh (`PullToRefresh.tsx`) com resistência física elástica no topo da tela em todas as abas. Ao soltar, animação com spinner circular de carregamento sincronizando dados locais e checando atualizações na nuvem; ao finalizar, a bolinha se transforma na marca de check verde estilo Nike / Esmeralda (`Check` stroke 3) e some automaticamente em 1.8 segundos. Otimização do Vite com divisão inteligente de chunks (`vendor-react`, `vendor-capacitor`, `vendor-icons`), reduzindo o footprint e acelerando a abertura no Android. Geração do instalador nativo **`Fiscal.IA.apk`** v1.0.20 (Build 21).
+- **Tags Git:** `PR.025`, `PR.025.1`, `PR.025.2`
+- **Arquivo Local do APK:** `c:\Users\Lenovo\Documents\antigravity\LAB - GPR\Fiscal.IA.lab - GPR\Fiscal.IA.apk`
+- **Comando de Restauração Rápida:**
+  ```bash
+  git checkout PR.025
+  ```
+
+---
+
 ### [PR.024] — Padronização Universal do Seletor de GRE (21 Regionais) na Central de Demandas, Orçamentos/OS e Rotas, Busca Dinâmica de Escolas e Navegação Hierárquica
 - **Data/Hora:** 2026-11-14 00:20 (UTC-3)
 - **Escopos Definidos:**

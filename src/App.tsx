@@ -35,6 +35,7 @@ import { DemandasView } from './components/demandas/DemandasView';
 import { GaleriaView } from './components/galeria/GaleriaView';
 import { ConfigView } from './components/config/ConfigView';
 import { UpdateModal } from './components/UpdateModal';
+import { PullToRefresh } from './components/common/PullToRefresh';
 import { checkForUpdate, VersionMetadata, AppInfo } from './utils/appUpdater';
 
 export function App() {
@@ -87,7 +88,34 @@ export function App() {
     installedInfo: AppInfo;
   } | null>(null);
 
-  // Checagem silenciosa de atualização OTA após 8 segundos da abertura
+  // Função global de sincronização e atualização (usada no pull-to-refresh e recarregamentos)
+  const handleRefreshGlobal = useCallback(async () => {
+    // 1. Recarrega dados limpos do storage local
+    setGres(storage.getGREs());
+    setSchools(storage.getSchools());
+    setAmbientes(storage.getAmbientes());
+    setOrdensServico(storage.getOrdensServico());
+    setAlertas(storage.getAlertas());
+    setDemandas(storage.getDemandas());
+    setTarefas(storage.getTarefas());
+    setLevantamentos(storage.getLevantamentos());
+    setRotas(storage.getRotas());
+
+    // 2. Varredura instantânea de atualização OTA
+    try {
+      const res = await checkForUpdate();
+      if (res.hasUpdate && res.metadata) {
+        setUpdateModalData({
+          metadata: res.metadata,
+          installedInfo: res.installed
+        });
+      }
+    } catch (err) {
+      console.warn('Checagem OTA no refresh:', err);
+    }
+  }, []);
+
+  // Varredura de atualização OTA na inicialização do aplicativo (em até 1.5 a 2 segundos)
   useEffect(() => {
     const timer = setTimeout(async () => {
       try {
@@ -99,9 +127,9 @@ export function App() {
           });
         }
       } catch (err) {
-        console.warn('Checagem OTA em background:', err);
+        console.warn('Checagem OTA rápida inicial:', err);
       }
-    }, 8000);
+    }, 1500);
 
     return () => clearTimeout(timer);
   }, []);
@@ -458,11 +486,12 @@ export function App() {
           }}
         />
 
-        {/* ÁREA DE CONTEÚDO PRINCIPAL COM SCROLL */}
+        {/* ÁREA DE CONTEÚDO PRINCIPAL COM SCROLL & PULL-TO-REFRESH */}
         <main className="flex-1 overflow-y-auto no-scrollbar pb-16">
-          {/* ======================================= */}
-          {/* ABA 1: INÍCIO (DASHBOARD CENTRAL)       */}
-          {/* ======================================= */}
+          <PullToRefresh onRefresh={handleRefreshGlobal}>
+            {/* ======================================= */}
+            {/* ABA 1: INÍCIO (DASHBOARD CENTRAL)       */}
+            {/* ======================================= */}
           {activeTab === 'inicio' && subView === 'none' && (
             <div className="animate-fadeIn">
               {/* 1. Carrossel Horizontal de Alertas Urgentes (Swipeable) */}
@@ -649,6 +678,7 @@ export function App() {
               />
             </div>
           )}
+          </PullToRefresh>
         </main>
 
         {/* BARRA DE NAVEGAÇÃO INFERIOR FIXA */}

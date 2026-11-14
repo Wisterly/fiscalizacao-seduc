@@ -24,18 +24,44 @@ import {
 
 const STORAGE_KEYS = {
   GRES: 'seduc_fiscal_gres_v4',
-  SCHOOLS: 'seduc_fiscal_schools_inep_v5',
+  SCHOOLS: 'seduc_fiscal_schools_inep_v6',
   AMBIENTES: 'seduc_fiscal_ambientes_v1',
   OS: 'seduc_fiscal_os_v2',
-  ALERTAS: 'seduc_fiscal_alertas_v1',
-  DEMANDAS: 'seduc_fiscal_demandas_v1',
-  TAREFAS: 'seduc_fiscal_tarefas_v1',
-  LEVANTAMENTOS: 'seduc_fiscal_levantamentos_v1',
-  ROTAS: 'seduc_fiscal_rotas_v1',
+  ALERTAS: 'seduc_fiscal_alertas_v2',
+  DEMANDAS: 'seduc_fiscal_demandas_v2',
+  TAREFAS: 'seduc_fiscal_tarefas_v2',
+  LEVANTAMENTOS: 'seduc_fiscal_levantamentos_v2',
+  ROTAS: 'seduc_fiscal_rotas_v2',
   LAST_SYNC: 'seduc_fiscal_last_sync_v1'
 };
 
 class StorageService {
+  constructor() {
+    this.migrarELimparExemplos();
+  }
+
+  /**
+   * Remove chaves legadas contendo dados de exemplo e inicializa o app 100% limpo
+   */
+  private migrarELimparExemplos(): void {
+    try {
+      const chavesAntigas = [
+        'seduc_fiscal_alertas_v1',
+        'seduc_fiscal_demandas_v1',
+        'seduc_fiscal_tarefas_v1',
+        'seduc_fiscal_levantamentos_v1',
+        'seduc_fiscal_rotas_v1',
+        'seduc_fiscal_schools_inep_v5'
+      ];
+      chavesAntigas.forEach(k => {
+        if (localStorage.getItem(k) !== null) {
+          localStorage.removeItem(k);
+        }
+      });
+    } catch (e) {
+      console.warn('Erro ao limpar dados de exemplo legados:', e);
+    }
+  }
   private getItem<T>(key: string, defaultValue: T): T {
     try {
       const item = localStorage.getItem(key);

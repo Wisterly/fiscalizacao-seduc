@@ -397,6 +397,25 @@ export function prepararEscolasParaRota(schools: Escola[], gre: GRE): EscolaObra
  * 4. 4.5 diárias: Padrão 3 dias (2 pernoites na Cidade-Polo 19h-20h), podendo compactar para 2 dias ou 1 dia.
  * 5. Comparativo Google Maps / Waze vs S10 / Hilux a 140 km/h integrado em cada trecho.
  */
+/**
+ * Calcula a quantidade oficial de dias de viagem da SEDUC com base nas diárias.
+ * Regra: a meia diária (0.5) conta como o dia do retorno da equipe a Teresina.
+ * Exemplo prático do usuário (partindo segunda-feira dia 16):
+ * - 1.5 diárias: 2 dias de viagem (volta na terça-feira dia 17).
+ * - 2.5 diárias: 3 dias de viagem (volta na quarta-feira dia 18).
+ * - 3.5 diárias: 4 dias de viagem (volta na quinta-feira dia 19).
+ * - 4.5 diárias: 5 dias de viagem (volta na sexta-feira dia 20).
+ */
+export function calcularDiasPorDiaria(diaria: DiariaOption): number {
+  switch (diaria) {
+    case '1.5': return 2;
+    case '2.5': return 3;
+    case '3.5': return 4;
+    case '4.5': return 5;
+    default: return 2;
+  }
+}
+
 export function gerarPlanoDeViagem(
   tipoRota: 'trajeto' | 'prioridade',
   schools: Escola[],
@@ -410,17 +429,16 @@ export function gerarPlanoDeViagem(
 
   // Determina as durações permitidas e a duração ativa
   let duracoesDisponiveis: number[] = [1];
-  let duracaoPadrao = 1;
+  let duracaoPadrao = calcularDiasPorDiaria(diaria);
 
-  if (diaria === '1.5' || diaria === '2.5') {
-    duracoesDisponiveis = [1];
-    duracaoPadrao = 1;
-  } else if (diaria === '3.5') {
+  if (diaria === '1.5') {
     duracoesDisponiveis = [2, 1];
-    duracaoPadrao = 2;
-  } else if (diaria === '4.5') {
+  } else if (diaria === '2.5') {
     duracoesDisponiveis = [3, 2, 1];
-    duracaoPadrao = 3;
+  } else if (diaria === '3.5') {
+    duracoesDisponiveis = [4, 3, 2, 1];
+  } else if (diaria === '4.5') {
+    duracoesDisponiveis = [5, 4, 3, 2, 1];
   }
 
   const duracaoDiasReal = (duracaoDiasDesejada && duracoesDisponiveis.includes(duracaoDiasDesejada))

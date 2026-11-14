@@ -29,11 +29,13 @@ import {
 } from 'lucide-react';
 import { Escola, GRE, RotaVistoria } from '../../types';
 import { GreSelector } from '../vistorias/GreSelector';
+import { CalendarioRotaModal } from './CalendarioRotaModal';
 import { 
   DiariaOption, 
   PlanoViagem, 
   gerarPlanoDeViagem, 
   formatarPlanoParaWhatsApp,
+  calcularDiasPorDiaria,
   ResultadoAnalisePrioridade 
 } from '../../services/rotasEngine';
 
@@ -73,6 +75,7 @@ export const RotasView: React.FC<RotasViewProps> = ({
   const [duracaoDiasCustom, setDuracaoDiasCustom] = useState<number | undefined>(undefined);
   const [copiadoWhatsapp, setCopiadoWhatsapp] = useState(false);
   const [modalGreAberto, setModalGreAberto] = useState(false);
+  const [modalCalendarioAberto, setModalCalendarioAberto] = useState(false);
   const [filtroGreBusca, setFiltroGreBusca] = useState('');
 
   // Equipe de Campo / Pessoas na Rota (Persistido no localStorage)
@@ -154,10 +157,57 @@ export const RotasView: React.FC<RotasViewProps> = ({
     return gerarPlanoDeViagem(subTab, escolasElegiveis, activeGre, selectedDiaria, duracaoDiasCustom);
   }, [subTab, escolasElegiveis, activeGre, selectedDiaria, duracaoDiasCustom, gres]);
 
-  // Handler de alteração de diária (redefine a duração personalizada)
+  // Recalcula a data de volta com base na diária (a meia diária é a volta)
+  const recalcularDataFinal = (diariaTarget: DiariaOption, duracaoTarget?: number) => {
+    try {
+      const isoInicio = localStorage.getItem('seduc_rotas_data_inicio_iso');
+      if (isoInicio) {
+        const [ano, mes, dia] = isoInicio.split('-').map(Number);
+        if (ano && mes && dia) {
+          const inicio = new Date(ano, mes - 1, dia);
+          const dias = duracaoTarget !== undefined ? duracaoTarget : calcularDiasPorDiaria(diariaTarget);
+          const fim = new Date(inicio);
+          fim.setDate(fim.getDate() + (dias - 1));
+
+          const pad = (n: number) => String(n).padStart(2, '0');
+          const dInicio = pad(inicio.getDate());
+          const mInicio = pad(inicio.getMonth() + 1);
+          const aInicio = inicio.getFullYear();
+
+          const dFim = pad(fim.getDate());
+          const mFim = pad(fim.getMonth() + 1);
+          const aFim = fim.getFullYear();
+
+          const novoPeriodo = dias === 1
+            ? `${dInicio}/${mInicio}/${aInicio}`
+            : `${dInicio}/${mInicio} á ${dFim}/${mFim}/${aFim}`;
+
+          handleDataPeriodoChange(novoPeriodo);
+        }
+      }
+    } catch (err) {
+      console.warn('Erro ao recalcular data final:', err);
+    }
+  };
+
+  // Handler de alteração de diária (redefine a duração personalizada e recalcula automaticamente o período)
   const handleSelectDiaria = (novaDiaria: DiariaOption) => {
     setSelectedDiaria(novaDiaria);
     setDuracaoDiasCustom(undefined);
+    recalcularDataFinal(novaDiaria, undefined);
+  };
+
+  const handleCustomDuracao = (dias: number) => {
+    setDuracaoDiasCustom(dias);
+    recalcularDataFinal(selectedDiaria, dias);
+  };
+
+  const handleConfirmarDataCalendario = (periodoFormatado: string, isoInicio: string) => {
+    handleDataPeriodoChange(periodoFormatado);
+    try {
+      localStorage.setItem('seduc_rotas_data_inicio_iso', isoInicio);
+    } catch {}
+    setModalCalendarioAberto(false);
   };
 
   // Handler de Cópia para WhatsApp (Padrão Oficial UGERF / GPR)
@@ -402,7 +452,7 @@ export const RotasView: React.FC<RotasViewProps> = ({
                     return (
                       <button
                         key={numDias}
-                        onClick={() => setDuracaoDiasCustom(numDias)}
+                        onClick={() => handleCustomDuracao(numDias)}
                         className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
                           isSelected
                             ? 'bg-amber-400 text-slate-950 ring-1 ring-amber-300'
@@ -481,29 +531,54 @@ export const RotasView: React.FC<RotasViewProps> = ({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {/* Campo de Data / Período */}
+            {/* Campo de Data / Período com Seletor e Botão de Calendário */}
             <div className="space-y-1">
-              <label className="text-[11px] font-semibold text-slate-400 flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5 text-amber-400" />
-                <span>Data / Período:</span>
-              </label>
-              <div className="relative">
+              <div className="flex items-center justify-between">
+                <label className="text-[11px] font-semibold text-slate-400 flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Data / Período:</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setModalCalendarioAberto(true)}
+                  className="text-[10px] font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1 bg-amber-500/10 px-2 py-0.5 rounded-lg border border-amber-500/20 transition-colors active:scale-95"
+                >
+                  <Calendar className="w-3 h-3" />
+                  <span>Abrir Calendário</span>
+                </button>
+              </div>
+              <div className="relative flex items-center">
                 <input
                   type="text"
                   value={dataPeriodo}
+                  onClick={() => setModalCalendarioAberto(true)}
                   onChange={(e) => handleDataPeriodoChange(e.target.value)}
-                  placeholder="Ex: 18/11 á 20/11 ou XX/XX á XX/XX"
-                  className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all pr-8"
+                  placeholder="Ex: 16/11 á 20/11/2026"
+                  className="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all pr-14 cursor-pointer"
                 />
-                {dataPeriodo && (
+                <div className="absolute right-2 flex items-center gap-1">
+                  {dataPeriodo && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDataPeriodoChange('');
+                      }}
+                      className="text-slate-400 hover:text-white p-1 rounded-lg transition-colors"
+                      title="Limpar data"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
                   <button
-                    onClick={() => handleDataPeriodoChange('')}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1 rounded-lg transition-colors"
-                    title="Limpar data"
+                    type="button"
+                    onClick={() => setModalCalendarioAberto(true)}
+                    className="text-amber-400 hover:text-amber-300 p-1 rounded-lg transition-colors"
+                    title="Selecionar Data no Calendário"
                   >
-                    <X className="w-3 h-3" />
+                    <Calendar className="w-4 h-4" />
                   </button>
-                )}
+                </div>
               </div>
             </div>
 
@@ -964,6 +1039,17 @@ export const RotasView: React.FC<RotasViewProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal Interativo de Calendário da Rota com Cálculo Automático */}
+      {modalCalendarioAberto && (
+        <CalendarioRotaModal
+          dataPeriodoAtual={dataPeriodo}
+          duracaoDias={planoViagem.duracaoDiasReal}
+          diaria={selectedDiaria}
+          onConfirmar={handleConfirmarDataCalendario}
+          onClose={() => setModalCalendarioAberto(false)}
+        />
       )}
     </div>
   );
