@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { App as CapApp } from '@capacitor/app';
 import { storage } from './services/storageService';
 import { syncInepFromGoogleSheets } from './services/sheetsSyncService';
 import {
@@ -50,7 +51,19 @@ export function App() {
 
   // --- Navegação e Fluxo de Telas ---
   const [activeTab, setActiveTab] = useState<NavTab>('inicio');
+  const [tabHistory, setTabHistory] = useState<NavTab[]>(['inicio']);
   const [subView, setSubView] = useState<'none' | 'orcamentos' | 'rotas'>('none');
+  const [showExitToast, setShowExitToast] = useState(false);
+  const lastBackPressRef = useRef<number>(0);
+
+  // Navegador de Abas com registro de histórico
+  const handleNavigateTab = (tab: NavTab) => {
+    if (tab !== activeTab) {
+      setTabHistory(prev => [...prev, tab]);
+      setActiveTab(tab);
+    }
+    setSubView('none');
+  };
 
   // Navegação no Módulo 1 (Vistorias)
   const [selectedGre, setSelectedGre] = useState<GRE | null>(null);
@@ -87,6 +100,119 @@ export function App() {
 
     return () => clearTimeout(timer);
   }, []);
+
+  // --- Gestão Inteligente do Botão / Gesto Voltar (Android & Navegador) ---
+  const handleGlobalBack = useCallback((): boolean => {
+    // 1. Modais têm prioridade máxima de fechamento
+    if (reportModalData) {
+      setReportModalData(null);
+      return true;
+    }
+    if (schoolForNewLevantamento) {
+      setSchoolForNewLevantamento(null);
+      return true;
+    }
+    if (updateModalData) {
+      setUpdateModalData(null);
+      return true;
+    }
+
+    // 2. Se estiver no perfil de uma escola, volta para a lista da GRE
+    if (selectedSchool) {
+      setSelectedSchool(null);
+      return true;
+    }
+
+    // 3. Se estiver na lista de escolas de uma GRE, volta para o seletor das 21 GREs
+    if (selectedGre) {
+      setSelectedGre(null);
+      return true;
+    }
+
+    // 4. Se estiver em uma subview (ex: 'rotas' ou 'orcamentos'), volta para a tela inicial do módulo
+    if (subView !== 'none') {
+      setSubView('none');
+      return true;
+    }
+
+    // 5. Se estiver em outra aba que não seja a 'inicio', volta para a última aba visitada
+    if (activeTab !== 'inicio') {
+      setTabHistory(prev => {
+        if (prev.length > 1) {
+          const newHistory = [...prev];
+          newHistory.pop();
+          const prevTab = newHistory[newHistory.length - 1] || 'inicio';
+          setActiveTab(prevTab);
+          return newHistory;
+        } else {
+          setActiveTab('inicio');
+          return ['inicio'];
+        }
+      });
+      return true;
+    }
+
+    // 6. Está na aba inicial ('inicio') e na tela inicial do app:
+    // Regra do duplo toque para sair!
+    const now = Date.now();
+    if (now - lastBackPressRef.current < 2000) {
+      // Pressionou duas vezes rapidamente: sai do aplicativo
+      try {
+        CapApp.exitApp();
+      } catch (err) {
+        console.warn('exitApp falhou:', err);
+      }
+      return true;
+    } else {
+      lastBackPressRef.current = now;
+      setShowExitToast(true);
+      setTimeout(() => {
+        setShowExitToast(false);
+      }, 2000);
+      return true;
+    }
+  }, [
+    reportModalData,
+    schoolForNewLevantamento,
+    updateModalData,
+    selectedSchool,
+    selectedGre,
+    subView,
+    activeTab
+  ]);
+
+  // Listener para capturar o Hardware / Gesture Back Button no Android e PopState no Navegador
+  useEffect(() => {
+    let backListener: any = null;
+
+    const setupBackListener = async () => {
+      try {
+        backListener = await CapApp.addListener('backButton', () => {
+          handleGlobalBack();
+        });
+      } catch (err) {
+        console.warn('Capacitor App listener não disponível:', err);
+      }
+    };
+
+    setupBackListener();
+
+    const handlePopState = (e: PopStateEvent) => {
+      e.preventDefault();
+      handleGlobalBack();
+      window.history.pushState(null, '', window.location.pathname);
+    };
+
+    window.history.pushState(null, '', window.location.pathname);
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      if (backListener && typeof backListener.remove === 'function') {
+        backListener.remove();
+      }
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [handleGlobalBack]);
 
   // --- Handlers de Alertas ---
   const handleResolverAlerta = (id: string) => {
@@ -481,12 +607,17 @@ export function App() {
         {/* BARRA DE NAVEGAÇÃO INFERIOR FIXA */}
         <BottomNav
           activeTab={activeTab}
-          onChangeTab={(tab) => {
-            setActiveTab(tab);
-            setSubView('none');
-          }}
+          onChangeTab={handleNavigateTab}
           pendenciasCount={pendenciasCount}
         />
+
+        {/* TOAST DE FEEDBACK DE DUPLO TOQUE PARA SAIR */}
+        {showExitToast && (
+          <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 text-white text-xs font-semibold px-4 py-2.5 rounded-full border border-slate-700 shadow-2xl backdrop-blur-md flex items-center gap-2 animate-fadeIn pointer-events-none">
+            <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+            <span>Pressione novamente para sair do aplicativo</span>
+          </div>
+        )}
 
         {/* MODAL: ATUALIZAÇÃO AUTOMÁTICA OTA */}
         {updateModalData && (

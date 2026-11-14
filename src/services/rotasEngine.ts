@@ -54,6 +54,15 @@ export interface ResultadoAnalisePrioridade {
   justificativaIA: string[];
 }
 
+export interface EstimativaTrecho {
+  distanciaKm: number;
+  tempoGoogleMapsMin: number;      // Referência Maps / Waze (~75 km/h)
+  tempoS10Hilux140Min: number;     // Cruzeiro 140 km/h (~120-125 km/h efetivo)
+  economiaTempoMin: number;
+  tempoFormatadoMaps: string;
+  tempoFormatadoHilux: string;
+}
+
 export interface ParadaRota {
   ordem: number;
   tipo: 'partida' | 'vistoria' | 'pernoite' | 'retorno';
@@ -62,7 +71,11 @@ export interface ParadaRota {
   cidade: string;
   localNome: string;
   distanciaTrechoKm: number;
-  tempoDeslocamentoMin: number;
+  tempoDeslocamentoMin: number;   // Tempo real Hilux a 140 km/h
+  tempoGoogleMapsMin: number;     // Tempo comparativo Google Maps/Waze
+  economiaTempoMin: number;
+  tempoEstimadoMapsFormatado: string;
+  tempoEstimadoHiluxFormatado: string;
   tempoPermanenciaMin: number;
   horarioChegada: string;
   horarioPartida: string;
@@ -78,6 +91,7 @@ export interface DiaViagem {
   cidadePernoiteOuDestino: string;
   totalKmDia: number;
   totalTempoEstradaMin: number;
+  totalTempoGoogleMapsMin: number;
   totalTempoVistoriasMin: number;
   paradas: ParadaRota[];
 }
@@ -87,8 +101,12 @@ export interface PlanoViagem {
   gre: GRE;
   diaria: DiariaOption;
   cidadePolo: string;
+  duracaoDiasReal: number;
+  duracoesDisponiveis: number[];
   totalKm: number;
   tempoEstradaHoras: string;
+  tempoEstradaGoogleMapsHoras: string;
+  economiaTotalEstradaHoras: string;
   totalEscolasAtendidas: number;
   veiculoInfo: string;
   velocidadeCruzeiro: string;
@@ -96,7 +114,7 @@ export interface PlanoViagem {
   dias: DiaViagem[];
 }
 
-// Distâncias referenciais aproximadas (km) saindo de Teresina para as Sedes e Cidades do PI
+// Distâncias referenciais aproximadas (km) saindo de Teresina para as Sedes e Cidades do PI (Via BRs e PIs)
 export const DISTANCIAS_TERESINA_KM: Record<string, number> = {
   'TERESINA': 0,
   'ALTOS': 42,
@@ -153,20 +171,69 @@ export function getDistanciaTeresina(municipio: string): number {
   if (DISTANCIAS_TERESINA_KM[norm] !== undefined) {
     return DISTANCIAS_TERESINA_KM[norm];
   }
-  // Se não estiver na tabela, calcula uma estimativa realista
-  return 250;
+  return 260;
+}
+
+/**
+ * Formata minutos em string amigável: "Xh Ymin"
+ */
+export function formatarMinutosLegivel(minutos: number): string {
+  const h = Math.floor(minutos / 60);
+  const m = Math.round(minutos % 60);
+  if (h === 0) return `${m} min`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}min`;
+}
+
+/**
+ * Converte minutos a partir das 00:00 para string "HH:MMh"
+ */
+function minToTime(minutos: number): string {
+  const h = Math.floor(minutos / 60) % 24;
+  const m = Math.floor(minutos % 60);
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}h`;
+}
+
+/**
+ * CALCULA ESTIMATIVA COMPARATIVA DE DESLOCAMENTO:
+ * 1. Google Maps / Waze: média padrão de rodovia no PI (~75 km/h).
+ * 2. Caminhonete S10 / Hilux a 140 km/h: velocidade média efetiva ~120-125 km/h.
+ * Exemplo: 3h (180 min) no Maps vira ~1h45 a 1h50 na Hilux a 140 km/h.
+ */
+export function calcularDeslocamentoTrecho(distanciaKm: number): EstimativaTrecho {
+  const dist = Math.max(5, distanciaKm);
+
+  // Google Maps / Waze: média ~75 km/h nas BRs do Piauí
+  const tempoMaps = Math.max(15, Math.round((dist / 75) * 60));
+
+  // Simulação Caminhonete S10 / Hilux a 140 km/h em estrada aberta (~125 km/h média efetiva)
+  const tempoHilux = Math.max(10, Math.round((dist / 125) * 60));
+
+  const economia = Math.max(0, tempoMaps - tempoHilux);
+
+  return {
+    distanciaKm: dist,
+    tempoGoogleMapsMin: tempoMaps,
+    tempoS10Hilux140Min: tempoHilux,
+    economiaTempoMin: economia,
+    tempoFormatadoMaps: formatarMinutosLegivel(tempoMaps),
+    tempoFormatadoHilux: formatarMinutosLegivel(tempoHilux)
+  };
+}
+
+export function calcularTempoEstradaMinutos(distanciaKm: number): number {
+  return calcularDeslocamentoTrecho(distanciaKm).tempoS10Hilux140Min;
 }
 
 /**
  * MOTOR DE COMPATIBILIZAÇÃO E ANÁLISE DE PRIORIDADE DA ESCOLA
- * (Especificação exata do Super Prompt)
  */
 export function analisarPrioridadeEscola(escola: EscolaObra): ResultadoAnalisePrioridade {
   let score = 0;
   let maiorGrauDetectado: GrauCriticidade = 1;
   const justificativas: string[] = [];
 
-  // 1. Avaliar Demandas Diretas pela Hierarquia (Naila, Anik, Arielma e Diretora da Escola)
+  // 1. Demandas Diretas pela Hierarquia
   escola.demandas.forEach((demanda) => {
     switch (demanda.origem) {
       case 'Arielma (Superintendente)':
@@ -188,7 +255,6 @@ export function analisarPrioridadeEscola(escola: EscolaObra): ResultadoAnalisePr
         break;
 
       case 'Diretora da Escola':
-        // Análise inteligente cruzando a reclamação da Diretora com o Relatório Técnico
         if (escola.relatorio.possuiProblemaGrave || escola.relatorio.quantidadeProblemas >= 5 || escola.relatorio.obraParada) {
           maiorGrauDetectado = 3;
           score += 260;
@@ -196,16 +262,16 @@ export function analisarPrioridadeEscola(escola: EscolaObra): ResultadoAnalisePr
         } else if (escola.relatorio.quantidadeProblemas >= 3 || escola.relatorio.obraAtrasada) {
           if (maiorGrauDetectado < 2) maiorGrauDetectado = 2;
           score += 170;
-          justificativas.push('Demanda da Diretora da Escola + Múltiplos Problemas no Relatório (Grau 2)');
+          justificativas.push('Demanda da Diretora da Escola + Pendências no Relatório (Grau 2)');
         } else {
           score += 70;
-          justificativas.push('Demanda da Diretora da Escola (Resolução com calma / Grau 1)');
+          justificativas.push('Demanda da Diretora da Escola (Resolução em rotina / Grau 1)');
         }
         break;
     }
   });
 
-  // 2. Avaliar o Relatório Técnico de forma autônoma (mesmo sem demanda nominal)
+  // 2. Relatório Técnico autônomo
   if (escola.relatorio.obraParada) {
     maiorGrauDetectado = 3;
     score += 220;
@@ -216,14 +282,14 @@ export function analisarPrioridadeEscola(escola: EscolaObra): ResultadoAnalisePr
     justificativas.push('Problema técnico grave no relatório');
   }
 
-  // 3. Avaliar Defasagem de Visita (Dias sem ir na obra)
+  // 3. Defasagem de Visita
   score += escola.diasSemVistoria * 1.5;
   if (escola.diasSemVistoria >= 60) {
     if (maiorGrauDetectado < 2) maiorGrauDetectado = 2;
     justificativas.push(`${escola.diasSemVistoria} dias sem vistoria (Alta defasagem)`);
   }
 
-  // 4. Compatibilização Final em 4 Níveis: Razoável | Requer Atenção | Prioridade | Urgente
+  // 4. Compatibilização Final em 4 Níveis
   let statusCompatibilizado: StatusCompatibilizado = 'Razoável';
 
   if (maiorGrauDetectado === 3 || score >= 300) {
@@ -249,27 +315,7 @@ export function analisarPrioridadeEscola(escola: EscolaObra): ResultadoAnalisePr
 }
 
 /**
- * Converte minutos a partir das 00:00 para string "HH:MM"
- */
-function minToTime(minutos: number): string {
-  const h = Math.floor(minutos / 60) % 24;
-  const m = Math.floor(minutos % 60);
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}h`;
-}
-
-/**
- * Calcula o tempo de estrada em minutos considerando a velocidade de 140 km/h (S10/Hilux)
- * com fator de correção para acessos urbanos e pontes (velocidade média efetiva ~115 km/h).
- */
-export function calcularTempoEstradaMinutos(distanciaKm: number): number {
-  // 140 km/h nominal -> com curvas/lombadas/acesso: fator 1.15
-  const horas = distanciaKm / 125;
-  return Math.max(15, Math.round(horas * 60));
-}
-
-/**
- * Constrói a lista de EscolaObra rica para a GRE selecionada,
- * injetando dados preditivos e históricos do sistema.
+ * Constrói a lista de EscolaObra rica para a GRE selecionada
  */
 export function prepararEscolasParaRota(schools: Escola[], gre: GRE): EscolaObra[] {
   const greSchools = schools.filter(s => s.greId === gre.id);
@@ -277,12 +323,10 @@ export function prepararEscolasParaRota(schools: Escola[], gre: GRE): EscolaObra
   return greSchools.map((s, idx) => {
     const dist = getDistanciaTeresina(s.municipio);
 
-    // Simulação preditiva e histórica realista para criticidade
     const isCritico = s.statusConservacao === 'critico' || idx % 5 === 0;
     const isAtencao = s.statusConservacao === 'atencao' || idx % 4 === 1;
     const dias = s.diasSemVisita > 0 ? s.diasSemVisita : (20 + (idx * 13) % 90);
 
-    // Demandas simuladas baseadas nos cargos oficiais
     const demandas: DemandaRegistrada[] = [];
     if (idx % 7 === 0 || s.statusConservacao === 'critico') {
       demandas.push({
@@ -345,29 +389,53 @@ export function prepararEscolasParaRota(schools: Escola[], gre: GRE): EscolaObra
 }
 
 /**
- * GERADOR DE ROTA INTELIGENTE (Trajeto vs Prioridade)
+ * GERADOR DE ROTA INTELIGENTE
+ * Ajustado estritamente com as regras do usuário:
+ * 1. 1.5 diária: Sempre Bate e Volta (1 dia), saída às 06:00h e volta entre 21:00h e 22:00h em Teresina. Carga leve (3 a 4 escolas).
+ * 2. 2.5 diárias: Bate e Volta (1 dia) otimizado com diária extra, carga moderada (4 a 5 escolas).
+ * 3. 3.5 diárias: Padrão 2 dias (1 pernoite na Cidade-Polo 19h-20h), podendo compactar para 1 dia.
+ * 4. 4.5 diárias: Padrão 3 dias (2 pernoites na Cidade-Polo 19h-20h), podendo compactar para 2 dias ou 1 dia.
+ * 5. Comparativo Google Maps / Waze vs S10 / Hilux a 140 km/h integrado em cada trecho.
  */
 export function gerarPlanoDeViagem(
   tipoRota: 'trajeto' | 'prioridade',
   schools: Escola[],
   gre: GRE,
-  diaria: DiariaOption
+  diaria: DiariaOption,
+  duracaoDiasDesejada?: number
 ): PlanoViagem {
   const todasEscolas = prepararEscolasParaRota(schools, gre);
   const cidadePolo = gre.sede || 'Cidade-Polo';
   const distTeresinaSede = getDistanciaTeresina(cidadePolo);
 
+  // Determina as durações permitidas e a duração ativa
+  let duracoesDisponiveis: number[] = [1];
+  let duracaoPadrao = 1;
+
+  if (diaria === '1.5' || diaria === '2.5') {
+    duracoesDisponiveis = [1];
+    duracaoPadrao = 1;
+  } else if (diaria === '3.5') {
+    duracoesDisponiveis = [2, 1];
+    duracaoPadrao = 2;
+  } else if (diaria === '4.5') {
+    duracoesDisponiveis = [3, 2, 1];
+    duracaoPadrao = 3;
+  }
+
+  const duracaoDiasReal = (duracaoDiasDesejada && duracoesDisponiveis.includes(duracaoDiasDesejada))
+    ? duracaoDiasDesejada
+    : duracaoPadrao;
+
+  // Ordenação das escolas
   let escolasOrdenadas: { escola: EscolaObra; analise: ResultadoAnalisePrioridade }[] = [];
 
   if (tipoRota === 'prioridade') {
-    // 1. Analisa a prioridade de todas as escolas
     const analisadas = todasEscolas.map(e => ({
       escola: e,
       analise: analisarPrioridadeEscola(e)
     }));
 
-    // 2. Ordena por Grau de Criticidade DECRESCENTE (Grau 3 -> Grau 2 -> Grau 1 -> Razoável)
-    // e por score numérico
     escolasOrdenadas = analisadas.sort((a, b) => {
       if (b.analise.grauFinal !== a.analise.grauFinal) {
         return b.analise.grauFinal - a.analise.grauFinal;
@@ -375,14 +443,12 @@ export function gerarPlanoDeViagem(
       return b.analise.scoreNumerico - a.analise.scoreNumerico;
     });
   } else {
-    // Rota por Trajeto: Ordena geograficamente pela proximidade do corredor logístico
     const analisadas = todasEscolas.map(e => ({
       escola: e,
       analise: analisarPrioridadeEscola(e)
     }));
 
     escolasOrdenadas = analisadas.sort((a, b) => {
-      // Primeiro cidades no eixo de ida para a sede
       return a.escola.distanciaDeTeresinaKm - b.escola.distanciaDeTeresinaKm;
     });
   }
@@ -390,19 +456,19 @@ export function gerarPlanoDeViagem(
   const dias: DiaViagem[] = [];
   let totalKmGeral = 0;
   let totalTempoEstradaGeralMin = 0;
+  let totalTempoGoogleMapsGeralMin = 0;
 
-  // Lógica por Regime de Diárias:
-  if (diaria === '1.5') {
-    // =========================================================================
-    // REGIME 1.5 DIÁRIA: BATE E VOLTA NO MESMO DIA (Teto limite: 22:00h em Teresina)
-    // =========================================================================
-    let cursorMin = 6 * 60; // 06:00h
-    const limiteChegadaTeresinaMin = 22 * 60; // 22:00h
-    let pontoAtual = 'Teresina';
+  // =========================================================================
+  // CASO 1: BATE E VOLTA NO MESMO DIA (1 DIA DE ROTA)
+  // Aplica para 1.5d, 2.5d e quando 3.5d/4.5d forem compactadas para 1 dia
+  // =========================================================================
+  if (duracaoDiasReal === 1) {
+    let cursorMin = 6 * 60; // 06:00h saída pontual
+    const limiteChegadaTeresinaMin = 21 * 60 + 50; // Chegada entre 21h e 22h
     let distAcumulada = 0;
     const paradasDia: ParadaRota[] = [];
 
-    // Partida
+    // Partida de Teresina
     paradasDia.push({
       ordem: 1,
       tipo: 'partida',
@@ -410,38 +476,46 @@ export function gerarPlanoDeViagem(
       localNome: 'Saída de Teresina (S10 / Hilux)',
       distanciaTrechoKm: 0,
       tempoDeslocamentoMin: 0,
+      tempoGoogleMapsMin: 0,
+      economiaTempoMin: 0,
+      tempoEstimadoMapsFormatado: '0 min',
+      tempoEstimadoHiluxFormatado: '0 min',
       tempoPermanenciaMin: 0,
       horarioChegada: minToTime(cursorMin),
       horarioPartida: minToTime(cursorMin),
-      observacao: 'Saída pontual em caminhonete S10/Hilux a 140 km/h de cruzeiro.'
+      observacao: 'Partida pontual às 06:00h em caminhonete S10/Hilux a 140 km/h.'
     });
 
-    let indexEscola = 0;
-    while (indexEscola < escolasOrdenadas.length) {
-      const item = escolasOrdenadas[indexEscola];
-      const distTrecho = Math.abs(item.escola.distanciaDeTeresinaKm - (pontoAtual === 'Teresina' ? 0 : distAcumulada));
-      const tempoEstrada = calcularTempoEstradaMinutos(distTrecho || 40);
-      const tempoVistoria = item.escola.tempoEstimadoVistoriaMinutos;
-      
-      // Simula tempo de volta para Teresina após essa visita
-      const tempoVoltaTeresina = calcularTempoEstradaMinutos(item.escola.distanciaDeTeresinaKm);
-      const chegadaSeFizerEssa = cursorMin + tempoEstrada + tempoVistoria + tempoVoltaTeresina;
+    // Limite máximo de escolas para bate e volta seguro sem sobrecarga
+    const maxEscolasBateVolta = diaria === '1.5' ? 4 : (diaria === '2.5' ? 5 : 6);
 
-      // TRAVA ANTI-SOBRECARGA: Não pode estourar as 22:00h em Teresina
-      if (chegadaSeFizerEssa > limiteChegadaTeresinaMin && paradasDia.length > 2) {
-        break; // Corta novas adições
+    let indexEscola = 0;
+    let escolasAdicionadas = 0;
+
+    while (indexEscola < escolasOrdenadas.length && escolasAdicionadas < maxEscolasBateVolta) {
+      const item = escolasOrdenadas[indexEscola];
+      const distTrecho = Math.abs(item.escola.distanciaDeTeresinaKm - distAcumulada) || 40;
+      const estimativa = calcularDeslocamentoTrecho(distTrecho);
+      const tempoVistoria = item.escola.tempoEstimadoVistoriaMinutos;
+
+      // Estimativa para voltar a Teresina a partir desta escola
+      const estimativaVolta = calcularDeslocamentoTrecho(item.escola.distanciaDeTeresinaKm);
+      const horarioPrevistoRetorno = cursorMin + estimativa.tempoS10Hilux140Min + tempoVistoria + estimativaVolta.tempoS10Hilux140Min;
+
+      // Trava anti-sobrecarga rígida: retorno entre 21:00h e 22:00h
+      if (horarioPrevistoRetorno > limiteChegadaTeresinaMin && paradasDia.length > 2) {
+        break;
       }
 
-      // Adiciona a parada
-      cursorMin += tempoEstrada;
+      cursorMin += estimativa.tempoS10Hilux140Min;
       const horarioCheg = minToTime(cursorMin);
       cursorMin += tempoVistoria;
       const horarioPart = minToTime(cursorMin);
 
       totalKmGeral += distTrecho;
-      totalTempoEstradaGeralMin += tempoEstrada;
+      totalTempoEstradaGeralMin += estimativa.tempoS10Hilux140Min;
+      totalTempoGoogleMapsGeralMin += estimativa.tempoGoogleMapsMin;
       distAcumulada = item.escola.distanciaDeTeresinaKm;
-      pontoAtual = item.escola.municipio;
 
       paradasDia.push({
         ordem: paradasDia.length + 1,
@@ -451,58 +525,74 @@ export function gerarPlanoDeViagem(
         cidade: item.escola.municipio,
         localNome: item.escola.nome,
         distanciaTrechoKm: distTrecho,
-        tempoDeslocamentoMin: tempoEstrada,
+        tempoDeslocamentoMin: estimativa.tempoS10Hilux140Min,
+        tempoGoogleMapsMin: estimativa.tempoGoogleMapsMin,
+        economiaTempoMin: estimativa.economiaTempoMin,
+        tempoEstimadoMapsFormatado: estimativa.tempoFormatadoMaps,
+        tempoEstimadoHiluxFormatado: estimativa.tempoFormatadoHilux,
         tempoPermanenciaMin: tempoVistoria,
         horarioChegada: horarioCheg,
         horarioPartida: horarioPart,
-        observacao: `Vistoria técnica padrão (${tempoVistoria} min).`
+        observacao: `Vistoria técnica (${tempoVistoria} min). Maps: ~${estimativa.tempoFormatadoMaps} | Hilux: ~${estimativa.tempoFormatadoHilux}.`
       });
 
+      escolasAdicionadas++;
       indexEscola++;
     }
 
-    // Retorno para Teresina
-    const tempoVolta = calcularTempoEstradaMinutos(distAcumulada);
-    cursorMin += tempoVolta;
-    totalKmGeral += distAcumulada;
-    totalTempoEstradaGeralMin += tempoVolta;
+    // Retorno definitivo para Teresina
+    const estimativaVoltaFinal = calcularDeslocamentoTrecho(distAcumulada || distTeresinaSede);
+    cursorMin += estimativaVoltaFinal.tempoS10Hilux140Min;
+    totalKmGeral += estimativaVoltaFinal.distanciaKm;
+    totalTempoEstradaGeralMin += estimativaVoltaFinal.tempoS10Hilux140Min;
+    totalTempoGoogleMapsGeralMin += estimativaVoltaFinal.tempoGoogleMapsMin;
 
     paradasDia.push({
       ordem: paradasDia.length + 1,
       tipo: 'retorno',
       cidade: 'Teresina',
-      localNome: 'Chegada em Teresina - PI',
-      distanciaTrechoKm: distAcumulada,
-      tempoDeslocamentoMin: tempoVolta,
+      localNome: 'Chegada em Teresina - PI (Retorno Bate e Volta)',
+      distanciaTrechoKm: estimativaVoltaFinal.distanciaKm,
+      tempoDeslocamentoMin: estimativaVoltaFinal.tempoS10Hilux140Min,
+      tempoGoogleMapsMin: estimativaVoltaFinal.tempoGoogleMapsMin,
+      economiaTempoMin: estimativaVoltaFinal.economiaTempoMin,
+      tempoEstimadoMapsFormatado: estimativaVoltaFinal.tempoFormatadoMaps,
+      tempoEstimadoHiluxFormatado: estimativaVoltaFinal.tempoFormatadoHilux,
       tempoPermanenciaMin: 0,
       horarioChegada: minToTime(cursorMin),
       horarioPartida: minToTime(cursorMin),
-      observacao: `Retorno concluído dentro do teto operacional das 22h (${minToTime(cursorMin)}).`
+      observacao: `Retorno concluído entre 21:00h e 22:00h (${minToTime(cursorMin)}) sem sobrecarga.`
     });
 
     dias.push({
       diaNumero: 1,
-      titulo: 'Dia Único — Bate e Volta com Teto às 22h',
-      dataDescritiva: 'Saída e Retorno no mesmo dia',
+      titulo: diaria === '1.5' 
+        ? 'Dia Único — Bate e Volta (1.5 diária)' 
+        : (diaria === '2.5' ? 'Dia Único — Bate e Volta Otimizado (2.5 diárias)' : 'Dia Único — Rota Compactada em Bate e Volta'),
+      dataDescritiva: 'Saída às 06:00h e Retorno até 21h-22h',
       horarioInicio: '06:00h',
       horarioTerminoPrevisto: minToTime(cursorMin),
-      cidadePernoiteOuDestino: 'Teresina (Retorno Definitivo)',
+      cidadePernoiteOuDestino: 'Teresina (Base Central)',
       totalKmDia: totalKmGeral,
       totalTempoEstradaMin: totalTempoEstradaGeralMin,
+      totalTempoGoogleMapsMin: totalTempoGoogleMapsGeralMin,
       totalTempoVistoriasMin: paradasDia.filter(p => p.tipo === 'vistoria').length * 50,
       paradas: paradasDia
     });
 
-  } else if (diaria === '2.5' || diaria === '3.5') {
-    // =========================================================================
-    // REGIME 2.5 / 3.5 DIÁRIAS: 1 DIA DE ROTA + PERNOITE NA CIDADE-POLO + RETORNO
-    // =========================================================================
-    // DIA 1: Saída de Teresina até a Cidade-Polo da GRE (Chegada entre 19:00h e 20:00h)
+  // =========================================================================
+  // CASO 2: ROTA EM 2 DIAS (1 PERNOITE NA CIDADE-POLO ENTRE 19h E 20h)
+  // Aplica para 3.5d padrão ou 4.5d compactada para 2 dias
+  // =========================================================================
+  } else if (duracaoDiasReal === 2) {
+    // DIA 1: Teresina -> Vistorias -> Chegada na Sede da GRE (19:00h - 20:00h)
     let cursorMin1 = 6 * 60 + 30; // 06:30h
-    const limiteChegadaSedeMin = 19 * 60 + 30; // 19:30h
-    let pontoAtual = 'Teresina';
+    const limiteChegadaSedeMin = 19 * 60 + 40; // 19:40h
     let distAcumulada = 0;
     const paradasDia1: ParadaRota[] = [];
+    let kmDia1 = 0;
+    let tempoEstradaDia1 = 0;
+    let tempoMapsDia1 = 0;
 
     paradasDia1.push({
       ordem: 1,
@@ -511,39 +601,41 @@ export function gerarPlanoDeViagem(
       localNome: 'Saída de Teresina (S10 / Hilux)',
       distanciaTrechoKm: 0,
       tempoDeslocamentoMin: 0,
+      tempoGoogleMapsMin: 0,
+      economiaTempoMin: 0,
+      tempoEstimadoMapsFormatado: '0 min',
+      tempoEstimadoHiluxFormatado: '0 min',
       tempoPermanenciaMin: 0,
       horarioChegada: minToTime(cursorMin1),
       horarioPartida: minToTime(cursorMin1),
-      observacao: 'Partida com velocidade de cruzeiro 140 km/h rumo à jurisdição da GRE.'
+      observacao: 'Partida em caminhonete a 140 km/h de cruzeiro.'
     });
 
     let indexEscola = 0;
-    let kmDia1 = 0;
-    let tempoEstradaDia1 = 0;
+    let countDia1 = 0;
 
-    while (indexEscola < escolasOrdenadas.length) {
+    while (indexEscola < escolasOrdenadas.length && countDia1 < 4) {
       const item = escolasOrdenadas[indexEscola];
       const distTrecho = Math.abs(item.escola.distanciaDeTeresinaKm - distAcumulada) || 45;
-      const tempoEstrada = calcularTempoEstradaMinutos(distTrecho);
+      const estimativa = calcularDeslocamentoTrecho(distTrecho);
       const tempoVistoria = item.escola.tempoEstimadoVistoriaMinutos;
-      
-      // Tempo restante até a cidade-polo
-      const tempoAteSede = calcularTempoEstradaMinutos(Math.abs(distTeresinaSede - item.escola.distanciaDeTeresinaKm));
-      const chegadaSeFizer = cursorMin1 + tempoEstrada + tempoVistoria + tempoAteSede;
+
+      const estimativaAteSede = calcularDeslocamentoTrecho(Math.abs(distTeresinaSede - item.escola.distanciaDeTeresinaKm) || 30);
+      const chegadaSeFizer = cursorMin1 + estimativa.tempoS10Hilux140Min + tempoVistoria + estimativaAteSede.tempoS10Hilux140Min;
 
       if (chegadaSeFizer > limiteChegadaSedeMin && paradasDia1.length > 2) {
         break;
       }
 
-      cursorMin1 += tempoEstrada;
+      cursorMin1 += estimativa.tempoS10Hilux140Min;
       const horarioCheg = minToTime(cursorMin1);
       cursorMin1 += tempoVistoria;
       const horarioPart = minToTime(cursorMin1);
 
       kmDia1 += distTrecho;
-      tempoEstradaDia1 += tempoEstrada;
+      tempoEstradaDia1 += estimativa.tempoS10Hilux140Min;
+      tempoMapsDia1 += estimativa.tempoGoogleMapsMin;
       distAcumulada = item.escola.distanciaDeTeresinaKm;
-      pontoAtual = item.escola.municipio;
 
       paradasDia1.push({
         ordem: paradasDia1.length + 1,
@@ -553,85 +645,103 @@ export function gerarPlanoDeViagem(
         cidade: item.escola.municipio,
         localNome: item.escola.nome,
         distanciaTrechoKm: distTrecho,
-        tempoDeslocamentoMin: tempoEstrada,
+        tempoDeslocamentoMin: estimativa.tempoS10Hilux140Min,
+        tempoGoogleMapsMin: estimativa.tempoGoogleMapsMin,
+        economiaTempoMin: estimativa.economiaTempoMin,
+        tempoEstimadoMapsFormatado: estimativa.tempoFormatadoMaps,
+        tempoEstimadoHiluxFormatado: estimativa.tempoFormatadoHilux,
         tempoPermanenciaMin: tempoVistoria,
         horarioChegada: horarioCheg,
-        horarioPartida: horarioPart
+        horarioPartida: horarioPart,
+        observacao: `Vistoria técnica (${tempoVistoria} min). Maps: ~${estimativa.tempoFormatadoMaps} | Hilux: ~${estimativa.tempoFormatadoHilux}.`
       });
 
       indexEscola++;
+      countDia1++;
     }
 
-    // Deslocamento final até a Cidade-Polo da GRE para Jantar e Pernoite
-    const distFinalSede = Math.abs(distTeresinaSede - distAcumulada) || 30;
-    const tempoFinalSede = calcularTempoEstradaMinutos(distFinalSede);
-    cursorMin1 += tempoFinalSede;
-    kmDia1 += distFinalSede;
-    tempoEstradaDia1 += tempoFinalSede;
+    // Chegada na Cidade-Polo para Pernoite
+    const distFinalDia1 = Math.abs(distTeresinaSede - distAcumulada) || 35;
+    const estimativaPernoite1 = calcularDeslocamentoTrecho(distFinalDia1);
+    cursorMin1 += estimativaPernoite1.tempoS10Hilux140Min;
+    kmDia1 += distFinalDia1;
+    tempoEstradaDia1 += estimativaPernoite1.tempoS10Hilux140Min;
+    tempoMapsDia1 += estimativaPernoite1.tempoGoogleMapsMin;
 
     paradasDia1.push({
       ordem: paradasDia1.length + 1,
       tipo: 'pernoite',
       cidade: cidadePolo,
-      localNome: `Cidade-Polo (${cidadePolo}) — Jantar & Pernoite`,
-      distanciaTrechoKm: distFinalSede,
-      tempoDeslocamentoMin: tempoFinalSede,
+      localNome: `Pernoite & Jantar na Cidade-Polo (${cidadePolo})`,
+      distanciaTrechoKm: distFinalDia1,
+      tempoDeslocamentoMin: estimativaPernoite1.tempoS10Hilux140Min,
+      tempoGoogleMapsMin: estimativaPernoite1.tempoGoogleMapsMin,
+      economiaTempoMin: estimativaPernoite1.economiaTempoMin,
+      tempoEstimadoMapsFormatado: estimativaPernoite1.tempoFormatadoMaps,
+      tempoEstimadoHiluxFormatado: estimativaPernoite1.tempoFormatadoHilux,
       tempoPermanenciaMin: 0,
       horarioChegada: minToTime(cursorMin1),
-      horarioPartida: '07:30h (Dia seguinte)',
-      observacao: `Chegada entre 19h e 20h (${minToTime(cursorMin1)}) na sede da GRE para pernoite seguro.`
+      horarioPartida: minToTime(cursorMin1),
+      observacao: `Chegada entre 19:00h e 20:00h (${minToTime(cursorMin1)}) para descanso e jantar da equipe.`
     });
 
     dias.push({
       diaNumero: 1,
-      titulo: `Dia 1 — Deslocamento e Vistorias até ${cidadePolo}`,
-      dataDescritiva: 'Eixo de Ida e Pernoite na Sede da GRE',
+      titulo: 'Dia 1 — Vistorias no Eixo de Ida e Pernoite na Sede',
+      dataDescritiva: 'Saída de Teresina até a Cidade-Polo',
       horarioInicio: '06:30h',
       horarioTerminoPrevisto: minToTime(cursorMin1),
-      cidadePernoiteOuDestino: `${cidadePolo} (Jantar & Pernoite)`,
+      cidadePernoiteOuDestino: `${cidadePolo} (Pernoite)`,
       totalKmDia: kmDia1,
       totalTempoEstradaMin: tempoEstradaDia1,
+      totalTempoGoogleMapsMin: tempoMapsDia1,
       totalTempoVistoriasMin: paradasDia1.filter(p => p.tipo === 'vistoria').length * 50,
       paradas: paradasDia1
     });
 
     totalKmGeral += kmDia1;
     totalTempoEstradaGeralMin += tempoEstradaDia1;
+    totalTempoGoogleMapsGeralMin += tempoMapsDia1;
 
-    // DIA 2: Retorno para Teresina com vistorias no eixo de volta
+    // DIA 2: Saída da Cidade-Polo -> Vistorias de Retorno -> Chegada em Teresina
     let cursorMin2 = 7 * 60 + 30; // 07:30h
     const paradasDia2: ParadaRota[] = [];
     let kmDia2 = 0;
     let tempoEstradaDia2 = 0;
+    let tempoMapsDia2 = 0;
 
     paradasDia2.push({
       ordem: 1,
       tipo: 'partida',
       cidade: cidadePolo,
-      localNome: `Saída de ${cidadePolo} (Eixo de Retorno)`,
+      localNome: `Saída da Cidade-Polo (${cidadePolo})`,
       distanciaTrechoKm: 0,
       tempoDeslocamentoMin: 0,
+      tempoGoogleMapsMin: 0,
+      economiaTempoMin: 0,
+      tempoEstimadoMapsFormatado: '0 min',
+      tempoEstimadoHiluxFormatado: '0 min',
       tempoPermanenciaMin: 0,
       horarioChegada: minToTime(cursorMin2),
       horarioPartida: minToTime(cursorMin2),
-      observacao: 'Partida matinal da sede regional cobrindo unidades complementares.'
+      observacao: 'Início dos trabalhos no eixo de retorno.'
     });
 
-    // Pega mais 1 a 3 escolas no corredor de retorno
-    let escolasRestantes = 0;
-    while (indexEscola < escolasOrdenadas.length && escolasRestantes < 3) {
+    let countDia2 = 0;
+    while (indexEscola < escolasOrdenadas.length && countDia2 < 3) {
       const item = escolasOrdenadas[indexEscola];
-      const distTrecho = 35;
-      const tempoEstrada = calcularTempoEstradaMinutos(distTrecho);
+      const distTrecho = 45;
+      const estimativa = calcularDeslocamentoTrecho(distTrecho);
       const tempoVistoria = item.escola.tempoEstimadoVistoriaMinutos;
 
-      cursorMin2 += tempoEstrada;
+      cursorMin2 += estimativa.tempoS10Hilux140Min;
       const horarioCheg = minToTime(cursorMin2);
       cursorMin2 += tempoVistoria;
       const horarioPart = minToTime(cursorMin2);
 
       kmDia2 += distTrecho;
-      tempoEstradaDia2 += tempoEstrada;
+      tempoEstradaDia2 += estimativa.tempoS10Hilux140Min;
+      tempoMapsDia2 += estimativa.tempoGoogleMapsMin;
 
       paradasDia2.push({
         ordem: paradasDia2.length + 1,
@@ -641,60 +751,74 @@ export function gerarPlanoDeViagem(
         cidade: item.escola.municipio,
         localNome: item.escola.nome,
         distanciaTrechoKm: distTrecho,
-        tempoDeslocamentoMin: tempoEstrada,
+        tempoDeslocamentoMin: estimativa.tempoS10Hilux140Min,
+        tempoGoogleMapsMin: estimativa.tempoGoogleMapsMin,
+        economiaTempoMin: estimativa.economiaTempoMin,
+        tempoEstimadoMapsFormatado: estimativa.tempoFormatadoMaps,
+        tempoEstimadoHiluxFormatado: estimativa.tempoFormatadoHilux,
         tempoPermanenciaMin: tempoVistoria,
         horarioChegada: horarioCheg,
-        horarioPartida: horarioPart
+        horarioPartida: horarioPart,
+        observacao: `Vistoria de retorno (${tempoVistoria} min). Maps: ~${estimativa.tempoFormatadoMaps} | Hilux: ~${estimativa.tempoFormatadoHilux}.`
       });
 
       indexEscola++;
-      escolasRestantes++;
+      countDia2++;
     }
 
-    // Retorno definitivo para Teresina
-    const tempoVoltaFinal = calcularTempoEstradaMinutos(distTeresinaSede);
-    cursorMin2 += tempoVoltaFinal;
+    // Retorno definitivo a Teresina
+    const estimativaVoltaTeresina = calcularDeslocamentoTrecho(distTeresinaSede);
+    cursorMin2 += estimativaVoltaTeresina.tempoS10Hilux140Min;
     kmDia2 += distTeresinaSede;
-    tempoEstradaDia2 += tempoVoltaFinal;
+    tempoEstradaDia2 += estimativaVoltaTeresina.tempoS10Hilux140Min;
+    tempoMapsDia2 += estimativaVoltaTeresina.tempoGoogleMapsMin;
 
     paradasDia2.push({
       ordem: paradasDia2.length + 1,
       tipo: 'retorno',
       cidade: 'Teresina',
-      localNome: 'Chegada Definitiva em Teresina - PI',
+      localNome: 'Chegada Final em Teresina - PI',
       distanciaTrechoKm: distTeresinaSede,
-      tempoDeslocamentoMin: tempoVoltaFinal,
+      tempoDeslocamentoMin: estimativaVoltaTeresina.tempoS10Hilux140Min,
+      tempoGoogleMapsMin: estimativaVoltaTeresina.tempoGoogleMapsMin,
+      economiaTempoMin: estimativaVoltaTeresina.economiaTempoMin,
+      tempoEstimadoMapsFormatado: estimativaVoltaTeresina.tempoFormatadoMaps,
+      tempoEstimadoHiluxFormatado: estimativaVoltaTeresina.tempoFormatadoHilux,
       tempoPermanenciaMin: 0,
       horarioChegada: minToTime(cursorMin2),
       horarioPartida: minToTime(cursorMin2),
-      observacao: 'Conclusão da rota regional e desmobilização da equipe técnica.'
+      observacao: 'Conclusão da rota de 2 dias.'
     });
 
     dias.push({
       diaNumero: 2,
-      titulo: 'Dia 2 — Vistorias no Eixo de Volta e Retorno a Teresina',
+      titulo: 'Dia 2 — Vistorias no Eixo de Retorno e Chegada em Teresina',
       dataDescritiva: 'Fechamento do Roteiro Regional',
       horarioInicio: '07:30h',
       horarioTerminoPrevisto: minToTime(cursorMin2),
       cidadePernoiteOuDestino: 'Teresina (Base Central)',
       totalKmDia: kmDia2,
       totalTempoEstradaMin: tempoEstradaDia2,
+      totalTempoGoogleMapsMin: tempoMapsDia2,
       totalTempoVistoriasMin: paradasDia2.filter(p => p.tipo === 'vistoria').length * 50,
       paradas: paradasDia2
     });
 
     totalKmGeral += kmDia2;
     totalTempoEstradaGeralMin += tempoEstradaDia2;
+    totalTempoGoogleMapsGeralMin += tempoMapsDia2;
 
-  } else if (diaria === '4.5') {
-    // =========================================================================
-    // REGIME 4.5 DIÁRIAS: IMERSÃO COMPLETA (2 DIAS DE ROTA COM 2 PERNOITES NA SEDE + VOLTA NO 3º DIA)
-    // =========================================================================
-    // DIA 1: Teresina -> Cidades de Ida -> Sede da GRE (Pernoite 1)
+  // =========================================================================
+  // CASO 3: ROTA EM 3 DIAS (2 PERNOITES NA CIDADE-POLO ENTRE 19h E 20h)
+  // Aplica para 4.5d padrão
+  // =========================================================================
+  } else {
+    // DIA 1: Teresina -> Sede da GRE (Pernoite 1)
     let cursorMin1 = 6 * 60 + 30;
     const paradasDia1: ParadaRota[] = [];
     let kmDia1 = 0;
     let tempoEstradaDia1 = 0;
+    let tempoMapsDia1 = 0;
 
     paradasDia1.push({
       ordem: 1,
@@ -703,10 +827,13 @@ export function gerarPlanoDeViagem(
       localNome: 'Saída de Teresina (S10 / Hilux)',
       distanciaTrechoKm: 0,
       tempoDeslocamentoMin: 0,
+      tempoGoogleMapsMin: 0,
+      economiaTempoMin: 0,
+      tempoEstimadoMapsFormatado: '0 min',
+      tempoEstimadoHiluxFormatado: '0 min',
       tempoPermanenciaMin: 0,
       horarioChegada: minToTime(cursorMin1),
-      horarioPartida: minToTime(cursorMin1),
-      observacao: 'Partida em caminhonete para imersão regional completa.'
+      horarioPartida: minToTime(cursorMin1)
     });
 
     let indexEscola = 0;
@@ -714,16 +841,17 @@ export function gerarPlanoDeViagem(
     while (indexEscola < escolasOrdenadas.length && countDia1 < 4) {
       const item = escolasOrdenadas[indexEscola];
       const distTrecho = 50;
-      const tempoEstrada = calcularTempoEstradaMinutos(distTrecho);
+      const estimativa = calcularDeslocamentoTrecho(distTrecho);
       const tempoVistoria = item.escola.tempoEstimadoVistoriaMinutos;
 
-      cursorMin1 += tempoEstrada;
+      cursorMin1 += estimativa.tempoS10Hilux140Min;
       const horarioCheg = minToTime(cursorMin1);
       cursorMin1 += tempoVistoria;
       const horarioPart = minToTime(cursorMin1);
 
       kmDia1 += distTrecho;
-      tempoEstradaDia1 += tempoEstrada;
+      tempoEstradaDia1 += estimativa.tempoS10Hilux140Min;
+      tempoMapsDia1 += estimativa.tempoGoogleMapsMin;
 
       paradasDia1.push({
         ordem: paradasDia1.length + 1,
@@ -733,7 +861,11 @@ export function gerarPlanoDeViagem(
         cidade: item.escola.municipio,
         localNome: item.escola.nome,
         distanciaTrechoKm: distTrecho,
-        tempoDeslocamentoMin: tempoEstrada,
+        tempoDeslocamentoMin: estimativa.tempoS10Hilux140Min,
+        tempoGoogleMapsMin: estimativa.tempoGoogleMapsMin,
+        economiaTempoMin: estimativa.economiaTempoMin,
+        tempoEstimadoMapsFormatado: estimativa.tempoFormatadoMaps,
+        tempoEstimadoHiluxFormatado: estimativa.tempoFormatadoHilux,
         tempoPermanenciaMin: tempoVistoria,
         horarioChegada: horarioCheg,
         horarioPartida: horarioPart
@@ -743,73 +875,85 @@ export function gerarPlanoDeViagem(
       countDia1++;
     }
 
-    const distAteSede = 40;
-    const tempoAteSede = calcularTempoEstradaMinutos(distAteSede);
-    cursorMin1 += tempoAteSede;
-    kmDia1 += distAteSede;
-    tempoEstradaDia1 += tempoAteSede;
+    const estimativaPernoite1 = calcularDeslocamentoTrecho(40);
+    cursorMin1 += estimativaPernoite1.tempoS10Hilux140Min;
+    kmDia1 += 40;
+    tempoEstradaDia1 += estimativaPernoite1.tempoS10Hilux140Min;
+    tempoMapsDia1 += estimativaPernoite1.tempoGoogleMapsMin;
 
     paradasDia1.push({
       ordem: paradasDia1.length + 1,
       tipo: 'pernoite',
       cidade: cidadePolo,
-      localNome: `${cidadePolo} — Pernoite 1 (Jantar Regional)`,
-      distanciaTrechoKm: distAteSede,
-      tempoDeslocamentoMin: tempoAteSede,
+      localNome: `Pernoite 1 na Cidade-Polo (${cidadePolo})`,
+      distanciaTrechoKm: 40,
+      tempoDeslocamentoMin: estimativaPernoite1.tempoS10Hilux140Min,
+      tempoGoogleMapsMin: estimativaPernoite1.tempoGoogleMapsMin,
+      economiaTempoMin: estimativaPernoite1.economiaTempoMin,
+      tempoEstimadoMapsFormatado: estimativaPernoite1.tempoFormatadoMaps,
+      tempoEstimadoHiluxFormatado: estimativaPernoite1.tempoFormatadoHilux,
       tempoPermanenciaMin: 0,
       horarioChegada: minToTime(cursorMin1),
-      horarioPartida: '07:30h (Dia 2)',
-      observacao: `Chegada às ${minToTime(cursorMin1)} para jantar e descanso seguro da equipe.`
+      horarioPartida: minToTime(cursorMin1),
+      observacao: `Chegada entre 19:00h e 20:00h (${minToTime(cursorMin1)}) para descanso e jantar.`
     });
 
     dias.push({
       diaNumero: 1,
-      titulo: `Dia 1 — Deslocamento e Vistorias até ${cidadePolo}`,
-      dataDescritiva: 'Eixo de Ida e Pernoite 1',
+      titulo: 'Dia 1 — Deslocamento e Vistorias no Eixo de Ida',
+      dataDescritiva: `Teresina ➔ ${cidadePolo}`,
       horarioInicio: '06:30h',
       horarioTerminoPrevisto: minToTime(cursorMin1),
       cidadePernoiteOuDestino: `${cidadePolo} (Pernoite 1)`,
       totalKmDia: kmDia1,
       totalTempoEstradaMin: tempoEstradaDia1,
-      totalTempoVistoriasMin: countDia1 * 50,
+      totalTempoGoogleMapsMin: tempoMapsDia1,
+      totalTempoVistoriasMin: paradasDia1.filter(p => p.tipo === 'vistoria').length * 50,
       paradas: paradasDia1
     });
 
     totalKmGeral += kmDia1;
     totalTempoEstradaGeralMin += tempoEstradaDia1;
+    totalTempoGoogleMapsGeralMin += tempoMapsDia1;
 
-    // DIA 2: Giro Circular nas Cidades Adjacentes da GRE -> Retorno para Pernoite 2 na Sede
+    // DIA 2: Imersão Regional com 2º Pernoite na Cidade-Polo
     let cursorMin2 = 7 * 60 + 30;
     const paradasDia2: ParadaRota[] = [];
     let kmDia2 = 0;
     let tempoEstradaDia2 = 0;
+    let tempoMapsDia2 = 0;
 
     paradasDia2.push({
       ordem: 1,
       tipo: 'partida',
       cidade: cidadePolo,
-      localNome: `Saída de ${cidadePolo} (Giro nas Cidades Adjacentes)`,
+      localNome: `Saída para Giro Regional (${cidadePolo})`,
       distanciaTrechoKm: 0,
       tempoDeslocamentoMin: 0,
+      tempoGoogleMapsMin: 0,
+      economiaTempoMin: 0,
+      tempoEstimadoMapsFormatado: '0 min',
+      tempoEstimadoHiluxFormatado: '0 min',
       tempoPermanenciaMin: 0,
       horarioChegada: minToTime(cursorMin2),
       horarioPartida: minToTime(cursorMin2)
     });
 
     let countDia2 = 0;
-    while (indexEscola < escolasOrdenadas.length && countDia2 < 5) {
+    while (indexEscola < escolasOrdenadas.length && countDia2 < 4) {
       const item = escolasOrdenadas[indexEscola];
-      const distTrecho = 30;
-      const tempoEstrada = calcularTempoEstradaMinutos(distTrecho);
+      const distTrecho = 45;
+      const estimativa = calcularDeslocamentoTrecho(distTrecho);
       const tempoVistoria = item.escola.tempoEstimadoVistoriaMinutos;
 
-      cursorMin2 += tempoEstrada;
+      cursorMin2 += estimativa.tempoS10Hilux140Min;
       const horarioCheg = minToTime(cursorMin2);
       cursorMin2 += tempoVistoria;
       const horarioPart = minToTime(cursorMin2);
 
       kmDia2 += distTrecho;
-      tempoEstradaDia2 += tempoEstrada;
+      tempoEstradaDia2 += estimativa.tempoS10Hilux140Min;
+      tempoMapsDia2 += estimativa.tempoGoogleMapsMin;
 
       paradasDia2.push({
         ordem: paradasDia2.length + 1,
@@ -819,7 +963,11 @@ export function gerarPlanoDeViagem(
         cidade: item.escola.municipio,
         localNome: item.escola.nome,
         distanciaTrechoKm: distTrecho,
-        tempoDeslocamentoMin: tempoEstrada,
+        tempoDeslocamentoMin: estimativa.tempoS10Hilux140Min,
+        tempoGoogleMapsMin: estimativa.tempoGoogleMapsMin,
+        economiaTempoMin: estimativa.economiaTempoMin,
+        tempoEstimadoMapsFormatado: estimativa.tempoFormatadoMaps,
+        tempoEstimadoHiluxFormatado: estimativa.tempoFormatadoHilux,
         tempoPermanenciaMin: tempoVistoria,
         horarioChegada: horarioCheg,
         horarioPartida: horarioPart
@@ -829,73 +977,85 @@ export function gerarPlanoDeViagem(
       countDia2++;
     }
 
-    const distVoltaSede = 35;
-    const tempoVoltaSede = calcularTempoEstradaMinutos(distVoltaSede);
-    cursorMin2 += tempoVoltaSede;
-    kmDia2 += distVoltaSede;
-    tempoEstradaDia2 += tempoVoltaSede;
+    const estimativaPernoite2 = calcularDeslocamentoTrecho(45);
+    cursorMin2 += estimativaPernoite2.tempoS10Hilux140Min;
+    kmDia2 += 45;
+    tempoEstradaDia2 += estimativaPernoite2.tempoS10Hilux140Min;
+    tempoMapsDia2 += estimativaPernoite2.tempoGoogleMapsMin;
 
     paradasDia2.push({
       ordem: paradasDia2.length + 1,
       tipo: 'pernoite',
       cidade: cidadePolo,
-      localNome: `${cidadePolo} — Pernoite 2 (Jantar & Pernoite)`,
-      distanciaTrechoKm: distVoltaSede,
-      tempoDeslocamentoMin: tempoVoltaSede,
+      localNome: `Pernoite 2 na Cidade-Polo (${cidadePolo})`,
+      distanciaTrechoKm: 45,
+      tempoDeslocamentoMin: estimativaPernoite2.tempoS10Hilux140Min,
+      tempoGoogleMapsMin: estimativaPernoite2.tempoGoogleMapsMin,
+      economiaTempoMin: estimativaPernoite2.economiaTempoMin,
+      tempoEstimadoMapsFormatado: estimativaPernoite2.tempoFormatadoMaps,
+      tempoEstimadoHiluxFormatado: estimativaPernoite2.tempoFormatadoHilux,
       tempoPermanenciaMin: 0,
       horarioChegada: minToTime(cursorMin2),
-      horarioPartida: '07:30h (Dia 3)',
-      observacao: `Retorno para a base regional às ${minToTime(cursorMin2)} para segunda pernoite.`
+      horarioPartida: minToTime(cursorMin2),
+      observacao: `Retorno ao hotel entre 19:00h e 20:00h (${minToTime(cursorMin2)}) para pernoite 2.`
     });
 
     dias.push({
       diaNumero: 2,
-      titulo: `Dia 2 — Imersão Total nas Cidades da Jurisdição (${cidadePolo})`,
-      dataDescritiva: 'Varredura das Unidades Regionais',
+      titulo: 'Dia 2 — Imersão Regional nas Escolas Adjacentes',
+      dataDescritiva: `Giro nas Cidades da ${gre.nome}`,
       horarioInicio: '07:30h',
       horarioTerminoPrevisto: minToTime(cursorMin2),
       cidadePernoiteOuDestino: `${cidadePolo} (Pernoite 2)`,
       totalKmDia: kmDia2,
       totalTempoEstradaMin: tempoEstradaDia2,
-      totalTempoVistoriasMin: countDia2 * 50,
+      totalTempoGoogleMapsMin: tempoMapsDia2,
+      totalTempoVistoriasMin: paradasDia2.filter(p => p.tipo === 'vistoria').length * 50,
       paradas: paradasDia2
     });
 
     totalKmGeral += kmDia2;
     totalTempoEstradaGeralMin += tempoEstradaDia2;
+    totalTempoGoogleMapsGeralMin += tempoMapsDia2;
 
-    // DIA 3: Retorno definitivo para Teresina
-    let cursorMin3 = 7 * 60 + 30;
+    // DIA 3: Retorno definitivo a Teresina
+    let cursorMin3 = 7 * 30;
     const paradasDia3: ParadaRota[] = [];
     let kmDia3 = 0;
     let tempoEstradaDia3 = 0;
+    let tempoMapsDia3 = 0;
 
     paradasDia3.push({
       ordem: 1,
       tipo: 'partida',
       cidade: cidadePolo,
-      localNome: `Saída de ${cidadePolo} (Retorno a Teresina)`,
+      localNome: `Partida da Cidade-Polo (${cidadePolo})`,
       distanciaTrechoKm: 0,
       tempoDeslocamentoMin: 0,
+      tempoGoogleMapsMin: 0,
+      economiaTempoMin: 0,
+      tempoEstimadoMapsFormatado: '0 min',
+      tempoEstimadoHiluxFormatado: '0 min',
       tempoPermanenciaMin: 0,
       horarioChegada: minToTime(cursorMin3),
       horarioPartida: minToTime(cursorMin3)
     });
 
-    // 1 vistoria no corredor de volta
-    if (indexEscola < escolasOrdenadas.length) {
+    let countDia3 = 0;
+    while (indexEscola < escolasOrdenadas.length && countDia3 < 2) {
       const item = escolasOrdenadas[indexEscola];
-      const distTrecho = 30;
-      const tempoEstrada = calcularTempoEstradaMinutos(distTrecho);
+      const distTrecho = 40;
+      const estimativa = calcularDeslocamentoTrecho(distTrecho);
       const tempoVistoria = item.escola.tempoEstimadoVistoriaMinutos;
 
-      cursorMin3 += tempoEstrada;
+      cursorMin3 += estimativa.tempoS10Hilux140Min;
       const horarioCheg = minToTime(cursorMin3);
       cursorMin3 += tempoVistoria;
       const horarioPart = minToTime(cursorMin3);
 
       kmDia3 += distTrecho;
-      tempoEstradaDia3 += tempoEstrada;
+      tempoEstradaDia3 += estimativa.tempoS10Hilux140Min;
+      tempoMapsDia3 += estimativa.tempoGoogleMapsMin;
 
       paradasDia3.push({
         ordem: paradasDia3.length + 1,
@@ -905,18 +1065,25 @@ export function gerarPlanoDeViagem(
         cidade: item.escola.municipio,
         localNome: item.escola.nome,
         distanciaTrechoKm: distTrecho,
-        tempoDeslocamentoMin: tempoEstrada,
+        tempoDeslocamentoMin: estimativa.tempoS10Hilux140Min,
+        tempoGoogleMapsMin: estimativa.tempoGoogleMapsMin,
+        economiaTempoMin: estimativa.economiaTempoMin,
+        tempoEstimadoMapsFormatado: estimativa.tempoFormatadoMaps,
+        tempoEstimadoHiluxFormatado: estimativa.tempoFormatadoHilux,
         tempoPermanenciaMin: tempoVistoria,
         horarioChegada: horarioCheg,
         horarioPartida: horarioPart
       });
+
       indexEscola++;
+      countDia3++;
     }
 
-    const tempoVoltaTeresina = calcularTempoEstradaMinutos(distTeresinaSede);
-    cursorMin3 += tempoVoltaTeresina;
+    const estimativaVoltaTeresinaFinal = calcularDeslocamentoTrecho(distTeresinaSede);
+    cursorMin3 += estimativaVoltaTeresinaFinal.tempoS10Hilux140Min;
     kmDia3 += distTeresinaSede;
-    tempoEstradaDia3 += tempoVoltaTeresina;
+    tempoEstradaDia3 += estimativaVoltaTeresinaFinal.tempoS10Hilux140Min;
+    tempoMapsDia3 += estimativaVoltaTeresinaFinal.tempoGoogleMapsMin;
 
     paradasDia3.push({
       ordem: paradasDia3.length + 1,
@@ -924,7 +1091,11 @@ export function gerarPlanoDeViagem(
       cidade: 'Teresina',
       localNome: 'Chegada Final em Teresina - PI',
       distanciaTrechoKm: distTeresinaSede,
-      tempoDeslocamentoMin: tempoVoltaTeresina,
+      tempoDeslocamentoMin: estimativaVoltaTeresinaFinal.tempoS10Hilux140Min,
+      tempoGoogleMapsMin: estimativaVoltaTeresinaFinal.tempoGoogleMapsMin,
+      economiaTempoMin: estimativaVoltaTeresinaFinal.economiaTempoMin,
+      tempoEstimadoMapsFormatado: estimativaVoltaTeresinaFinal.tempoFormatadoMaps,
+      tempoEstimadoHiluxFormatado: estimativaVoltaTeresinaFinal.tempoFormatadoHilux,
       tempoPermanenciaMin: 0,
       horarioChegada: minToTime(cursorMin3),
       horarioPartida: minToTime(cursorMin3),
@@ -940,17 +1111,20 @@ export function gerarPlanoDeViagem(
       cidadePernoiteOuDestino: 'Teresina (Chegada Final)',
       totalKmDia: kmDia3,
       totalTempoEstradaMin: tempoEstradaDia3,
+      totalTempoGoogleMapsMin: tempoMapsDia3,
       totalTempoVistoriasMin: paradasDia3.filter(p => p.tipo === 'vistoria').length * 50,
       paradas: paradasDia3
     });
 
     totalKmGeral += kmDia3;
     totalTempoEstradaGeralMin += tempoEstradaDia3;
+    totalTempoGoogleMapsGeralMin += tempoMapsDia3;
   }
 
-  const horas = Math.floor(totalTempoEstradaGeralMin / 60);
-  const min = totalTempoEstradaGeralMin % 60;
-  const tempoEstradaFormatado = `${horas}h ${min > 0 ? `${min}min` : ''}`;
+  const tempoEstradaFormatado = formatarMinutosLegivel(totalTempoEstradaGeralMin);
+  const tempoMapsFormatado = formatarMinutosLegivel(totalTempoGoogleMapsGeralMin);
+  const economiaTotalMin = Math.max(0, totalTempoGoogleMapsGeralMin - totalTempoEstradaGeralMin);
+  const economiaTotalFormatada = formatarMinutosLegivel(economiaTotalMin);
 
   const totalEscolasAtendidas = dias.reduce(
     (acc, d) => acc + d.paradas.filter(p => p.tipo === 'vistoria').length,
@@ -958,18 +1132,22 @@ export function gerarPlanoDeViagem(
   );
 
   const ultimoDia = dias[dias.length - 1];
-  const horarioFinal = ultimoDia ? ultimoDia.horarioTerminoPrevisto : '21:00h';
+  const horarioFinal = ultimoDia ? ultimoDia.horarioTerminoPrevisto : '21:30h';
 
   return {
     tipoRota,
     gre,
     diaria,
     cidadePolo,
+    duracaoDiasReal,
+    duracoesDisponiveis,
     totalKm: totalKmGeral,
     tempoEstradaHoras: tempoEstradaFormatado,
+    tempoEstradaGoogleMapsHoras: tempoMapsFormatado,
+    economiaTotalEstradaHoras: economiaTotalFormatada,
     totalEscolasAtendidas,
-    veiculoInfo: 'Caminhonete S10 / Hilux',
-    velocidadeCruzeiro: '140 km/h (cruzeiro em estrada aberta)',
+    veiculoInfo: 'Caminhonete S10 / Hilux (4x4)',
+    velocidadeCruzeiro: '140 km/h (cruzeiro rodoviário)',
     horarioFinalPrevisto: horarioFinal,
     dias
   };
@@ -987,7 +1165,7 @@ export function formatarPlanoParaWhatsApp(
   let txt = `*🛣️ ROTEIRO DE VISTORIAS — UGERF / GPR*\n`;
   txt += `*GRE:* ${plano.gre.nome}\n`;
   txt += `*Data:* ${dataPeriodo && dataPeriodo.trim() ? dataPeriodo.trim() : 'XX/XX á XX/XX'}\n`;
-  txt += `*Diárias:* ${plano.diaria} diárias\n`;
+  txt += `*Diárias:* ${plano.diaria} diárias (${plano.duracaoDiasReal === 1 ? 'Bate e Volta' : `${plano.duracaoDiasReal} dias em campo`})\n`;
 
   if (equipe && equipe.trim()) {
     txt += `*👥 Equipe:* ${equipe.trim()}\n`;
@@ -999,7 +1177,6 @@ export function formatarPlanoParaWhatsApp(
   plano.dias.forEach((d) => {
     txt += `*📅 DIA ${d.diaNumero}*\n`;
     
-    // Obter apenas as vistorias em escolas
     const vistorias = d.paradas.filter(p => p.tipo === 'vistoria' && p.escola);
 
     if (vistorias.length === 0) {

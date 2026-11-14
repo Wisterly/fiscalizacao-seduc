@@ -16,14 +16,15 @@ import {
   ExternalLink, 
   Filter, 
   Moon, 
-  Sun,
-  Flame,
-  Award,
-  Search,
+  Flame, 
+  Search, 
   X,
-  Users,
   Trash2,
-  RotateCcw
+  RotateCcw,
+  Users,
+  Timer,
+  Zap,
+  SlidersHorizontal
 } from 'lucide-react';
 import { Escola, GRE, RotaVistoria } from '../../types';
 import { 
@@ -52,18 +53,18 @@ export const RotasView: React.FC<RotasViewProps> = ({
   const [subTab, setSubTab] = useState<'trajeto' | 'prioridade'>('trajeto');
 
   // Parâmetros de Viagem
-  // Seleciona preferencialmente a 8ª GRE (Oeiras) ou a primeira disponível
   const [selectedGreId, setSelectedGreId] = useState<string>(() => {
     const gre8 = gres.find(g => g.numero === 8 || g.id === 'gre-08');
     return gre8 ? gre8.id : (gres[0]?.id || 'gre-08');
   });
 
-  const [selectedDiaria, setSelectedDiaria] = useState<DiariaOption>('2.5');
+  const [selectedDiaria, setSelectedDiaria] = useState<DiariaOption>('1.5');
+  const [duracaoDiasCustom, setDuracaoDiasCustom] = useState<number | undefined>(undefined);
   const [copiadoWhatsapp, setCopiadoWhatsapp] = useState(false);
   const [modalGreAberto, setModalGreAberto] = useState(false);
   const [filtroGreBusca, setFiltroGreBusca] = useState('');
 
-  // Equipe / Pessoas na Rota (Persistido no localStorage)
+  // Equipe de Campo / Pessoas na Rota (Persistido no localStorage)
   const [equipeRota, setEquipeRota] = useState<string>(() => {
     try {
       return localStorage.getItem('seduc_rotas_equipe') || '';
@@ -106,10 +107,6 @@ export const RotasView: React.FC<RotasViewProps> = ({
     setEscolasRemovidasIds(prev => prev.includes(escolaId) ? prev : [...prev, escolaId]);
   };
 
-  const handleRestaurarEscola = (escolaId: string) => {
-    setEscolasRemovidasIds(prev => prev.filter(id => id !== escolaId));
-  };
-
   const handleRestaurarTodas = () => {
     setEscolasRemovidasIds([]);
   };
@@ -132,12 +129,18 @@ export const RotasView: React.FC<RotasViewProps> = ({
     return schools.filter(s => !escolasRemovidasIds.includes(s.id));
   }, [schools, escolasRemovidasIds]);
 
-  // Gera o Plano de Viagem Inteligente usando o Motor Algorítmico
+  // Gera o Plano de Viagem Inteligente com suporte a compactação de dias e comparativo Google Maps/Waze
   const planoViagem: PlanoViagem = useMemo(() => {
-    return gerarPlanoDeViagem(subTab, escolasElegiveis, greAtiva, selectedDiaria);
-  }, [subTab, escolasElegiveis, greAtiva, selectedDiaria]);
+    return gerarPlanoDeViagem(subTab, escolasElegiveis, greAtiva, selectedDiaria, duracaoDiasCustom);
+  }, [subTab, escolasElegiveis, greAtiva, selectedDiaria, duracaoDiasCustom]);
 
-  // Handler de Cópia para WhatsApp (Padrão UGERF / GPR: sem horários, apenas cidades e escolas, com data e equipe)
+  // Handler de alteração de diária (redefine a duração personalizada)
+  const handleSelectDiaria = (novaDiaria: DiariaOption) => {
+    setSelectedDiaria(novaDiaria);
+    setDuracaoDiasCustom(undefined);
+  };
+
+  // Handler de Cópia para WhatsApp (Padrão Oficial UGERF / GPR)
   const handleCopiarWhatsApp = async () => {
     const texto = formatarPlanoParaWhatsApp(planoViagem, equipeRota, dataPeriodo);
     try {
@@ -197,6 +200,8 @@ export const RotasView: React.FC<RotasViewProps> = ({
     }
   };
 
+  const isBateVolta = planoViagem.duracaoDiasReal === 1;
+
   return (
     <div className="space-y-6 pb-20">
       {/* ===================================================================== */}
@@ -218,7 +223,7 @@ export const RotasView: React.FC<RotasViewProps> = ({
                 </span>
               </div>
               <p className="text-xs sm:text-sm text-slate-400">
-                Otimização rodoviária a 140 km/h, matriz hierárquica e controle rígido de pernoite.
+                Cálculo com base no Google Maps & Waze simulado a 140 km/h (S10/Hilux), bate e volta controlado e matriz hierárquica.
               </p>
             </div>
           </div>
@@ -246,7 +251,7 @@ export const RotasView: React.FC<RotasViewProps> = ({
           </button>
         </div>
 
-        {/* NAVEGAÇÃO ENTRE AS DUAS SUB-ABAS (Super Prompt) */}
+        {/* NAVEGAÇÃO ENTRE AS DUAS SUB-ABAS */}
         <div className="grid grid-cols-2 gap-2 mt-4 p-1.5 bg-slate-950/60 rounded-xl border border-slate-800">
           <button
             onClick={() => setSubTab('trajeto')}
@@ -285,11 +290,11 @@ export const RotasView: React.FC<RotasViewProps> = ({
       </div>
 
       {/* ===================================================================== */}
-      {/* CONTROLES DA VIAGEM: GRE, DIÁRIAS, VEÍCULO E REGRAS OPERACIONAIS    */}
+      {/* CONTROLES DA VIAGEM: GRE, DIÁRIAS, COMPACTAÇÃO, VEÍCULO E REGRAS      */}
       {/* ===================================================================== */}
       <div className="bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* 1. SELETOR DE GRE (com acesso ao Seletor Oficial das 21 GREs) */}
+          {/* 1. SELETOR DE GRE */}
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
               <span>Jurisdição Regional (GRE)</span>
@@ -303,7 +308,7 @@ export const RotasView: React.FC<RotasViewProps> = ({
                     <span>{greAtiva.nome}</span>
                   </div>
                   <div className="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5">
-                    <span>Sede / Pernoite:</span>
+                    <span>Sede Regional:</span>
                     <strong className="text-amber-300">{greAtiva.sede}</strong>
                   </div>
                 </div>
@@ -319,17 +324,22 @@ export const RotasView: React.FC<RotasViewProps> = ({
             </div>
           </div>
 
-          {/* 2. SELETOR DE DIÁRIAS (1.5, 2.5, 3.5 e 4.5 exatas) */}
+          {/* 2. SELETOR DE DIÁRIAS & COMPACTAÇÃO */}
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
               <span>Regime de Diárias</span>
-              <span className="text-[10px] text-slate-400 font-normal">4 opções</span>
+              <span className="text-[10px] text-slate-400 font-normal">
+                {selectedDiaria === '1.5' && '1.5 d (Bate e Volta)'}
+                {selectedDiaria === '2.5' && '2.5 d (Bate e Volta + Diária)'}
+                {selectedDiaria === '3.5' && '3.5 d (2 dias / 1 pernoite)'}
+                {selectedDiaria === '4.5' && '4.5 d (3 dias / 2 pernoites)'}
+              </span>
             </label>
             <div className="grid grid-cols-4 gap-1.5 bg-slate-950/80 p-1 rounded-xl border border-slate-800">
               {(['1.5', '2.5', '3.5', '4.5'] as DiariaOption[]).map((opt) => (
                 <button
                   key={opt}
-                  onClick={() => setSelectedDiaria(opt)}
+                  onClick={() => handleSelectDiaria(opt)}
                   className={`py-2 px-1 rounded-lg text-xs font-bold transition-all ${
                     selectedDiaria === opt
                       ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/25 scale-[1.02]'
@@ -340,44 +350,87 @@ export const RotasView: React.FC<RotasViewProps> = ({
                 </button>
               ))}
             </div>
-            <p className="text-[11px] text-slate-400 italic">
-              {selectedDiaria === '1.5' && '⚡ Bate e volta no mesmo dia (teto retorno: até 22:00h em Teresina).'}
-              {selectedDiaria === '2.5' && `🏨 1 dia de rota com pernoite em ${greAtiva.sede} (19h-20h) + volta Dia 2.`}
-              {selectedDiaria === '3.5' && `🔄 Rota estruturada com pernoite em ${greAtiva.sede} (19h-20h) e giro no Dia 2.`}
-              {selectedDiaria === '4.5' && `🏕️ Imersão completa (2 pernoites em ${greAtiva.sede} e retorno no Dia 3).`}
-            </p>
+
+            {/* CONTROLE DE COMPACTAÇÃO DE DIAS EM CAMPO (Opção solicitada pelo usuário) */}
+            {planoViagem.duracoesDisponiveis.length > 1 && (
+              <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2">
+                <span className="text-[11px] font-semibold text-slate-300 flex items-center gap-1">
+                  <SlidersHorizontal className="w-3 h-3 text-amber-400" />
+                  <span>Duração em Campo:</span>
+                </span>
+                <div className="flex gap-1">
+                  {planoViagem.duracoesDisponiveis.map((numDias) => {
+                    const isSelected = planoViagem.duracaoDiasReal === numDias;
+                    return (
+                      <button
+                        key={numDias}
+                        onClick={() => setDuracaoDiasCustom(numDias)}
+                        className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
+                          isSelected
+                            ? 'bg-amber-400 text-slate-950 ring-1 ring-amber-300'
+                            : 'bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700'
+                        }`}
+                        title={numDias === 1 ? 'Compactar para Bate e Volta no mesmo dia' : `Executar em ${numDias} dias`}
+                      >
+                        {numDias === 1 ? '1 Dia (Bate/Volta)' : `${numDias} Dias`}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* 3. PARÂMETRO VEÍCULO & ORIGEM */}
+          {/* 3. PARÂMETRO VEÍCULO, VELOCIDADE E MAPS/WAZE */}
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-              Veículo & Ponto de Partida
+            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+              <span>Veículo & Velocidade</span>
+              <span className="text-[10px] text-emerald-400 font-semibold flex items-center gap-1">
+                <Zap className="w-3 h-3" />
+                Maps + Waze + S10
+              </span>
             </label>
             <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-2.5 space-y-1.5">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-slate-400 flex items-center gap-1.5">
                   <Car className="w-3.5 h-3.5 text-amber-400" />
-                  Veículo:
+                  Veículo Padrão:
                 </span>
                 <span className="font-bold text-white">S10 / Hilux (4x4)</span>
               </div>
               <div className="flex items-center justify-between text-xs">
                 <span className="text-slate-400 flex items-center gap-1.5">
                   <Gauge className="w-3.5 h-3.5 text-emerald-400" />
-                  Cruzeiro Rodoviário:
+                  Cruzeiro em Estrada:
                 </span>
                 <span className="font-bold text-emerald-400">140 km/h</span>
               </div>
               <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-800/80">
                 <span className="text-slate-500">Origem Fixa:</span>
-                <span className="font-semibold text-slate-300">Teresina - PI</span>
+                <span className="font-semibold text-slate-300">Teresina - PI (06:00h)</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* 4. CAMPO DE PESSOAS NA ROTA (EQUIPE DE CAMPO) */}
-        {/* 4. CAMPOS DE EXPORTAÇÃO WHATSAPP (DATA & EQUIPE DE CAMPO) */}
+        {/* ALERTA INFORMATIVO DE BATE E VOLTA E TRAVA DE TEMPO */}
+        {isBateVolta ? (
+          <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-3 text-xs text-blue-200 flex items-start gap-2.5">
+            <Timer className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+            <div>
+              <strong className="text-blue-300">Regime Bate e Volta (1 Dia):</strong> Saída às <strong>06:00h</strong> de Teresina com retorno previsto entre <strong>21:00h e 22:00h</strong>. Carga dosada de escolas ({planoViagem.totalEscolasAtendidas} unidades) para garantir tempo suficiente para todas as vistorias técnicas sem sobrecarregar a equipe.
+            </div>
+          </div>
+        ) : (
+          <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-3 text-xs text-purple-200 flex items-start gap-2.5">
+            <Moon className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
+            <div>
+              <strong className="text-purple-300">Viagem com Pernoite na Cidade-Polo:</strong> A equipe chega na sede regional (<strong>{greAtiva.sede}</strong>) rigorosamente entre <strong>19:00h e 20:00h</strong> para descanso e jantar, reiniciando os trabalhos no dia seguinte.
+            </div>
+          </div>
+        )}
+
+        {/* CAMPOS DE EXPORTAÇÃO WHATSAPP (DATA & EQUIPE DE CAMPO) */}
         <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3 sm:p-4 space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
             <label className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
@@ -442,28 +495,7 @@ export const RotasView: React.FC<RotasViewProps> = ({
               </div>
             </div>
           </div>
-
-          <p className="text-[11px] text-slate-400">
-            Exporta o modelo oficial: <code>*🛣️ ROTEIRO DE VISTORIAS — UGERF / GPR*</code> com apenas as cidades e os nomes das escolas por dia.
-          </p>
         </div>
-
-        {/* Banner Explicativo da Sub-Aba Ativa */}
-        {subTab === 'prioridade' ? (
-          <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 text-xs text-red-200 flex items-start gap-2.5">
-            <ShieldAlert className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-            <div>
-              <strong className="text-red-300">Matriz Hierárquica Ativada:</strong> A rota começa obrigatoriamente pela obra mais crítica (🔴 Urgente - Grau 3) e degrada sucessivamente até 🟢 Razoável. O algoritmo cruzou as demandas da <strong>Superintendente Arielma (Grau 3)</strong>, <strong>Diretora Anik (Grau 2)</strong>, <strong>Gerente Naila (Grau 1)</strong> e as vistorias das Diretoras Escolares analisadas com base no relatório técnico de obras.
-            </div>
-          </div>
-        ) : (
-          <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 text-xs text-amber-200 flex items-start gap-2.5">
-            <Navigation className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-            <div>
-              <strong className="text-amber-300">Corredor Geográfico Otimizado:</strong> Rota montada com menor deslocamento contínuo em estrada saindo de Teresina, atingindo as escolas da <strong>{greAtiva.nome}</strong> no eixo de ida e pernoitando rigorosamente em <strong>{greAtiva.sede}</strong> entre 19:00h e 20:00h para o jantar.
-            </div>
-          </div>
-        )}
       </div>
 
       {/* ===================================================================== */}
@@ -482,43 +514,48 @@ export const RotasView: React.FC<RotasViewProps> = ({
           <div className="text-[11px] text-slate-500 mt-0.5">Ida, giro e retorno</div>
         </div>
 
-        {/* Tempo de Estrada */}
+        {/* Tempo de Estrada (Comparativo Hilux 140km/h vs Maps/Waze) */}
         <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 shadow-lg">
           <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
-            <Clock className="w-4 h-4 text-blue-400" />
-            <span>Tempo Estrada</span>
+            <Clock className="w-4 h-4 text-emerald-400" />
+            <span>Estrada (140 km/h)</span>
           </div>
-          <div className="text-xl sm:text-2xl font-black text-white mt-1.5">
+          <div className="text-xl sm:text-2xl font-black text-emerald-400 mt-1.5">
             {planoViagem.tempoEstradaHoras}
           </div>
-          <div className="text-[11px] text-slate-500 mt-0.5">Cruzeiro a 140 km/h</div>
+          <div className="text-[10px] text-slate-400 mt-0.5 flex flex-col">
+            <span className="text-slate-500">Maps/Waze: ~{planoViagem.tempoEstradaGoogleMapsHoras}</span>
+            <span className="text-emerald-400 font-semibold">Economia: ~{planoViagem.economiaTotalEstradaHoras}</span>
+          </div>
         </div>
 
         {/* Escolas Atendidas */}
         <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 shadow-lg">
           <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
-            <Building2 className="w-4 h-4 text-emerald-400" />
+            <Building2 className="w-4 h-4 text-blue-400" />
             <span>Escolas na Rota</span>
           </div>
-          <div className="text-xl sm:text-2xl font-black text-emerald-400 mt-1.5">
+          <div className="text-xl sm:text-2xl font-black text-blue-400 mt-1.5">
             {planoViagem.totalEscolasAtendidas}
           </div>
-          <div className="text-[11px] text-slate-500 mt-0.5">Trava anti-sobrecarga ativa</div>
+          <div className="text-[11px] text-slate-500 mt-0.5">Sem sobrecarga de equipe</div>
         </div>
 
-        {/* Cidade-Polo de Pernoite */}
+        {/* Pernoite / Cidade-Polo */}
         <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 shadow-lg">
           <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
-            <Moon className="w-4 h-4 text-purple-400" />
-            <span>Cidade-Polo</span>
+            {isBateVolta ? <Timer className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-purple-400" />}
+            <span>{isBateVolta ? 'Regime' : 'Cidade-Polo'}</span>
           </div>
-          <div className="text-lg sm:text-xl font-black text-white mt-1.5 truncate" title={planoViagem.cidadePolo}>
-            {planoViagem.cidadePolo}
+          <div className="text-base sm:text-lg font-black text-white mt-1.5 truncate" title={isBateVolta ? 'Bate e Volta' : planoViagem.cidadePolo}>
+            {isBateVolta ? 'Bate e Volta' : planoViagem.cidadePolo}
           </div>
-          <div className="text-[11px] text-purple-300/80 mt-0.5">Pernoite e Jantar (19h-20h)</div>
+          <div className="text-[11px] text-slate-400 mt-0.5">
+            {isBateVolta ? 'Retorno no mesmo dia' : 'Pernoite e Jantar (19h-20h)'}
+          </div>
         </div>
 
-        {/* Horário Final */}
+        {/* Horário Final Previsto */}
         <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 shadow-lg col-span-2 sm:col-span-1">
           <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
             <Calendar className="w-4 h-4 text-yellow-400" />
@@ -527,7 +564,9 @@ export const RotasView: React.FC<RotasViewProps> = ({
           <div className="text-xl sm:text-2xl font-black text-yellow-400 mt-1.5">
             {planoViagem.horarioFinalPrevisto}
           </div>
-          <div className="text-[11px] text-slate-500 mt-0.5">Teresina - PI</div>
+          <div className="text-[11px] text-slate-500 mt-0.5">
+            {isBateVolta ? 'Teto entre 21h e 22h' : 'Teresina - PI'}
+          </div>
         </div>
       </div>
 
@@ -609,7 +648,7 @@ export const RotasView: React.FC<RotasViewProps> = ({
                     }`}
                   >
                     {/* Horário & Indicador da Timeline */}
-                    <div className="flex items-start gap-3 md:w-56 shrink-0">
+                    <div className="flex items-start gap-3 md:w-60 shrink-0">
                       <div className="flex flex-col items-center">
                         <div
                           className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs shadow-md ${
@@ -650,11 +689,13 @@ export const RotasView: React.FC<RotasViewProps> = ({
                           )}
                           {isPartida && 'Saída Oficial'}
                           {isPernoite && 'Pernoite & Jantar'}
-                          {isRetorno && 'Encerramento'}
+                          {isRetorno && 'Retorno a Teresina'}
                         </div>
                         {parada.distanciaTrechoKm > 0 && (
-                          <div className="text-[10px] text-slate-500 mt-0.5">
-                            🛣️ Trecho: {parada.distanciaTrechoKm} km (~{parada.tempoDeslocamentoMin} min)
+                          <div className="text-[10px] text-slate-500 mt-1 space-y-0.5">
+                            <div>🛣️ Trecho: <strong>{parada.distanciaTrechoKm} km</strong></div>
+                            <div className="text-emerald-400 font-semibold">⚡ S10 (140km/h): ~{parada.tempoEstimadoHiluxFormatado}</div>
+                            <div className="text-slate-500">🗺️ Maps/Waze: ~{parada.tempoEstimadoMapsFormatado} (-{parada.economiaTempoMin}m)</div>
                           </div>
                         )}
                       </div>
@@ -671,7 +712,6 @@ export const RotasView: React.FC<RotasViewProps> = ({
                           {parada.cidade}
                         </span>
 
-                        {/* Status Compatibilizado na Rota por Prioridade */}
                         {isVistoria && renderStatusBadge(parada.analisePrioridade)}
                       </div>
 
@@ -682,7 +722,7 @@ export const RotasView: React.FC<RotasViewProps> = ({
                         </p>
                       )}
 
-                      {/* DETALHES DE CRITICIDADE E HIERARQUIA (Super Prompt) */}
+                      {/* DETALHES DE CRITICIDADE E HIERARQUIA */}
                       {isVistoria && parada.escola && (
                         <div className="bg-slate-950/70 border border-slate-800/80 rounded-xl p-3 space-y-2">
                           {/* Tags de Origem da Demanda */}
@@ -710,7 +750,6 @@ export const RotasView: React.FC<RotasViewProps> = ({
                               );
                             })}
 
-                            {/* Tags Técnicas do Relatório */}
                             {parada.escola.relatorio.obraParada && (
                               <span className="px-2 py-0.5 rounded text-[11px] bg-red-600/30 text-red-200 border border-red-500/50 font-bold">
                                 🛑 Obra Parada
@@ -774,14 +813,14 @@ export const RotasView: React.FC<RotasViewProps> = ({
                           </button>
                         )}
 
-                        {/* Botão de Tirar da Rota */}
+                        {/* Botão de Excluir / Tirar da Rota */}
                         <button
                           onClick={() => handleRemoverEscola(parada.escola!.id)}
-                          className="px-2.5 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-300 hover:text-red-200 text-xs font-semibold flex items-center gap-1.5 border border-red-500/30 transition-colors"
-                          title="Tirar esta escola sugerida da rota"
+                          className="px-2 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 text-xs font-medium flex items-center gap-1 border border-red-500/20 transition-colors"
+                          title="Tirar esta escola da rota"
                         >
-                          <Trash2 className="w-3.5 h-3.5 text-red-400" />
-                          <span>Tirar da Rota</span>
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">Tirar</span>
                         </button>
                       </div>
                     )}
@@ -794,7 +833,7 @@ export const RotasView: React.FC<RotasViewProps> = ({
       </div>
 
       {/* ===================================================================== */}
-      {/* MODAL DE SELEÇÃO RÁPIDA DAS 21 GREs (Mesmo padrão de Vistorias)       */}
+      {/* MODAL DE SELEÇÃO RÁPIDA DAS 21 GREs                                  */}
       {/* ===================================================================== */}
       {modalGreAberto && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
@@ -855,7 +894,6 @@ export const RotasView: React.FC<RotasViewProps> = ({
                       key={gre.id}
                       onClick={() => {
                         setSelectedGreId(gre.id);
-                        setEscolasRemovidasIds([]);
                         setModalGreAberto(false);
                       }}
                       className={`p-3 rounded-xl border text-left transition-all relative flex flex-col justify-between ${

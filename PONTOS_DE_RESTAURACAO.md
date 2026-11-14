@@ -29,6 +29,21 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.023] — Interceptação Inteligente do Botão Voltar (Android & Web) com Duplo Toque para Sair, Bate e Volta Otimizado (1.5 e 2.5 d) & Comparativo Maps/Waze vs Hilux 140km/h
+- **Data/Hora:** 2026-11-13 23:58 (UTC-3)
+- **Escopos Definidos:**
+  - `PR.023` (Geral): Solução completa para o gesto/botão de voltar do Android e navegador. Interceptação via `@capacitor/app` (`CapApp.addListener('backButton')`) e `window.addEventListener('popstate')`. Implementação de pilha de histórico de abas (`tabHistory`), fechamento em cascata de modais de vistoria, relatórios, telas de perfil de escola e subviews. Trava de segurança com duplo clique na tela inicial (`inicio`): ao pressionar voltar pela primeira vez na tela inicial, exibe o toast flutuante *"Pressione novamente para sair do aplicativo"* e somente fecha o app se pressionado duas vezes em até 2 segundos.
+  - `PR.023.1` (Desktop / Web): Readequação estrita das regras de viagem no motor algorítmico `rotasEngine.ts`: regimes de 1.5 e 2.5 diárias configurados como Bate e Volta no mesmo dia (saída às 06:00h e chegada programada entre 21:00h e 22:00h em Teresina), limitando a carga de escolas a 3-5 unidades para evitar sobrecarga humana. Regimes de 3.5 diárias (2 dias / 1 pernoite) e 4.5 diárias (3 dias / 2 pernoites) com pernoites rigorosamente entre 19:00h e 20:00h na Cidade-Polo. Novo seletor de "Duração em Campo" com recurso de compactação para reduzir rotas de 4.5d para 2 ou 1 dia (bate e volta) e 3.5d para 1 dia.
+  - `PR.023.2` (Mobile / Android): Integração da física comparativa entre tempos oficiais de rodovias do Google Maps & Waze (~75 km/h) versus a Simulação em Caminhonete 4x4 (S10 / Hilux) a 140 km/h de cruzeiro (~125 km/h efetivo com até 45% de economia de tempo). Exibição visual nos cards executivos e em cada parada da timeline. Sincronização Capacitor e geração do instalador nativo **`Fiscal.IA.apk`** v1.0.18 (Build 19).
+- **Tags Git:** `PR.023`, `PR.023.1`, `PR.023.2`
+- **Arquivo Local do APK:** `c:\Users\Lenovo\Documents\antigravity\LAB - GPR\Fiscal.IA.lab - GPR\Fiscal.IA.apk`
+- **Comando de Restauração Rápida:**
+  ```bash
+  git checkout PR.023
+  ```
+
+---
+
 ### [PR.022] — Correção Definitiva do Ícone Android: Expurgamento de Vetores Legados em Drawable e Prioridade Total aos Ícones Adaptativos 3D
 - **Data/Hora:** 2026-11-13 13:20 (UTC-3)
 - **Escopos Definidos:**

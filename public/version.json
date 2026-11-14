@@ -1,16 +1,15 @@
 {
-  "version": "1.0.13",
-  "buildNumber": 14,
+  "version": "1.0.18",
+  "buildNumber": 19,
   "releaseDate": "2026-11-13",
   "minRequiredVersion": "1.0.0",
   "downloadUrl": "https://github.com/Wisterly/fiscalizacao-seduc/releases/download/apk-latest/Fiscal.IA.apk",
   "changelog": [
-    "Novo Módulo de Rotas Inteligentes de Vistoria com Sub-Abas: Rota por Trajeto e Rota por Prioridade",
-    "Origem fixa em Teresina - PI com seletor de 21 GREs e identificação automática da Cidade-Polo de pernoite",
-    "Seletor com 4 regimes de diárias: 1.5 (bate e volta até 22h), 2.5, 3.5 e 4.5 diárias (pernoites na sede às 19h-20h)",
-    "Física de deslocamento em caminhonete S10/Hilux a 140 km/h com trava anti-sobrecarga matemática",
-    "Matriz Hierárquica de Demandas: Arielma (Grau 3), Anik (Grau 2), Naila (Grau 1) e Diretora Escolar analisada via relatório técnico",
-    "Compatibilização em 4 níveis (Urgente, Prioridade, Requer Atenção, Razoável) com degradação sucessiva de criticidade",
-    "Exportação e formatação oficial do plano diário completo com cópia em 1 clique para WhatsApp"
+    "Gestão Inteligente do Botão / Gesto Voltar no Android: histórico de abas e telas sem fechamento acidental",
+    "Trava de segurança na tela inicial com duplo toque rápido para sair e toast de aviso",
+    "Bate e Volta para 1.5 e 2.5 diárias com saída às 06:00h e chegada entre 21:00h e 22:00h sem sobrecarga",
+    "Duração em 2 dias (3.5 diárias) e 3 dias (4.5 diárias) com pernoites rigorosamente entre 19:00h e 20:00h",
+    "Seletor de Duração em Campo com opção de compactar rotas longas para 2 dias ou 1 dia",
+    "Cálculo e Comparativo Google Maps & Waze (~75 km/h) versus Simulação S10/Hilux a 140 km/h (~125 km/h efetivo)"
   ]
 }

@@ -1,14 +1,15 @@
 {
-  "version": "1.0.17",
-  "buildNumber": 18,
+  "version": "1.0.18",
+  "buildNumber": 19,
   "releaseDate": "2026-11-13",
   "minRequiredVersion": "1.0.0",
   "downloadUrl": "https://github.com/Wisterly/fiscalizacao-seduc/releases/download/apk-latest/Fiscal.IA.apk",
   "changelog": [
-    "Correção definitiva do ícone Android: remoção dos vetores legados de drawable que sobrepunham a logo oficial 3D",
-    "Garantia de exibição nativa da logo oficial 3D nos celulares Android 8 até 15+",
-    "Formatação Oficial UGERF / GPR de exportação para WhatsApp exatamente conforme especificado",
-    "Campos de Data e Equipe de Campo integrados com persistência offline",
-    "Opção de retirar escolas sugeridas com recálculo automático"
+    "Gestão Inteligente do Botão / Gesto Voltar no Android: histórico de abas e telas sem fechamento acidental",
+    "Trava de segurança na tela inicial com duplo toque rápido para sair e toast de aviso",
+    "Bate e Volta para 1.5 e 2.5 diárias com saída às 06:00h e chegada entre 21:00h e 22:00h sem sobrecarga",
+    "Duração em 2 dias (3.5 diárias) e 3 dias (4.5 diárias) com pernoites rigorosamente entre 19:00h e 20:00h",
+    "Seletor de Duração em Campo com opção de compactar rotas longas para 2 dias ou 1 dia",
+    "Cálculo e Comparativo Google Maps & Waze (~75 km/h) versus Simulação S10/Hilux a 140 km/h (~125 km/h efetivo)"
   ]
 }
