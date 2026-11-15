@@ -208,15 +208,16 @@ export const DemandasView: React.FC<DemandasViewProps> = ({
         </div>
       </div>
 
-      {/* Lista de Demandas */}
-      <div className="px-4 space-y-2.5">
+      {/* Lista de Demandas Responsiva */}
+      <div className="px-4">
         {filteredDemandas.length === 0 ? (
           <div className="p-6 rounded-2xl bg-slate-900/40 border border-white/5 text-center text-xs text-slate-400 space-y-1">
             <div className="font-semibold text-slate-300">Nenhuma demanda cadastrada para a {selectedGre.nome}.</div>
             <p className="text-[11px] text-slate-500">Clique em &quot;Nova Demanda&quot; para cadastrar uma pendência vinculada às escolas desta regional.</p>
           </div>
         ) : (
-          filteredDemandas.map((dem) => {
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {filteredDemandas.map((dem) => {
             const isNaila = dem.responsavel === 'Naila' || dem.tipo === 'gerencia_naila';
 
             return (
@@ -309,7 +310,8 @@ export const DemandasView: React.FC<DemandasViewProps> = ({
                 </div>
               </div>
             );
-          })
+          })}
+          </div>
         )}
       </div>
 

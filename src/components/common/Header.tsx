@@ -31,8 +31,8 @@ export const Header: React.FC<HeaderProps> = ({
         style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)' }}
       >
         {subViewTitle ? (
-          /* Header específico de Sub-View (como Tela Direita da Referência) */
-          <div className="flex items-center justify-between max-w-md mx-auto">
+          /* Header específico de Sub-View */
+          <div className="flex items-center justify-between max-w-full md:max-w-6xl xl:max-w-7xl mx-auto">
             <div className="flex items-center gap-3">
               <button
                 onClick={onBackFromSubView}
@@ -41,7 +41,7 @@ export const Header: React.FC<HeaderProps> = ({
               >
                 <ArrowLeft className="w-5 h-5 stroke-[2.2]" />
               </button>
-              <h1 className="text-base font-extrabold text-white tracking-tight leading-none">
+              <h1 className="text-base sm:text-lg font-extrabold text-white tracking-tight leading-none">
                 {subViewTitle}
               </h1>
             </div>
@@ -55,9 +55,9 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           </div>
         ) : (
-          /* Header Principal (como Tela Esquerda da Referência) */
-          <div className="flex items-center justify-between max-w-md mx-auto">
-            {/* Canto Superior Esquerdo: Menu Hambúrguer + Logo 3D + Nome do Aplicativo (Fiscal.IA.lab - GPR) */}
+          /* Header Principal com suporte responsivo a Mobile e Desktop */
+          <div className="flex items-center justify-between max-w-full md:max-w-6xl xl:max-w-7xl mx-auto">
+            {/* Canto Superior Esquerdo: Menu + Logo + Nome */}
             <div className="flex items-center gap-2.5 min-w-0">
               <button
                 onClick={onOpenMenu}
@@ -77,7 +77,7 @@ export const Header: React.FC<HeaderProps> = ({
 
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <h1 className="text-sm font-extrabold text-white tracking-tight leading-none truncate">
+                  <h1 className="text-sm sm:text-base font-extrabold text-white tracking-tight leading-none truncate">
                     Fiscal.IA.lab
                   </h1>
                   <span className="text-[9px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.2 rounded border border-amber-500/20">
@@ -90,6 +90,14 @@ export const Header: React.FC<HeaderProps> = ({
                   <span className="text-emerald-400 font-semibold">{isOnline ? 'Online' : 'Offline'}</span>
                 </p>
               </div>
+            </div>
+
+            {/* Centro: Indicador Exclusivo de Modo Desktop Web & Nuvem */}
+            <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900/80 border border-cyan-500/20 backdrop-blur-md text-[11px] text-slate-300 shadow-sm">
+              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+              <span className="font-semibold text-white">Sincronização em Nuvem & Drive Ativa</span>
+              <span className="text-slate-500">•</span>
+              <span className="text-cyan-300 font-medium">Cross-Platform Web/Mobile</span>
             </div>
 
             {/* Canto Superior Direito: Logo Secretaria de Educação com mapa do Piauí + Sino */}

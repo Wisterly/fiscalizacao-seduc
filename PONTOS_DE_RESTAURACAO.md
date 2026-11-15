@@ -29,6 +29,21 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.026] — Design Responsivo Web/Desktop Adaptativo, Sincronização em Nuvem Cross-Platform (Celular ⇄ Web) e Armazenamento Inteligente com Google Drive por GRE e Escola
+- **Data/Hora:** 2026-11-14 23:50 (UTC-3)
+- **Escopos Definidos:**
+  - `PR.026` (Geral): Criação do `cloudSyncService.ts` com identificação universal de dispositivo (`deviceId`), sincronização bidirecional de dados (demandas, vistorias, tarefas, medições, escolas), persistência segura de configurações no `localStorage`, suporte a webhook do Google Apps Script e geração estruturada da hierarquia de pastas no Google Drive (`[Nome_GRE] / [Nome_Escola] / Fotos_Vistoria` e `Laudos_Relatorios_PDF`).
+  - `PR.026.1` (Desktop / Web): Fim do layout comprimido no navegador. O container principal do aplicativo se expande dinamicamente de `max-w-md` para telas amplas widescreen (`w-full max-w-md md:max-w-4xl lg:max-w-6xl xl:max-w-7xl`). A barra de navegação se transforma no Desktop em uma moderna Dock Bar flutuante centralizada com cantos arredondados, backdrop blur e bordas refinadas. O grid dos módulos salta para 4 colunas (`grid-cols-2 md:grid-cols-4`), a seleção das 21 GREs passa para até 7 colunas por linha (`grid-cols-4 md:grid-cols-6 lg:grid-cols-7`), e a listagem de demandas adota layout em grade multi-colunas (`md:grid-cols-2 lg:grid-cols-3`).
+  - `PR.026.2` (Mobile / Android): No smartphone Android, o design permanece 100% fiel à ergonomia mobile nativa (barra inferior fixa ergonômica, safe area, toque tátil e rolagem ultrafluida). Integração do Google Drive e nuvem aos relatórios técnicos de vistoria e aos formulários fotográficos. Na aba de Configurações, card completo de *Sincronização em Nuvem & Google Drive* com indicador de status (🟢 Conectado / 🟡 Aguardando Link), campo direto para salvar o link da pasta compartilhada, extração automática do `folderId` e botão de sincronização forçada com notificação de confirmação. Atualização de versão para **v1.0.21 (Build 22)** e compilação do APK nativo `Fiscal.IA.apk`.
+- **Tags Git:** `PR.026`, `PR.026.1`, `PR.026.2`
+- **Arquivo Local do APK:** `c:\Users\Lenovo\Documents\antigravity\LAB - GPR\Fiscal.IA.lab - GPR\Fiscal.IA.apk`
+- **Comando de Restauração Rápida:**
+  ```bash
+  git checkout PR.026
+  ```
+
+---
+
 ### [PR.025] — Calendário Interativo de Viagem com Matriz Real de Diárias SEDUC, Reset Completo de Mocks, Varredura Rápida (<2s), Gesto Pull-to-Refresh com Check Verde e Otimização de Chunks
 - **Data/Hora:** 2026-11-14 01:45 (UTC-3)
 - **Escopos Definidos:**

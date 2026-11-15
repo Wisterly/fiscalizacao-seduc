@@ -36,6 +36,7 @@ import { GaleriaView } from './components/galeria/GaleriaView';
 import { ConfigView } from './components/config/ConfigView';
 import { UpdateModal } from './components/UpdateModal';
 import { PullToRefresh } from './components/common/PullToRefresh';
+import { cloudSync } from './services/cloudSyncService';
 import { checkForUpdate, VersionMetadata, AppInfo } from './utils/appUpdater';
 
 export function App() {
@@ -101,7 +102,21 @@ export function App() {
     setLevantamentos(storage.getLevantamentos());
     setRotas(storage.getRotas());
 
-    // 2. Varredura instantânea de atualização OTA
+    // 2. Sincronização em Nuvem (Cross-Device Celular <-> Web)
+    try {
+      await cloudSync.sincronizarComNuvem({
+        demandas: storage.getDemandas(),
+        tarefas: storage.getTarefas(),
+        levantamentos: storage.getLevantamentos(),
+        rotas: storage.getRotas(),
+        ordensServico: storage.getOrdensServico(),
+        schools: storage.getSchools()
+      });
+    } catch (err) {
+      console.warn('Sincronização em nuvem no refresh:', err);
+    }
+
+    // 3. Varredura instantânea de atualização OTA
     try {
       const res = await checkForUpdate();
       if (res.hasUpdate && res.metadata) {
@@ -458,9 +473,9 @@ export function App() {
 
   return (
     <div className="min-h-screen bg-[#060911] text-slate-100 flex justify-center">
-      {/* Moldura do Smartphone Android Moderno */}
-      <div className="w-full max-w-md bg-[#090D16] min-h-screen flex flex-col relative shadow-2xl border-x border-white/[0.04]">
-        {/* Header Superior Android */}
+      {/* Moldura Adaptativa: App Mobile-First no celular e Painel Fluido na Web Desktop */}
+      <div className="w-full max-w-md md:max-w-4xl lg:max-w-6xl xl:max-w-7xl bg-[#090D16] min-h-screen flex flex-col relative shadow-2xl border-x border-white/[0.04] transition-all duration-300">
+        {/* Header Superior Responsivo */}
         <Header
           alertas={alertas}
           onResolverAlerta={handleResolverAlerta}

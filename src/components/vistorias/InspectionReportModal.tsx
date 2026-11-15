@@ -1,6 +1,7 @@
 import React from 'react';
-import { X, Printer, Share2, Calendar, MapPin, Building, User, AlertTriangle, Sparkles, CheckCircle2 } from 'lucide-react';
+import { X, Printer, Share2, Calendar, MapPin, Building, User, AlertTriangle, Sparkles, CheckCircle2, HardDrive, ExternalLink } from 'lucide-react';
 import { Levantamento, Escola, Ambiente } from '../../types';
+import { cloudSync } from '../../services/cloudSyncService';
 
 interface InspectionReportModalProps {
   levantamento: Levantamento;
@@ -23,6 +24,14 @@ export const InspectionReportModal: React.FC<InspectionReportModalProps> = ({
     window.print();
   };
 
+  const driveConfig = cloudSync.carregarConfiguracao();
+  const drivePath = cloudSync.gerarCaminhoDriveParaArquivo(
+    'relatorio',
+    school ? `${school.greId}ª GRE` : 'SEDUC',
+    school?.nome || 'Escola',
+    `Laudo_${levantamento.id.slice(0, 8)}.pdf`
+  );
+
   return (
     <div 
       className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/85 backdrop-blur-md animate-fadeIn"
@@ -42,6 +51,19 @@ export const InspectionReportModal: React.FC<InspectionReportModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
+            {driveConfig.googleDriveFolderUrl && (
+              <a
+                href={driveConfig.googleDriveFolderUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2 rounded-xl bg-blue-500/20 border border-blue-500/30 text-blue-300 hover:text-white active-press flex items-center gap-1 text-[11px] font-bold"
+                title="Abrir pasta no Google Drive"
+              >
+                <HardDrive className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Google Drive</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            )}
             <button
               onClick={handleImprimir}
               className="p-2 rounded-xl bg-slate-800 border border-white/10 text-slate-300 hover:text-white active-press"
@@ -187,6 +209,23 @@ export const InspectionReportModal: React.FC<InspectionReportModalProps> = ({
               ))}
             </div>
           </div>
+        </div>
+
+        {/* Indicação do Caminho Google Drive */}
+        <div className="px-4 py-2 bg-blue-950/40 border-t border-blue-500/20 flex items-center justify-between gap-2 text-[11px] text-blue-200">
+          <div className="flex items-center gap-1.5 truncate">
+            <HardDrive className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+            <span className="truncate">
+              {driveConfig.googleDriveFolderUrl
+                ? `Armazenamento Google Drive: ${drivePath.caminhoCompleto}`
+                : `Destino Estruturado Drive: ${drivePath.caminhoCompleto}`}
+            </span>
+          </div>
+          {driveConfig.googleDriveFolderUrl && (
+            <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 shrink-0">
+              Sincronizado
+            </span>
+          )}
         </div>
 
         {/* Rodapé do Modal */}

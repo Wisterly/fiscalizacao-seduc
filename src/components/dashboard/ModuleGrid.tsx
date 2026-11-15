@@ -20,7 +20,7 @@ export const ModuleGrid: React.FC<ModuleGridProps> = ({
 }) => {
   return (
     <div className="px-4 my-2">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
         {/* CARD 1: GREs e Levantamentos (Ciano/Turquesa) */}
         <button
           onClick={onOpenGREs}

@@ -95,8 +95,8 @@ export const GreSelector: React.FC<GreSelectorProps> = ({
         </span>
       </div>
 
-      {/* Grid 4 Colunas com Cards Redondos e Borda Furtacor */}
-      <div className="grid grid-cols-4 gap-2 sm:gap-2.5">
+      {/* Grid Responsivo com Cards Redondos e Borda Furtacor */}
+      <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7 gap-2 sm:gap-2.5 md:gap-3.5">
         {sortedGres.map((gre) => {
           const isSelected = selectedGreId === gre.id;
           const sedeText = getSedeName(gre);

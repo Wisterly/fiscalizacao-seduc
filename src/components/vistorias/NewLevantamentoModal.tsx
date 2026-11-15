@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { X, Camera, Plus, Minus, Check, Image, AlertTriangle, Sparkles, Building, FileText, Trash2 } from 'lucide-react';
+import { X, Camera, Plus, Minus, Check, Image, AlertTriangle, Sparkles, Building, FileText, Trash2, HardDrive } from 'lucide-react';
 import { Escola, Ambiente, FotoLevantamento, Levantamento } from '../../types';
 import { PhotoCatalogModal } from './PhotoCatalogModal';
+import { cloudSync } from '../../services/cloudSyncService';
 
 interface NewLevantamentoModalProps {
   school: Escola;
@@ -420,6 +421,15 @@ export const NewLevantamentoModal: React.FC<NewLevantamentoModalProps> = ({
                 ))}
               </div>
             )}
+
+            {/* Aviso de Armazenamento Inteligente no Google Drive */}
+            <div className="p-2.5 rounded-xl bg-blue-950/30 border border-blue-500/20 flex items-center justify-between text-[11px] text-blue-200">
+              <span className="flex items-center gap-1.5 truncate">
+                <HardDrive className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                <span className="truncate">Destino em Nuvem: {school.greId}ª GRE / {school.nome} / Fotos_Vistoria</span>
+              </span>
+              <span className="text-[10px] font-bold text-cyan-300 shrink-0">Google Drive</span>
+            </div>
           </div>
 
           {/* Botão de Finalização */}
