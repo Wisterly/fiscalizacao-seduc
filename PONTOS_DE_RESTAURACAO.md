@@ -29,6 +29,21 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.030] — Barra Inferior Otimizada com 6 Abas (Ajustes Exclusivo no Menu Superior), Temática Vítrea com Halo Dourado Suave e Release v1.0.25 (Build 26)
+- **Data/Hora:** 2026-11-15 01:55 (UTC-3)
+- **Escopos Definidos:**
+  - `PR.030` (Geral): Redução da barra inferior para exatamente 6 abas essenciais (`Início`, `Vistoria`, `Orçamento`, `Rotas`, `Demandas` e `Galeria`). Remoção do ícone de Ajustes da barra inferior, mantendo o acesso a Ajustes/Configurações centralizado nos 3 pontinhos / menu superior e nos cards da Home. Versão oficial atualizada para **v1.0.25 (Build 26)**.
+  - `PR.030.1` (Web / Desktop): Barra inferior responsiva tipo dock com acabamento translúcido fumê vítreo (`bg-[#0B111E]/95 backdrop-blur-2xl border-white/[0.18]`), filete superior refinado com reflexo perolado suave e sombras projetadas de alta profundidade.
+  - `PR.030.2` (Mobile / Android): No smartphone Android, ergonomia aprimorada com espaçamento expandido entre os 6 ícones, eliminação total de aperto no toque e acabamento idêntico à imagem de referência: halo circular luminoso âmbar/dourado suave em torno do ícone ativo e tipografia âmbar quente vibrante. Compilação do APK nativo `Fiscal.IA.apk` Build 26 e upload na Release do GitHub.
+- **Tags Git:** `PR.030`, `PR.030.1`, `PR.030.2`
+- **Arquivo Local do APK:** `c:\Users\Lenovo\Documents\antigravity\LAB - GPR\Fiscal.IA.lab - GPR\Fiscal.IA.apk`
+- **Comando de Restauração Rápida:**
+  ```bash
+  git checkout PR.030
+  ```
+
+---
+
 ### [PR.029] — Atualização Oficial para v1.0.24 (Build 25), Sistema Anti-Cache Web (F5 Instantâneo) e Varredura OTA Multi-Canal (Vercel + GitHub)
 - **Data/Hora:** 2026-11-15 01:45 (UTC-3)
 - **Escopos Definidos:**

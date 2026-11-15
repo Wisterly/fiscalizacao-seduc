@@ -1,17 +1,14 @@
 {
-  "version": "1.0.24",
-  "buildNumber": 25,
+  "version": "1.0.25",
+  "buildNumber": 26,
   "releaseDate": "2026-11-15",
   "minRequiredVersion": "1.0.0",
   "downloadUrl": "https://github.com/Wisterly/fiscalizacao-seduc/releases/download/apk-latest/Fiscal.IA.apk",
   "changelog": [
-    "Orçamentos & OS: Exibição de 100% das escolas da GRE selecionada com expansão universal",
-    "Cadastro Direto de OS & Orçamentos: botão destacado para cadastrar em qualquer escola zerada",
-    "Anexos em PDF da OS e da Planilha Orçamentária: upload direto de arquivos e visualização",
-    "Medições de Obras com Expansão Universal: botão para cadastrar medição manual ou vincular OS existente",
-    "Medição Manual Interativa: slider de 0 a 100% com cálculo ao vivo de valor medido R$ e saldo contratual",
-    "Barra Inferior Ergonômica com 7 Abas: Início, Vistoria, Orçamento, Rotas, Demandas, Galeria e Ajustes com efeito vítreo neon",
-    "Menu Superior Completo: gaveta lateral com os 9 módulos integrados",
-    "Card de Atualização Simplificado com botão único 'Instalar'"
+    "Barra Inferior Otimizada com 6 Abas: Início, Vistoria, Orçamento, Rotas, Demandas e Galeria",
+    "Ajustes mantido exclusivamente no menu superior de três pontinhos/três linhas",
+    "Novo Design com Efeito Vítreo e Halo Dourado Suave (Glassmorphism inspirado na referência)",
+    "Espaçamento ampliado e ícones maiores para toque confortável com uma mão",
+    "Orçamentos e Medições com 100% das escolas da GRE e expansão universal para cadastro de OS e anexos em PDF"
   ]
 }
