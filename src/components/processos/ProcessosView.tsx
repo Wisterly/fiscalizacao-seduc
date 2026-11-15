@@ -158,7 +158,7 @@ export const ProcessosView: React.FC<ProcessosViewProps> = ({ onBack }) => {
     const alertasIniciais: AlertaProcessoConfig[] = activeCategoriaId === 'diaria'
       ? [
           { id: 'alt-1', nomeDocumentoAlvo: 'SEDUC Empenho', ativo: true, mensagemPersonalizada: 'Foi empenhado no seu processo SEI de diária!' },
-          { id: 'alt-2', nomeDocumentoAlvo: 'SEDUC QRE', ativo: true, mensagemPersonalizada: 'O SEDUC QRE foi gerado no seu processo de diária!' }
+          { id: 'alt-2', nomeDocumentoAlvo: 'SEDUC RE', ativo: true, mensagemPersonalizada: 'O SEDUC RE foi gerado no seu processo de diária!' }
         ]
       : [
           { id: 'alt-1', nomeDocumentoAlvo: 'Nota Fiscal', ativo: true, mensagemPersonalizada: 'Nota fiscal anexada ao processo de medição!' },
@@ -232,7 +232,7 @@ export const ProcessosView: React.FC<ProcessosViewProps> = ({ onBack }) => {
       nomeDocumento: nomeDoc,
       tipo: 'Documento SEI',
       dataAnexacao: new Date().toLocaleDateString('pt-BR') + ' ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-      unidadeGeradora: nomeDoc.includes('Empenho') || nomeDoc.includes('QRE') ? 'SEDUC/DAF' : 'SEDUC/GPR'
+      unidadeGeradora: nomeDoc.includes('Empenho') || nomeDoc.includes('RE') ? 'SEDUC/DAF' : 'SEDUC/GPR'
     });
     setProcessos(updated);
   };
@@ -297,7 +297,7 @@ export const ProcessosView: React.FC<ProcessosViewProps> = ({ onBack }) => {
       let tipo = 'Documento SEI';
       const docLower = nomeDoc.toLowerCase();
       if (docLower.includes('empenho')) tipo = 'Nota de Empenho';
-      else if (docLower.includes('qre')) tipo = 'SEDUC QRE';
+      else if (docLower.includes('seduc re') || docLower.includes('re ') || docLower.endsWith(' re') || docLower === 're' || docLower.includes('qre')) tipo = 'SEDUC RE';
       else if (docLower.includes('atesto')) tipo = 'Termo de Atesto';
       else if (docLower.includes('nota fiscal') || docLower.includes('danfe')) tipo = 'Nota Fiscal';
       else if (docLower.includes('pdf') || docLower.includes('roteiro') || docLower.includes('boletim')) tipo = 'Anexo PDF';
@@ -595,7 +595,7 @@ export const ProcessosView: React.FC<ProcessosViewProps> = ({ onBack }) => {
             </div>
           </div>
 
-          {/* Botões de Ação Rápida para Simular SEDUC Empenho / SEDUC QRE */}
+          {/* Botões de Ação Rápida para Simular SEDUC Empenho / SEDUC RE */}
           {selectedProcesso.categoriaId === 'diaria' && (
             <div className="flex items-center gap-1.5 flex-wrap p-2 rounded-xl bg-cyan-950/30 border border-cyan-500/20 text-[11px] text-cyan-200">
               <span className="font-semibold text-cyan-300">Testar Alertas:</span>
@@ -608,10 +608,10 @@ export const ProcessosView: React.FC<ProcessosViewProps> = ({ onBack }) => {
               </button>
               <button
                 type="button"
-                onClick={() => handleJuntarDocRapido('SEDUC QRE')}
+                onClick={() => handleJuntarDocRapido('SEDUC RE')}
                 className="px-2 py-0.5 rounded-lg bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 font-bold hover:bg-cyan-500/30 active-press"
               >
-                + Juntar SEDUC QRE
+                + Juntar SEDUC RE
               </button>
             </div>
           )}
@@ -620,20 +620,20 @@ export const ProcessosView: React.FC<ProcessosViewProps> = ({ onBack }) => {
           <div className="space-y-2 pt-1">
             {selectedProcesso.documentos.map((doc, idx) => {
               const isEmpenho = doc.nomeDocumento.toLowerCase().includes('empenho');
-              const isQRE = doc.nomeDocumento.toLowerCase().includes('qre');
+              const isRE = doc.nomeDocumento.toLowerCase().includes('seduc re') || doc.nomeDocumento.toLowerCase().includes('re ') || doc.nomeDocumento.toLowerCase().includes('qre');
 
               return (
                 <div
                   key={doc.id}
                   className={`p-3 rounded-2xl border transition-all flex items-start justify-between gap-3 ${
-                    isEmpenho || isQRE
+                    isEmpenho || isRE
                       ? 'bg-gradient-to-r from-emerald-950/40 via-slate-900 to-slate-950 border-emerald-500/40 shadow-glass'
                       : 'bg-slate-950/60 border-white/5 hover:border-white/10'
                   }`}
                 >
                   <div className="flex items-start gap-2.5 min-w-0 flex-1">
                     <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-xs font-bold ${
-                      isEmpenho || isQRE
+                      isEmpenho || isRE
                         ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                         : 'bg-slate-800 text-slate-300 border border-white/10'
                     }`}>
@@ -645,9 +645,9 @@ export const ProcessosView: React.FC<ProcessosViewProps> = ({ onBack }) => {
                         <span className="text-xs font-black text-white leading-tight">
                           {doc.nomeDocumento}
                         </span>
-                        {(isEmpenho || isQRE) && (
+                        {(isEmpenho || isRE) && (
                           <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded-full bg-emerald-500 text-slate-950">
-                            {isEmpenho ? 'EMPENHADO' : 'QRE EMITIDO'}
+                            {isEmpenho ? 'EMPENHADO' : 'RE EMITIDO'}
                           </span>
                         )}
                       </div>
@@ -701,7 +701,7 @@ export const ProcessosView: React.FC<ProcessosViewProps> = ({ onBack }) => {
                       <option value="Anexo PDF">Anexo PDF</option>
                       <option value="Termo de Atesto">Termo de Atesto</option>
                       <option value="Nota de Empenho">Nota de Empenho</option>
-                      <option value="QRE">SEDUC QRE</option>
+                      <option value="RE">SEDUC RE</option>
                     </select>
                   </div>
                   <div>
@@ -775,7 +775,7 @@ export const ProcessosView: React.FC<ProcessosViewProps> = ({ onBack }) => {
                 </label>
                 <textarea
                   rows={8}
-                  placeholder="Exemplo do que colar:&#10;001 Requerimento de Concessão de Diárias (SEDUC/GPR) 10/11/2026&#10;002 Roteiro de Vistoria Técnica (SEDUC/GPR) 10/11/2026&#10;003 Portaria de Concessão de Diárias (SEDUC/GAB) 12/11/2026&#10;004 SEDUC Empenho (SEDUC/DAF) 14/11/2026&#10;005 SEDUC QRE (SEDUC/DAF) 15/11/2026"
+                  placeholder="Exemplo do que colar:&#10;001 Requerimento de Concessão de Diárias (SEDUC/GPR) 10/11/2026&#10;002 Roteiro de Vistoria Técnica (SEDUC/GPR) 10/11/2026&#10;003 Portaria de Concessão de Diárias (SEDUC/GAB) 12/11/2026&#10;004 SEDUC Empenho (SEDUC/DAF) 14/11/2026&#10;005 SEDUC RE (SEDUC/DAF) 15/11/2026"
                   value={textoImportacaoSEI}
                   onChange={(e) => setTextoImportacaoSEI(e.target.value)}
                   className="w-full text-xs font-mono bg-slate-950 border border-white/15 rounded-2xl p-3 text-white placeholder-slate-600 focus:outline-none focus:border-amber-400 leading-relaxed"
@@ -873,7 +873,7 @@ export const ProcessosView: React.FC<ProcessosViewProps> = ({ onBack }) => {
           ) : (
             processosDaCategoria.map((proc) => {
               const temEmpenho = proc.documentos.some((d) => d.nomeDocumento.toLowerCase().includes('empenho'));
-              const temQRE = proc.documentos.some((d) => d.nomeDocumento.toLowerCase().includes('qre'));
+              const temRE = proc.documentos.some((d) => d.nomeDocumento.toLowerCase().includes('seduc re') || d.nomeDocumento.toLowerCase().includes('re ') || d.nomeDocumento.toLowerCase().includes('qre'));
 
               return (
                 <div
@@ -928,10 +928,10 @@ export const ProcessosView: React.FC<ProcessosViewProps> = ({ onBack }) => {
                         Empenhado
                       </span>
                     )}
-                    {temQRE && (
+                    {temRE && (
                       <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 flex items-center gap-1">
                         <CheckCircle2 className="w-3 h-3" />
-                        SEDUC QRE
+                        SEDUC RE
                       </span>
                     )}
                   </div>
@@ -1063,7 +1063,7 @@ export const ProcessosView: React.FC<ProcessosViewProps> = ({ onBack }) => {
             <span>Acompanhamento de Processos</span>
           </h2>
           <p className="text-[11px] text-slate-400">
-            Estrutura e trâmite no SEI • Alertas de Empenho e SEDUC QRE
+            Estrutura e trâmite no SEI • Alertas de Empenho e SEDUC RE
           </p>
         </div>
 
@@ -1145,7 +1145,7 @@ export const ProcessosView: React.FC<ProcessosViewProps> = ({ onBack }) => {
                 </p>
                 {isDiaria && (
                   <span className="text-[9px] text-cyan-300 font-semibold block mt-1">
-                    ⚡ Alertas: SEDUC Empenho & SEDUC QRE
+                    ⚡ Alertas: SEDUC Empenho & SEDUC RE
                   </span>
                 )}
               </div>

@@ -170,7 +170,7 @@ export interface TarefaDoDia {
 export interface DocumentoProcessoSEI {
   id: string;
   numeroOrdem: string; // ex: "001", "002"
-  nomeDocumento: string; // ex: "SEDUC Empenho", "SEDUC QRE", "Nota Fiscal", "Boletim de Medição"
+  nomeDocumento: string; // ex: "SEDUC Empenho", "SEDUC RE", "Nota Fiscal", "Boletim de Medição"
   tipo: string; // ex: "Documento SEI", "Anexo PDF", "Termo de Atesto"
   dataAnexacao: string; // ex: "14/11/2026 10:30"
   unidadeGeradora?: string; // ex: "SEDUC/GPR", "SEDUC/DAF", "SEDUC/GCONF"
@@ -179,7 +179,7 @@ export interface DocumentoProcessoSEI {
 
 export interface AlertaProcessoConfig {
   id: string;
-  nomeDocumentoAlvo: string; // ex: "SEDUC Empenho" ou "SEDUC QRE"
+  nomeDocumentoAlvo: string; // ex: "SEDUC Empenho" ou "SEDUC RE"
   mensagemPersonalizada?: string;
   ativo: boolean;
 }

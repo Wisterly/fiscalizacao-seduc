@@ -622,7 +622,7 @@ class StorageService {
       {
         id: 'diaria',
         nome: 'Processos de Diária',
-        descricao: 'Controle de concessão, empenho e SEDUC QRE de diárias',
+        descricao: 'Controle de concessão, empenho e SEDUC RE de diárias',
         isPadrao: true,
         corBadge: 'cyan'
       }
@@ -650,7 +650,71 @@ class StorageService {
   }
 
   getProcessos(): ProcessoAcompanhamento[] {
-    return this.getItem<ProcessoAcompanhamento[]>(STORAGE_KEYS.PROCESSOS, []);
+    const defaultProcessos: ProcessoAcompanhamento[] = [
+      {
+        id: 'proc-diaria-00011-081091-2026-94',
+        categoriaId: 'diaria',
+        categoriaNome: 'Processos de Diária',
+        titulo: 'Concessão de Diárias - Fiscalização e Vistorias GREs',
+        numeroProcesso: '00011.081091/2026-94',
+        dataCriacao: new Date().toLocaleDateString('pt-BR'),
+        status: 'em_tramitacao',
+        unidadeAtual: 'SEDUC/GPR',
+        documentos: [
+          {
+            id: 'doc-001-req',
+            numeroOrdem: '001',
+            nomeDocumento: 'Requerimento de Concessão de Diárias',
+            tipo: 'Documento SEI',
+            dataAnexacao: new Date().toLocaleDateString('pt-BR') + ' 08:30',
+            unidadeGeradora: 'SEDUC/GPR'
+          },
+          {
+            id: 'doc-002-rot',
+            numeroOrdem: '002',
+            nomeDocumento: 'Roteiro de Vistoria Técnica e Escolas',
+            tipo: 'Anexo PDF',
+            dataAnexacao: new Date().toLocaleDateString('pt-BR') + ' 08:35',
+            unidadeGeradora: 'SEDUC/GPR'
+          },
+          {
+            id: 'doc-003-port',
+            numeroOrdem: '003',
+            nomeDocumento: 'Portaria de Autorização de Deslocamento',
+            tipo: 'Documento SEI',
+            dataAnexacao: new Date().toLocaleDateString('pt-BR') + ' 10:15',
+            unidadeGeradora: 'SEDUC/GAB'
+          }
+        ],
+        alertasMonitorados: [
+          {
+            id: 'alt-empenho',
+            nomeDocumentoAlvo: 'SEDUC Empenho',
+            ativo: true,
+            mensagemPersonalizada: 'Foi empenhado no seu processo SEI de diária!'
+          },
+          {
+            id: 'alt-re',
+            nomeDocumentoAlvo: 'SEDUC RE',
+            ativo: true,
+            mensagemPersonalizada: 'O SEDUC RE foi gerado no seu processo de diária!'
+          }
+        ]
+      }
+    ];
+
+    const salvos = this.getItem<ProcessoAcompanhamento[]>(STORAGE_KEYS.PROCESSOS, defaultProcessos);
+    if (!salvos || salvos.length === 0) {
+      this.setItem(STORAGE_KEYS.PROCESSOS, defaultProcessos);
+      return defaultProcessos;
+    }
+    const temProcessoPadrao = salvos.some(p => p.numeroProcesso.includes('081091/2026-94'));
+    if (!temProcessoPadrao) {
+      const atualizados = [defaultProcessos[0], ...salvos];
+      this.setItem(STORAGE_KEYS.PROCESSOS, atualizados);
+      return atualizados;
+    }
+    return salvos;
   }
 
   saveProcesso(processo: ProcessoAcompanhamento): ProcessoAcompanhamento[] {
