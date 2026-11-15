@@ -210,6 +210,7 @@ export function parseAtaCsvToOS(csvText: string, currentSchools: Escola[]): {
   let colInicio = -1;
   let colTermino = -1;
   let colStatus = -1;
+  let colStatusDiario = -1;
   let colPercentual = -1;
   let colDescritivo = -1;
   let colPdf = -1;
@@ -229,6 +230,7 @@ export function parseAtaCsvToOS(csvText: string, currentSchools: Escola[]): {
     if (colInicio === -1 && norm.includes('inicio')) colInicio = idx;
     if (colTermino === -1 && (norm.includes('termino') || norm.includes('previsao'))) colTermino = idx;
     if (colStatus === -1 && (norm === 'status' || norm === 'status da obra')) colStatus = idx;
+    if (colStatusDiario === -1 && (norm.includes('status diario') || norm.includes('diario'))) colStatusDiario = idx;
     if (colPercentual === -1 && (norm.includes('% executada') || norm.includes('percentual'))) colPercentual = idx;
     if (colDescritivo === -1 && (norm.includes('descritivo') || norm.includes('objeto'))) colDescritivo = idx;
     if (colPdf === -1 && (norm.includes('arquivo pdf') || norm.includes('pdf'))) colPdf = idx;
@@ -247,7 +249,8 @@ export function parseAtaCsvToOS(csvText: string, currentSchools: Escola[]): {
   if (colConstrutora === -1) colConstrutora = 14;
   if (colInicio === -1) colInicio = 15;
   if (colTermino === -1) colTermino = 16;
-  if (colStatus === -1) colStatus = 17;
+  if (colStatus === -1) colStatus = 17; // Coluna R (Status Geral)
+  if (colStatusDiario === -1) colStatusDiario = 18; // Coluna S (Status Diário)
   if (colPercentual === -1) colPercentual = 19;
   if (colDescritivo === -1) colDescritivo = 24;
   if (colPdf === -1) colPdf = 26;
@@ -274,34 +277,22 @@ export function parseAtaCsvToOS(csvText: string, currentSchools: Escola[]): {
     const municipio = (r[colMunicipio] || '').trim();
     const rawGre = (r[colGre] || '').trim();
     const rawStatus = (r[colStatus] || '').toUpperCase().trim();
+    const rawStatusDiario = (r[colStatusDiario] || '').trim();
 
     // Pula linhas vazias ou sem escola/OS
     if (!rawEscola && !rawNumeroOS) continue;
     if (rawEscola.toUpperCase().includes('NOME ENTIDADE')) continue;
 
     // FILTRO ESTREITO SOLICITADO PELO USUÁRIO:
-    // Apenas ordens de serviço operacionais (A INICIAR, EXECUÇÃO, EM EXECUÇÃO, PARALISADA, AGUARDANDO SALDO)
-    // Descarta linhas sem OS emitida válida, CANCELADA ou vazias
-    if (!rawStatus || rawStatus === 'CANCELADA' || rawStatus.includes('SEM O.S') || rawNumeroOS.includes('SEM O.S')) {
+    // Apenas ordens de serviço onde a Coluna R (Status Geral) conste EXECUÇÃO ou EM EXECUÇÃO
+    if (!rawStatus.includes('EXECU')) {
       continue;
     }
 
-    // Se o status for CONCLUÍDA, também pulamos porque o usuário pediu apenas as ordens de serviço em execução/ativas
-    if (rawStatus === 'CONCLUÍDA' || rawStatus === 'FINALIZADA') {
-      continue;
-    }
-
-    // Normaliza status amigável
-    let statusObraLabel = 'EM EXECUÇÃO';
-    if (rawStatus.includes('INICIAR')) {
-      statusObraLabel = 'A INICIAR';
-    } else if (rawStatus.includes('PARALISADA') || rawStatus.includes('PARADA')) {
-      statusObraLabel = 'PARALISADA';
-    } else if (rawStatus.includes('AGUARDANDO')) {
-      statusObraLabel = 'AGUARDANDO SALDO';
-    } else if (rawStatus.includes('EXECU')) {
-      statusObraLabel = 'EM EXECUÇÃO';
-    }
+    // Normaliza status diário e tipoStatus
+    const statusDiarioNormalizado = rawStatusDiario || 'Em andamento';
+    const isParada = statusDiarioNormalizado.toLowerCase().includes('parada') || statusDiarioNormalizado.toLowerCase().includes('paralisada');
+    const statusObraLabel = 'EM EXECUÇÃO';
 
     // Localiza ou cria a Escola
     const greId = extractGreId(rawGre, municipio) || 'gre-01';
@@ -374,8 +365,10 @@ export function parseAtaCsvToOS(csvText: string, currentSchools: Escola[]): {
       orcamentoPdfUrl = driveBaseFolder;
     }
 
+    const cleanOsId = rawNumeroOS ? rawNumeroOS.replace(/[^0-9a-zA-Z]/g, '_') : `row_${i}`;
+
     osList.push({
-      id: `os-ata-${inep || rawNumeroOS || i}`,
+      id: `os-ata-${inep || 'noinep'}-${cleanOsId}`,
       numeroOS: rawNumeroOS || `OS-${i}/SEDUC`,
       escolaId,
       escolaNome,
@@ -387,8 +380,9 @@ export function parseAtaCsvToOS(csvText: string, currentSchools: Escola[]): {
       dataInicio,
       prazoFinal,
       status: 'ativa',
-      tipoStatus: statusObraLabel === 'EM EXECUÇÃO' ? 'em_execucao' : statusObraLabel === 'PARALISADA' ? 'paralisada' : 'aguardando',
-      statusObra: statusObraLabel,
+      tipoStatus: isParada ? 'paralisada' : 'em_execucao',
+      statusObra: 'EM EXECUÇÃO',
+      statusDiario: statusDiarioNormalizado,
       contratoNumero,
       dataEmissaoOS,
       fiscalResponsavel: fiscal,
@@ -396,13 +390,13 @@ export function parseAtaCsvToOS(csvText: string, currentSchools: Escola[]): {
       osPdfUrl,
       orcamentoPdfUrl,
       empresaContratada: construtora,
-      orcamentoPdfSimulado: `orcamento_${inep || rawNumeroOS}.pdf`,
-      memorialDescritivoPdfSimulado: `memorial_${inep || rawNumeroOS}.pdf`,
+      orcamentoPdfSimulado: `orcamento_${inep || cleanOsId}.pdf`,
+      memorialDescritivoPdfSimulado: `memorial_${inep || cleanOsId}.pdf`,
       observacoes: [
         {
           id: `obs-ata-${i}`,
           data: dataEmissaoOS || new Date().toLocaleDateString('pt-BR'),
-          texto: `Ordem de Serviço ${rawNumeroOS} com status [${statusObraLabel}] e valor ${valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}. Contrato ${contratoNumero || 'S/N'}.`,
+          texto: `Ordem de Serviço ${rawNumeroOS} com status diário [${statusDiarioNormalizado}] e valor ${valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}. Contrato ${contratoNumero || 'S/N'}.`,
           autor: fiscal
         }
       ]

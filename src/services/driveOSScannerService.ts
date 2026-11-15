@@ -134,6 +134,20 @@ class DriveOSScannerService {
   }
 
   /**
+   * Gera o link direto de busca do arquivo da OS dentro do Google Drive
+   */
+  gerarLinkBuscaDrive(greId?: string, numeroOS?: string): string {
+    const targetFolderUrl = storage.getPastaGeralOSDriveUrl();
+    const folderId = this.extrairFolderId(targetFolderUrl);
+    const termoBusca = (numeroOS || '').replace(/\//g, '-').trim();
+
+    if (folderId && termoBusca) {
+      return `https://drive.google.com/drive/folders/${folderId}?q=${encodeURIComponent(termoBusca)}`;
+    }
+    return targetFolderUrl;
+  }
+
+  /**
    * Executa a varredura completa das escolas e ordens de serviço ativas,
    * buscando o número de cada OS dentro da pasta compartilhada do Google Drive
    * e anexando automaticamente o arquivo ao card da respectiva escola.

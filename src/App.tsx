@@ -495,7 +495,7 @@ export function App() {
         />
 
         {/* ÁREA DE CONTEÚDO PRINCIPAL COM SCROLL & PULL-TO-REFRESH */}
-        <main className="flex-1 overflow-y-auto no-scrollbar pb-16">
+        <main className="flex-1 overflow-y-auto no-scrollbar pb-24 sm:pb-28">
           <PullToRefresh onRefresh={handleRefreshGlobal}>
             {/* ======================================= */}
             {/* ABA 1: INÍCIO (DASHBOARD CENTRAL)       */}

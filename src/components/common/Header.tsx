@@ -159,14 +159,14 @@ export const Header: React.FC<HeaderProps> = ({
             <div className="flex items-center gap-1.5">
               <button
                 onClick={handleOpenMenuDrawer}
-                className="flex items-center justify-center w-8 h-8 rounded-xl border border-white/80 bg-slate-900/80 hover:bg-white/10 active-press transition-all shadow-sm flex-shrink-0"
+                className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-xl border-[2.2px] border-white bg-[#0e1422] hover:bg-white/10 active:scale-95 transition-all shadow-[0_2px_8px_rgba(0,0,0,0.5)] flex-shrink-0"
                 aria-label="Abrir Menu Lateral"
                 title="Abrir Menu"
               >
                 <div className="flex flex-col justify-center items-center gap-[3px]">
-                  <span className="w-3.5 h-[2px] bg-white rounded-full" />
-                  <span className="w-3.5 h-[2px] bg-white rounded-full" />
-                  <span className="w-3.5 h-[2px] bg-white rounded-full" />
+                  <span className="w-4 h-[2px] bg-white rounded-full" />
+                  <span className="w-4 h-[2px] bg-white rounded-full" />
+                  <span className="w-4 h-[2px] bg-white rounded-full" />
                 </div>
               </button>
             </div>
@@ -175,18 +175,18 @@ export const Header: React.FC<HeaderProps> = ({
           /* Header Principal */
           <div className="max-w-full md:max-w-6xl xl:max-w-7xl mx-auto">
             <div className="flex items-center justify-between">
-              {/* Canto Superior Esquerdo: Menu Hamburguer com borda branca + Logo + Nome */}
+              {/* Canto Superior Esquerdo: Menu Hamburguer com borda branca idêntico à imagem + Logo + Nome */}
               <div className="flex items-center gap-2.5 min-w-0">
                 <button
                   onClick={handleOpenMenuDrawer}
-                  className="flex items-center justify-center w-8 h-8 rounded-xl border border-white/80 bg-slate-900/80 hover:bg-white/10 active-press transition-all shadow-sm flex-shrink-0"
+                  className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-xl border-[2.2px] border-white bg-[#0e1422] hover:bg-white/10 active:scale-95 transition-all shadow-[0_2px_8px_rgba(0,0,0,0.5)] flex-shrink-0"
                   aria-label="Abrir Menu Lateral de Navegação"
                   title="Abrir Menu Completo"
                 >
                   <div className="flex flex-col justify-center items-center gap-[3px]">
-                    <span className="w-3.5 h-[2px] bg-white rounded-full" />
-                    <span className="w-3.5 h-[2px] bg-white rounded-full" />
-                    <span className="w-3.5 h-[2px] bg-white rounded-full" />
+                    <span className="w-4 h-[2px] bg-white rounded-full" />
+                    <span className="w-4 h-[2px] bg-white rounded-full" />
+                    <span className="w-4 h-[2px] bg-white rounded-full" />
                   </div>
                 </button>
 

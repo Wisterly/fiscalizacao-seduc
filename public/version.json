@@ -1,15 +1,15 @@
 {
-  "version": "1.0.27",
-  "buildNumber": 28,
+  "version": "1.0.28",
+  "buildNumber": 29,
   "releaseDate": "2026-11-15",
   "minRequiredVersion": "1.0.0",
   "downloadUrl": "https://github.com/Wisterly/fiscalizacao-seduc/releases/download/apk-latest/Fiscal.IA.apk",
   "changelog": [
-    "Pasta Geral de Ordens de Serviço do Google Drive com todas as GREs configurável nos Ajustes",
-    "Varredura Automática de OSs no Drive com busca inteligente pelo número da ordem de serviço",
-    "Anexação automática dos arquivos PDF de Ordens de Serviço aos cards das escolas em Orçamentos",
-    "Orçamentos com fluxo 100% manual dedicado para envio e consulta da planilha orçamentária",
-    "Botão de atalho para Varredura de OSs no Drive direto na aba de Orçamentos",
-    "Índice offline com 1015 arquivos e PDFs do acervo da SEDUC integrado"
+    "Nova Barra Inferior Flutuante com Glassmorphism vítreo escuro e iluminação âmbar suave nos 6 itens",
+    "Novo Botão de Menu Superior idêntico ao design de referência com moldura branca e 3 traços paralelos",
+    "Filtro estrito na Planilha da Ata pela Coluna R (Obras em Execução) e exibição do Status Diário da Coluna S (Parada, Em andamento, etc.)",
+    "Ordem de Serviço do CETI Orlando Carvalho e demais 154 escolas em execução integradas com valores e status diário reais",
+    "Download e busca direta dos arquivos PDF das Ordens de Serviço nas pastas de cada GRE no Google Drive",
+    "Ajustes concentrado exclusivamente no menu superior de três linhas para máxima ergonomia no mobile"
   ]
 }

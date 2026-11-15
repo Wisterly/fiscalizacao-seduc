@@ -448,11 +448,9 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
                               window.open(os.osPdfUrl, '_blank');
                             } else if (os.arquivoPdfGerado && os.arquivoPdfGerado.startsWith('http')) {
                               window.open(os.arquivoPdfGerado, '_blank');
-                            } else if (driveBase) {
-                              window.open(driveBase, '_blank');
                             } else {
-                              setModalSchool(school);
-                              setModalOS(os);
+                              const linkDrive = driveOSScanner.gerarLinkBuscaDrive(os.greId, os.numeroOS);
+                              window.open(linkDrive, '_blank');
                             }
                           };
 
@@ -471,17 +469,19 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
                             }
                           };
 
-                          const statusLabel = os.statusObra || (os.status === 'ativa' ? 'EM EXECUÇÃO' : 'HISTÓRICO');
-                          const isAIniciar = statusLabel.toUpperCase().includes('INICIAR');
-                          const isExecucao = statusLabel.toUpperCase().includes('EXECUÇÃO') || statusLabel.toUpperCase().includes('EXECUCAO');
-                          const isParalisada = statusLabel.toUpperCase().includes('PARALISADA');
+                          // O usuário solicitou que o status exibido em destaque seja o STATUS DIÁRIO (Coluna S da Planilha da Ata)
+                          const statusDiarioTexto = (os.statusDiario || os.statusObra || 'Em andamento').trim();
+                          const isParada = statusDiarioTexto.toLowerCase().includes('parada') || statusDiarioTexto.toLowerCase().includes('paralisada');
+                          const isRitmoLento = statusDiarioTexto.toLowerCase().includes('lento') || statusDiarioTexto.toLowerCase().includes('ritmo');
+                          const isAndamento = statusDiarioTexto.toLowerCase().includes('andamento') || statusDiarioTexto.toLowerCase().includes('execu');
+                          const isPendencia = statusDiarioTexto.toLowerCase().includes('pend');
 
                           return (
                             <div
                               key={os.id}
                               className="p-3.5 rounded-2xl bg-slate-900/90 border border-white/10 space-y-3 shadow-md"
                             >
-                              {/* Topo da OS com Status em Destaque */}
+                              {/* Topo da OS com Status Diário em Destaque Obrigatório */}
                               <div className="flex items-start justify-between gap-2">
                                 <div className="min-w-0 flex-1">
                                   <div className="flex items-center gap-2 flex-wrap">
@@ -489,30 +489,34 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
                                       OS Nº {os.numeroOS}
                                     </span>
 
-                                    {/* STATUS DA OBRA DESTACADO CONFORME SOLICITADO */}
+                                    {/* BADGE DE STATUS DIÁRIO (Coluna S) */}
                                     <span
                                       className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border uppercase tracking-wider flex items-center gap-1.5 shadow-sm ${
-                                        isAIniciar
-                                          ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-amber-500/10'
-                                          : isExecucao
-                                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-emerald-500/10'
-                                          : isParalisada
+                                        isParada
                                           ? 'bg-red-500/20 text-red-300 border-red-500/40 shadow-red-500/10'
+                                          : isRitmoLento
+                                          ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-amber-500/10'
+                                          : isAndamento
+                                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-emerald-500/10'
+                                          : isPendencia
+                                          ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
                                           : 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
                                       }`}
                                     >
                                       <span
                                         className={`w-2 h-2 rounded-full animate-pulse ${
-                                          isAIniciar
-                                            ? 'bg-amber-400'
-                                            : isExecucao
-                                            ? 'bg-emerald-400'
-                                            : isParalisada
+                                          isParada
                                             ? 'bg-red-400'
+                                            : isRitmoLento
+                                            ? 'bg-amber-400'
+                                            : isAndamento
+                                            ? 'bg-emerald-400'
+                                            : isPendencia
+                                            ? 'bg-purple-400'
                                             : 'bg-cyan-400'
                                         }`}
                                       />
-                                      <span>{statusLabel}</span>
+                                      <span>● {statusDiarioTexto.toUpperCase()}</span>
                                     </span>
                                   </div>
 

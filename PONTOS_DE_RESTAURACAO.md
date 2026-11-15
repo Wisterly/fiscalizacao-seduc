@@ -29,6 +29,21 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.033] — Nova Barra de Navegação Flutuante Glassmorphism, Botão [ ≡ ] Fiel, Filtro Estrito Coluna R (Obras em Execução), Badge de Status Diário (Coluna S), 154 OSs Reais (CETI Orlando Carvalho) e Release v1.0.28 (Build 29)
+- **Data/Hora:** 2026-11-15 02:45 (UTC-3)
+- **Escopos Definidos:**
+  - `PR.033` (Geral): Reformulação completa da filtragem da Planilha da Ata da SEDUC com critério estrito na Coluna R (índice 17: apenas status `EXECUÇÃO` ou `EM EXECUÇÃO`) e captura do Status Diário da Coluna S (índice 18: `Parada`, `Em andamento`, `Ritmo lento`, etc.). Sincronização de 154 ordens de serviço ativas no estado do Piauí com identificação única, incluindo os dados reais do CETI Orlando Carvalho (8ª GRE - Oeiras, OS 2025/671, valor R$ 627.751,30, Status Diário `Parada`, Contrato 217/2022, Fiscal Kayro Rocha, Construtora R Melo). Nova Barra Inferior de Navegação flutuante com acabamento vítreo premium escuro translúcido, reflexo chanfrado superior, iluminação difusa âmbar suave no ícone ativo e remoção ergonômica de Ajustes (mantendo apenas 6 itens principais). Botão superior de menu [ ≡ ] com moldura quadrada de cantos arredondados e borda branca de alto contraste. Versão atualizada para **v1.0.28 (Build 29)**.
+  - `PR.033.1` (Web / Desktop): Na visualização Web e Desktop, o layout mantém o dock flutuante centralizado na base com reflexo chanfrado e halo dourado difuso no item ativo, sem colisões com os cards de módulos. Cabeçalho com o botão de menu [ ≡ ] em destaque e navegação instantânea.
+  - `PR.033.2` (Mobile / Android): No smartphone Android, o dock flutuante inferior ganha margens confortáveis (`left-2.5 right-2.5 bottom-2`), bordas arredondadas `rounded-2xl` e fundo `backdrop-blur-2xl`, garantindo que os 6 botões (Início, Vistoria, Orçamento, Rotas, Demandas, Galeria) tenham espaço tátil generoso sem cortes. O card expandido da escola na aba de Orçamentos destaca com máxima clareza o badge de Status Diário com ponto luminoso pulsante (vermelho para `● PARADA`, âmbar para `● RITMO LENTO` e verde para `● EM ANDAMENTO`). Botão direto de download de OS acionando o link direto do Google Drive da referida regional. Compilação do APK nativo `Fiscal.IA.apk` Build 29 com `versionCode 29` e `versionName 1.0.28`.
+- **Tags Git:** `PR.033`, `PR.033.1`, `PR.033.2`
+- **Arquivo Local do APK:** `c:\Users\Lenovo\Documents\antigravity\LAB - GPR\Fiscal.IA.lab - GPR\Fiscal.IA.apk`
+- **Comando de Restauração Rápida:**
+  ```bash
+  git checkout PR.033
+  ```
+
+---
+
 ### [PR.032] — Pasta Geral de Ordens de Serviço do Drive (Todas as GREs), Varredura Inteligente por Número de OS, Anexação Automática aos Cards das Escolas e Release v1.0.27 (Build 28)
 - **Data/Hora:** 2026-11-15 02:30 (UTC-3)
 - **Escopos Definidos:**
