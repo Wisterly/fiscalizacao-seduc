@@ -27,13 +27,17 @@ const HISTORICO_PATH = path.join(DIR_ATUAL, 'historico_alertas.json');
 function carregarConfig() {
   if (fs.existsSync(CONFIG_PATH)) {
     try {
-      return JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+      const raw = fs.readFileSync(CONFIG_PATH, 'utf8').replace(/^\uFEFF/, '');
+      return JSON.parse(raw);
     } catch (e) {
       console.error('❌ Erro ao ler sei_config.json:', e.message);
     }
   }
   if (fs.existsSync(CONFIG_TEMPLATE_PATH)) {
-    return JSON.parse(fs.readFileSync(CONFIG_TEMPLATE_PATH, 'utf8'));
+    try {
+      const raw = fs.readFileSync(CONFIG_TEMPLATE_PATH, 'utf8').replace(/^\uFEFF/, '');
+      return JSON.parse(raw);
+    } catch (e) {}
   }
   return {
     usuario: process.env.SEI_USUARIO || '',
