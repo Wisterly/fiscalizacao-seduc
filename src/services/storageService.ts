@@ -8,7 +8,10 @@ import {
   RotaVistoria,
   TarefaDoDia,
   Levantamento,
-  FotoLevantamento
+  FotoLevantamento,
+  ProcessoAcompanhamento,
+  CategoriaProcessoCard,
+  DocumentoProcessoSEI
 } from '../types';
 import {
   INITIAL_GRES,
@@ -24,14 +27,17 @@ import {
 
 const STORAGE_KEYS = {
   GRES: 'seduc_fiscal_gres_v4',
-  SCHOOLS: 'seduc_fiscal_schools_inep_v6',
+  SCHOOLS: 'seduc_fiscal_schools_inep_v7',
   AMBIENTES: 'seduc_fiscal_ambientes_v1',
-  OS: 'seduc_fiscal_os_v2',
-  ALERTAS: 'seduc_fiscal_alertas_v2',
-  DEMANDAS: 'seduc_fiscal_demandas_v2',
-  TAREFAS: 'seduc_fiscal_tarefas_v2',
-  LEVANTAMENTOS: 'seduc_fiscal_levantamentos_v2',
-  ROTAS: 'seduc_fiscal_rotas_v2',
+  OS: 'seduc_fiscal_os_v3',
+  ALERTAS: 'seduc_fiscal_alertas_v3',
+  DEMANDAS: 'seduc_fiscal_demandas_v3',
+  TAREFAS: 'seduc_fiscal_tarefas_v3',
+  LEVANTAMENTOS: 'seduc_fiscal_levantamentos_v3',
+  ROTAS: 'seduc_fiscal_rotas_v3',
+  PROCESSOS: 'seduc_fiscal_processos_v2',
+  CATEGORIAS_PROCESSO: 'seduc_fiscal_categorias_processo_v2',
+  CARD_ORDER: 'seduc_fiscal_home_cards_order_v1',
   LAST_SYNC: 'seduc_fiscal_last_sync_v1'
 };
 
@@ -46,12 +52,21 @@ class StorageService {
   private migrarELimparExemplos(): void {
     try {
       const chavesAntigas = [
+        'seduc_fiscal_os_v1',
+        'seduc_fiscal_os_v2',
         'seduc_fiscal_alertas_v1',
+        'seduc_fiscal_alertas_v2',
         'seduc_fiscal_demandas_v1',
+        'seduc_fiscal_demandas_v2',
         'seduc_fiscal_tarefas_v1',
+        'seduc_fiscal_tarefas_v2',
         'seduc_fiscal_levantamentos_v1',
+        'seduc_fiscal_levantamentos_v2',
         'seduc_fiscal_rotas_v1',
-        'seduc_fiscal_schools_inep_v5'
+        'seduc_fiscal_rotas_v2',
+        'seduc_fiscal_processos_v1',
+        'seduc_fiscal_schools_inep_v5',
+        'seduc_fiscal_schools_inep_v6'
       ];
       chavesAntigas.forEach(k => {
         if (localStorage.getItem(k) !== null) {
@@ -496,6 +511,88 @@ class StorageService {
     return { rotas: updatedRotas, schools: updatedSchools };
   }
 
+  // --- Acompanhamento de Processos SEI ---
+  getCategoriasProcesso(): CategoriaProcessoCard[] {
+    const defaultCategorias: CategoriaProcessoCard[] = [
+      {
+        id: 'medicao',
+        nome: 'Processos de Medição',
+        descricao: 'Acompanhamento e trâmite de processos de medição de obras',
+        isPadrao: true,
+        corBadge: 'amber'
+      },
+      {
+        id: 'diaria',
+        nome: 'Processos de Diária',
+        descricao: 'Controle de concessão, empenho e SEDUC QRE de diárias',
+        isPadrao: true,
+        corBadge: 'cyan'
+      }
+    ];
+    return this.getItem<CategoriaProcessoCard[]>(STORAGE_KEYS.CATEGORIAS_PROCESSO, defaultCategorias);
+  }
+
+  saveCategoriaProcesso(cat: CategoriaProcessoCard): CategoriaProcessoCard[] {
+    const list = this.getCategoriasProcesso();
+    const index = list.findIndex(c => c.id === cat.id);
+    let updated: CategoriaProcessoCard[];
+    if (index >= 0) {
+      updated = list.map(c => c.id === cat.id ? cat : c);
+    } else {
+      updated = [...list, cat];
+    }
+    this.setItem(STORAGE_KEYS.CATEGORIAS_PROCESSO, updated);
+    return updated;
+  }
+
+  deleteCategoriaProcesso(id: string): CategoriaProcessoCard[] {
+    const list = this.getCategoriasProcesso().filter(c => c.id !== id || c.isPadrao);
+    this.setItem(STORAGE_KEYS.CATEGORIAS_PROCESSO, list);
+    return list;
+  }
+
+  getProcessos(): ProcessoAcompanhamento[] {
+    return this.getItem<ProcessoAcompanhamento[]>(STORAGE_KEYS.PROCESSOS, []);
+  }
+
+  saveProcesso(processo: ProcessoAcompanhamento): ProcessoAcompanhamento[] {
+    const list = this.getProcessos();
+    const index = list.findIndex(p => p.id === processo.id);
+    let updated: ProcessoAcompanhamento[];
+    if (index >= 0) {
+      updated = list.map(p => p.id === processo.id ? processo : p);
+    } else {
+      updated = [processo, ...list];
+    }
+    this.setItem(STORAGE_KEYS.PROCESSOS, updated);
+    return updated;
+  }
+
+  deleteProcesso(id: string): ProcessoAcompanhamento[] {
+    const list = this.getProcessos().filter(p => p.id !== id);
+    this.setItem(STORAGE_KEYS.PROCESSOS, list);
+    return list;
+  }
+
+  adicionarDocumentoProcesso(processoId: string, doc: Omit<DocumentoProcessoSEI, 'id'>): ProcessoAcompanhamento[] {
+    const list = this.getProcessos();
+    const novoDoc: DocumentoProcessoSEI = {
+      ...doc,
+      id: `doc-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`
+    };
+    const updated = list.map(p => {
+      if (p.id === processoId) {
+        return {
+          ...p,
+          documentos: [...p.documentos, novoDoc]
+        };
+      }
+      return p;
+    });
+    this.setItem(STORAGE_KEYS.PROCESSOS, updated);
+    return updated;
+  }
+
   // --- Galeria Agregada ---
   getAllFotos(): (FotoLevantamento & { escolaNome: string; levantamentoId: string })[] {
     const levantamentos = this.getLevantamentos();
@@ -514,6 +611,16 @@ class StorageService {
       });
     });
     return allFotos;
+  }
+
+  // --- Ordem Interativa dos Cards na Home ---
+  getHomeCardsOrder(): string[] {
+    const defaultOrder = ['gres', 'orcamentos', 'medicoes', 'rotas', 'demandas', 'processos'];
+    return this.getItem<string[]>(STORAGE_KEYS.CARD_ORDER, defaultOrder);
+  }
+
+  saveHomeCardsOrder(order: string[]): void {
+    this.setItem(STORAGE_KEYS.CARD_ORDER, order);
   }
 
   // --- Reset de Fábrica ---

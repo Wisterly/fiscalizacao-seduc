@@ -29,6 +29,21 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.027] — 6 Cards Interativos na Home com Modo Solto (Jiggle/Drag & Drop), Novo Módulo de Medições Desacoplado, Acompanhamento de Processos SEI com Alertas Inteligentes, Barra Inferior e Menu Lateral com 9 Módulos
+- **Data/Hora:** 2026-11-15 01:00 (UTC-3)
+- **Escopos Definidos:**
+  - `PR.027` (Geral): Limpeza radical e eliminação de 100% de quaisquer dados fictícios/mocks (ordens de serviço com medições 100% ou 65%, demandas e vistorias fictícias removidas; banco de dados e localStorage inicializados zerados na versão v3, preservando a base cadastral das 21 GREs e escolas do INEP). Criação dos modelos e serviços de dados para Processos SEI (`ProcessoAcompanhamento`, `DocumentoProcessoSEI`, `AlertaProcessoConfig`).
+  - `PR.027.1` (Desktop / Web): Expansão da Home para 6 cards modulares com persistência da ordem personalizada (`storage.saveHomeCardsOrder`). Modo de reorganização ativado por clique ou arraste (Drag and Drop HTML5) e setas direcionais com tremor interativo (`animate-wiggle`). Barra de navegação inferior (Dock flutuante) e Menu Hamburguer superior espelhando integralmente os 9 módulos do sistema com navegação direta e feedback visual sincronizado.
+  - `PR.027.2` (Mobile / Android): No smartphone Android, modo de reorganização ativado por toque prolongado (Long Press de 450ms com feedback tátil de vibração). Implementação do novo módulo de Medições de Obras (`MedicoesView.tsx`) abrindo obrigatoriamente pelo Seletor das 21 GREs, com barra estilizada neon turquesa e dourada, resumo financeiro e saldos contratuais. Implementação do novo módulo de Acompanhamento de Processos SEI (`ProcessosView.tsx`) com visualização da árvore de documentos anexados em modo visitante/consulta pública para Medições e Diárias, com sistema configurável de alertas em tempo real para `SEDUC Empenho` e `SEDUC QRE`. Empacotamento Capacitor, atualização para **v1.0.22 (Build 23)** e compilação do APK nativo `Fiscal.IA.apk`.
+- **Tags Git:** `PR.027`, `PR.027.1`, `PR.027.2`
+- **Arquivo Local do APK:** `c:\Users\Lenovo\Documents\antigravity\LAB - GPR\Fiscal.IA.lab - GPR\Fiscal.IA.apk`
+- **Comando de Restauração Rápida:**
+  ```bash
+  git checkout PR.027
+  ```
+
+---
+
 ### [PR.026] — Design Responsivo Web/Desktop Adaptativo, Sincronização em Nuvem Cross-Platform (Celular ⇄ Web) e Armazenamento Inteligente com Google Drive por GRE e Escola
 - **Data/Hora:** 2026-11-14 23:50 (UTC-3)
 - **Escopos Definidos:**

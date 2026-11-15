@@ -117,7 +117,7 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
   const handleConfirmReset = () => {
     if (
       window.confirm(
-        'Deseja realmente restaurar os dados de fábrica do Piauí? Todas as 21 GREs, OS de 65% e alertas para a Gerência Naila serão restaurados.'
+        'Deseja realmente restaurar as configurações originais e manter o aplicativo 100% limpo para novos cadastros?'
       )
     ) {
       onResetData();

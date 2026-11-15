@@ -106,3 +106,14 @@
 .animate-ai-glow {
   animation: ai-pulse 2.5s infinite ease-in-out;
 }
+
+/* Animação de tremor interativo para reorganização de cards (efeito solto) */
+@keyframes card-wiggle {
+  0% { transform: rotate(-0.8deg) scale(1.02); }
+  50% { transform: rotate(0.8deg) scale(1.02); }
+  100% { transform: rotate(-0.8deg) scale(1.02); }
+}
+
+.animate-wiggle {
+  animation: card-wiggle 0.24s infinite ease-in-out;
+}

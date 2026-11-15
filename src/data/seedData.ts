@@ -40,9 +40,8 @@ export const INITIAL_AMBIENTES: Ambiente[] = [
   { id: 'amb-9', nome: 'Pátio Coberto / Quadra Poliesportiva', isPadrao: true },
 ];
 
-export const INITIAL_OS: OrdemServico[] = ordensServicoAtaJson as OrdemServico[];
-
-// Dados 100% limpos para cadastro pelo usuário
+// Dados 100% limpos e zerados para cadastro real pelo usuário
+export const INITIAL_OS: OrdemServico[] = [];
 export const INITIAL_ALERTAS: AlertaUrgente[] = [];
 export const INITIAL_DEMANDAS: Demanda[] = [];
 export const INITIAL_TAREFAS: TarefaDoDia[] = [];

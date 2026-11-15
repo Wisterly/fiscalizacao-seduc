@@ -103,7 +103,7 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
           schools={schools}
           selectedGreId={null}
           titulo="1. Selecionar a GRE para Orçamentos e OS"
-          subtitulo="Acompanhe ordens de serviço, contratos da ata e medições físicas"
+          subtitulo="Acompanhe ordens de serviço, contratos da ata e projetos executivos"
           badgeTexto="21 Regiões"
           onSelectGre={setActiveGre}
         />
@@ -313,16 +313,6 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
                         <button
                           onClick={() => {
                             setCardMenuOpenId(null);
-                            handleOpenEditMedicao(os);
-                          }}
-                          className="w-full px-3 py-1.5 text-left text-xs text-white hover:bg-slate-800 rounded-lg flex items-center gap-2"
-                        >
-                          <Sliders className="w-3.5 h-3.5 text-amber-400" />
-                          Ajustar % de Medição
-                        </button>
-                        <button
-                          onClick={() => {
-                            setCardMenuOpenId(null);
                             setPreviewDoc({ os, tipo: 'orcamento' });
                           }}
                           className="w-full px-3 py-1.5 text-left text-xs text-white hover:bg-slate-800 rounded-lg flex items-center gap-2"
@@ -374,96 +364,17 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
                   </button>
                 </div>
 
-                {/* BARRA DE MEDIÇÃO ESTILIZADA EXATA DA REFERÊNCIA */}
-                {/* Cápsula arredondada com contorno neon turquesa e gradiente dourado interno */}
-                <div className="pt-1">
-                  <div
-                    onClick={() => {
-                      if (!isEditing) handleOpenEditMedicao(os);
-                    }}
-                    className="relative w-full h-8 rounded-full border-2 border-cyan-400 bg-slate-950/80 p-0.5 shadow-[0_0_18px_rgba(6,182,212,0.45)] cursor-pointer overflow-hidden active-press transition-all group"
-                    title="Clique para ajustar a medição"
-                  >
-                    {/* Barra de Progresso Dourada Interna */}
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-400 transition-all duration-300 shadow-glass-glow-gold"
-                      style={{ width: `${perc}%` }}
-                    />
-
-                    {/* Texto Centralizado na Cápsula: "65% Medido" */}
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <span className="text-xs font-extrabold text-white tracking-wide drop-shadow-[0_1px_3px_rgba(0,0,0,0.95)]">
-                        {perc}% Medido
-                      </span>
-                    </div>
+                {/* Resumo do Contrato e Vigência */}
+                <div className="p-2.5 rounded-xl bg-slate-950/60 border border-white/5 flex items-center justify-between text-xs text-slate-300 mt-1">
+                  <div className="truncate">
+                    <span className="text-[10px] text-slate-400 block">Empresa Contratada</span>
+                    <strong className="text-white truncate block">{os.empresaContratada}</strong>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className="text-[10px] text-slate-400 block">Vigência até</span>
+                    <strong className="text-amber-300">{os.prazoFinal}</strong>
                   </div>
                 </div>
-
-                {/* CONTROLES INTERATIVOS EXPANSÍVEIS DE MEDIÇÃO */}
-                {isEditing && (
-                  <div className="pt-2 pb-1 space-y-2.5 animate-fadeIn bg-slate-950/60 p-3 rounded-2xl border border-white/10 mt-2">
-                    <div className="flex items-center justify-between text-xs font-bold text-amber-300">
-                      <span>Ajustar Medição em Campo:</span>
-                      <span className="font-mono text-sm">{tempPercentual}%</span>
-                    </div>
-
-                    {/* Slider */}
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      step="1"
-                      value={tempPercentual}
-                      onChange={(e) => setTempPercentual(Number(e.target.value))}
-                      className="w-full accent-amber-400 cursor-pointer"
-                    />
-
-                    {/* Botões Rápidos */}
-                    <div className="flex gap-1.5">
-                      {[-10, -5, +5, +10].map((step) => (
-                        <button
-                          key={step}
-                          type="button"
-                          onClick={() =>
-                            setTempPercentual((prev) =>
-                              Math.min(100, Math.max(0, prev + step))
-                            )
-                          }
-                          className="flex-1 py-1 text-[10px] font-bold rounded-lg bg-slate-800 border border-white/5 text-slate-200 active-press hover:bg-slate-700"
-                        >
-                          {step > 0 ? `+${step}%` : `${step}%`}
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* Anotação Técnica */}
-                    <input
-                      type="text"
-                      placeholder="Registrar anotação técnica desta medição..."
-                      value={novaObservacao}
-                      onChange={(e) => setNovaObservacao(e.target.value)}
-                      className="w-full text-xs bg-slate-900 border border-white/10 rounded-xl px-2.5 py-1.5 text-white placeholder-slate-400 focus:outline-none focus:border-amber-400"
-                    />
-
-                    {/* Botões de Ação */}
-                    <div className="flex gap-2 justify-end pt-1">
-                      <button
-                        type="button"
-                        onClick={() => setEditingOsId(null)}
-                        className="px-3 py-1 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold"
-                      >
-                        Cancelar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleSalvarMedicao(os.id)}
-                        className="px-3.5 py-1 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs active-press shadow-glass-glow-gold"
-                      >
-                        Salvar Medição
-                      </button>
-                    </div>
-                  </div>
-                )}
 
                 {/* Linha de Observações Técnicas */}
                 <div className="pt-1.5 border-t border-white/[0.06]">

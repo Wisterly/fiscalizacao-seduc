@@ -30,8 +30,10 @@ import { SchoolTimeline } from './components/vistorias/SchoolTimeline';
 import { NewLevantamentoModal } from './components/vistorias/NewLevantamentoModal';
 import { InspectionReportModal } from './components/vistorias/InspectionReportModal';
 import { OrcamentosView } from './components/orcamentos/OrcamentosView';
+import { MedicoesView } from './components/medicoes/MedicoesView';
 import { RotasView } from './components/rotas/RotasView';
 import { DemandasView } from './components/demandas/DemandasView';
+import { ProcessosView } from './components/processos/ProcessosView';
 import { GaleriaView } from './components/galeria/GaleriaView';
 import { ConfigView } from './components/config/ConfigView';
 import { UpdateModal } from './components/UpdateModal';
@@ -54,7 +56,7 @@ export function App() {
   // --- Navegação e Fluxo de Telas ---
   const [activeTab, setActiveTab] = useState<NavTab>('inicio');
   const [tabHistory, setTabHistory] = useState<NavTab[]>(['inicio']);
-  const [subView, setSubView] = useState<'none' | 'orcamentos' | 'rotas'>('none');
+  const [subView, setSubView] = useState<'none' | 'orcamentos' | 'medicoes' | 'rotas' | 'processos'>('none');
   const [showExitToast, setShowExitToast] = useState(false);
   const lastBackPressRef = useRef<number>(0);
 
@@ -71,9 +73,10 @@ export function App() {
   const [selectedGre, setSelectedGre] = useState<GRE | null>(null);
   const [selectedSchool, setSelectedSchool] = useState<Escola | null>(null);
 
-  // Seletores de GRE para os módulos Demandas, Orçamentos e Rotas
+  // Seletores de GRE para os módulos Demandas, Orçamentos, Medições e Rotas
   const [selectedDemandasGre, setSelectedDemandasGre] = useState<GRE | null>(null);
   const [selectedOrcamentosGre, setSelectedOrcamentosGre] = useState<GRE | null>(null);
+  const [selectedMedicoesGre, setSelectedMedicoesGre] = useState<GRE | null>(null);
   const [selectedRotasGre, setSelectedRotasGre] = useState<GRE | null>(null);
 
   // Modais de Vistoria
@@ -166,34 +169,32 @@ export function App() {
     }
 
     // 2. Se estiver no perfil de uma escola (Vistorias), volta para a lista da GRE
-    if (selectedSchool) {
+    if (activeTab === 'vistorias' && selectedSchool) {
       setSelectedSchool(null);
       return true;
     }
 
     // 3. Se estiver na lista de escolas de uma GRE (Vistorias), volta para o seletor das 21 GREs
-    if (selectedGre) {
+    if (activeTab === 'vistorias' && selectedGre) {
       setSelectedGre(null);
       return true;
     }
 
     // 4. Se estiver em Rotas com GRE selecionada, volta para o seletor de GRE de Rotas
-    if (subView === 'rotas') {
-      if (selectedRotasGre) {
-        setSelectedRotasGre(null);
-        return true;
-      }
-      setSubView('none');
+    if ((activeTab === 'rotas' || subView === 'rotas') && selectedRotasGre) {
+      setSelectedRotasGre(null);
       return true;
     }
 
     // 5. Se estiver em Orçamentos com GRE selecionada, volta para o seletor de GRE de Orçamentos
-    if (subView === 'orcamentos') {
-      if (selectedOrcamentosGre) {
-        setSelectedOrcamentosGre(null);
-        return true;
-      }
-      setSubView('none');
+    if ((activeTab === 'orcamentos' || subView === 'orcamentos') && selectedOrcamentosGre) {
+      setSelectedOrcamentosGre(null);
+      return true;
+    }
+
+    // 5b. Se estiver em Medições com GRE selecionada, volta para o seletor de GRE de Medições
+    if ((activeTab === 'medicoes' || subView === 'medicoes') && selectedMedicoesGre) {
+      setSelectedMedicoesGre(null);
       return true;
     }
 
@@ -253,6 +254,7 @@ export function App() {
     selectedGre,
     selectedDemandasGre,
     selectedOrcamentosGre,
+    selectedMedicoesGre,
     selectedRotasGre,
     subView,
     activeTab
@@ -488,16 +490,7 @@ export function App() {
           }
           onBackFromSubView={() => setSubView('none')}
           onNavigateToTab={(tab) => {
-            if (tab === 'orcamentos') {
-              setActiveTab('vistorias');
-              setSubView('orcamentos');
-            } else if (tab === 'rotas') {
-              setActiveTab('vistorias');
-              setSubView('rotas');
-            } else {
-              setActiveTab(tab as NavTab);
-              setSubView('none');
-            }
+            handleNavigateTab(tab as NavTab);
           }}
         />
 
@@ -516,26 +509,14 @@ export function App() {
                 onAbrir={handleAbrirAlerta}
               />
 
-              {/* 2. Grid 2x2 com 4 Grandes Botões/Cards Modulares */}
+              {/* 2. Grid com 6 Grandes Botões/Cards Modulares Interativos */}
               <ModuleGrid
-                onOpenGREs={() => {
-                  setActiveTab('vistorias');
-                  setSubView('none');
-                  setSelectedGre(null);
-                  setSelectedSchool(null);
-                }}
-                onOpenOS={() => {
-                  setActiveTab('vistorias');
-                  setSubView('orcamentos');
-                }}
-                onOpenRotas={() => {
-                  setActiveTab('vistorias');
-                  setSubView('rotas');
-                }}
-                onOpenDemandas={() => {
-                  setActiveTab('demandas');
-                  setSubView('none');
-                }}
+                onOpenGREs={() => handleNavigateTab('vistorias')}
+                onOpenOS={() => handleNavigateTab('orcamentos')}
+                onOpenMedicoes={() => handleNavigateTab('medicoes')}
+                onOpenRotas={() => handleNavigateTab('rotas')}
+                onOpenDemandas={() => handleNavigateTab('demandas')}
+                onOpenProcessos={() => handleNavigateTab('processos')}
                 osAtivasCount={osAtivasCount}
                 demandasPendentesCount={pendenciasCount}
               />
@@ -550,9 +531,9 @@ export function App() {
           )}
 
           {/* ======================================= */}
-          {/* SUB-VIEW: MÓDULO 2 - ORÇAMENTOS & OS    */}
+          {/* MÓDULO 2 - ORÇAMENTOS & OS              */}
           {/* ======================================= */}
-          {subView === 'orcamentos' && (
+          {(activeTab === 'orcamentos' || subView === 'orcamentos') && (
             <div className="animate-fadeIn">
               <OrcamentosView
                 ordensServico={ordensServico}
@@ -566,7 +547,7 @@ export function App() {
                   if (selectedOrcamentosGre) {
                     setSelectedOrcamentosGre(null);
                   } else {
-                    setSubView('none');
+                    handleNavigateTab('inicio');
                   }
                 }}
               />
@@ -574,9 +555,43 @@ export function App() {
           )}
 
           {/* ======================================= */}
-          {/* SUB-VIEW: MÓDULO 3 - ROTAS DE VISTORIA  */}
+          {/* MÓDULO 3 - MEDIÇÕES DE OBRAS            */}
           {/* ======================================= */}
-          {subView === 'rotas' && (
+          {(activeTab === 'medicoes' || subView === 'medicoes') && (
+            <div className="animate-fadeIn">
+              <MedicoesView
+                ordensServico={ordensServico}
+                gres={gres}
+                schools={schools}
+                selectedGre={selectedMedicoesGre}
+                onSelectGre={setSelectedMedicoesGre}
+                onUpdateMedicao={handleUpdateMedicaoOS}
+                onBack={() => {
+                  if (selectedMedicoesGre) {
+                    setSelectedMedicoesGre(null);
+                  } else {
+                    handleNavigateTab('inicio');
+                  }
+                }}
+              />
+            </div>
+          )}
+
+          {/* ======================================= */}
+          {/* MÓDULO 6 - PROCESSOS SEI                */}
+          {/* ======================================= */}
+          {(activeTab === 'processos' || subView === 'processos') && (
+            <div className="animate-fadeIn">
+              <ProcessosView
+                onBack={() => handleNavigateTab('inicio')}
+              />
+            </div>
+          )}
+
+          {/* ======================================= */}
+          {/* MÓDULO 4 - ROTAS DE VISTORIA            */}
+          {/* ======================================= */}
+          {(activeTab === 'rotas' || subView === 'rotas') && (
             <div className="animate-fadeIn">
               <RotasView
                 rotas={rotas}
@@ -590,8 +605,7 @@ export function App() {
                   const targetGre = gres.find(g => g.id === school.greId) || null;
                   setSelectedGre(targetGre);
                   setSelectedSchool(school);
-                  setSubView('none');
-                  setActiveTab('vistorias');
+                  handleNavigateTab('vistorias');
                 }}
               />
             </div>

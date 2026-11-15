@@ -154,3 +154,53 @@ export interface TarefaDoDia {
   prioridade: 'urgente' | 'normal';
   concluida: boolean;
 }
+
+// ==========================================
+// ACOMPANHAMENTO DE PROCESSOS SEI
+// ==========================================
+
+export interface DocumentoProcessoSEI {
+  id: string;
+  numeroOrdem: string; // ex: "001", "002"
+  nomeDocumento: string; // ex: "SEDUC Empenho", "SEDUC QRE", "Nota Fiscal", "Boletim de Medição"
+  tipo: string; // ex: "Documento SEI", "Anexo PDF", "Termo de Atesto"
+  dataAnexacao: string; // ex: "14/11/2026 10:30"
+  unidadeGeradora?: string; // ex: "SEDUC/GPR", "SEDUC/DAF", "SEDUC/GCONF"
+  observacao?: string;
+}
+
+export interface AlertaProcessoConfig {
+  id: string;
+  nomeDocumentoAlvo: string; // ex: "SEDUC Empenho" ou "SEDUC QRE"
+  mensagemPersonalizada?: string;
+  ativo: boolean;
+}
+
+export interface ProcessoAcompanhamento {
+  id: string;
+  categoriaId: string; // 'medicao' | 'diaria' ou id de categoria custom
+  categoriaNome: string;
+  titulo: string; // ex: "1ª Medição Reforma Rocha Neto" ou "Diária Vistoria Oeiras"
+  numeroProcesso: string; // ex: "00026.012345/2026-11"
+  dataCriacao: string;
+  status: 'em_tramitacao' | 'empenhado' | 'liquidado' | 'concluido' | 'aguardando';
+  unidadeAtual?: string; // ex: "SEDUC/GPR", "SEDUC/DAF"
+  escolaNome?: string;
+  empresaContratada?: string;
+  // Campos específicos de diária
+  participantes?: string[]; // nomes das pessoas da diária
+  dataDiaria?: string; // período da diária, ex: "16/11/2026 a 20/11/2026"
+  // Estrutura do Processo SEI
+  documentos: DocumentoProcessoSEI[];
+  // Regras de alertas ativas para este processo
+  alertasMonitorados: AlertaProcessoConfig[];
+}
+
+export interface CategoriaProcessoCard {
+  id: string;
+  nome: string;
+  descricao: string;
+  isPadrao: boolean; // Medições e Diárias são padrão
+  corBadge: string;
+}
+
