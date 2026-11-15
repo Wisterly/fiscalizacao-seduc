@@ -19,11 +19,19 @@ import {
   Link2,
   Check,
   ClipboardList,
-  FolderOpen
+  FolderOpen,
+  FileCheck,
+  FolderSearch
 } from 'lucide-react';
-import { storage, DEFAULT_PLANILHA_ATA_URL, DEFAULT_DRIVE_OBRAS_URL } from '../../services/storageService';
+import {
+  storage,
+  DEFAULT_PLANILHA_ATA_URL,
+  DEFAULT_DRIVE_OBRAS_URL,
+  DEFAULT_PASTA_GERAL_OS_DRIVE_URL
+} from '../../services/storageService';
 import { cloudSync } from '../../services/cloudSyncService';
 import { syncAtaFromGoogleSheets } from '../../services/sheetsSyncService';
+import { driveOSScanner } from '../../services/driveOSScannerService';
 import {
   checkForUpdate,
   getInstalledAppInfo,
@@ -101,6 +109,45 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
     } finally {
       setSincronizandoAta(false);
       setTimeout(() => setMsgPlanilhaAta(null), 6000);
+    }
+  };
+
+  // Estado da Pasta Geral de Ordens de Serviço (Google Drive com todas as GREs)
+  const [pastaGeralOSDriveUrl, setPastaGeralOSDriveUrl] = useState(storage.getPastaGeralOSDriveUrl());
+  const [salvandoPastaGeralOS, setSalvandoPastaGeralOS] = useState(false);
+  const [varrendoOSDrive, setVarrendoOSDrive] = useState(false);
+  const [msgVarreduraOS, setMsgVarreduraOS] = useState<string | null>(null);
+
+  const handleSalvarPastaGeralOS = () => {
+    setSalvandoPastaGeralOS(true);
+    storage.setPastaGeralOSDriveUrl(pastaGeralOSDriveUrl.trim());
+    setTimeout(() => {
+      setSalvandoPastaGeralOS(false);
+      setMsgVarreduraOS('Link da Pasta Geral de OSs do Drive salvo com sucesso!');
+      setTimeout(() => setMsgVarreduraOS(null), 3500);
+    }, 400);
+  };
+
+  const handleRestaurarPadraoPastaGeralOS = () => {
+    storage.setPastaGeralOSDriveUrl(DEFAULT_PASTA_GERAL_OS_DRIVE_URL);
+    setPastaGeralOSDriveUrl(DEFAULT_PASTA_GERAL_OS_DRIVE_URL);
+    setMsgVarreduraOS('Link padrão da pasta geral de OSs restaurado!');
+    setTimeout(() => setMsgVarreduraOS(null), 3500);
+  };
+
+  const handleExecutarVarreduraOSAgora = async () => {
+    setVarrendoOSDrive(true);
+    setMsgVarreduraOS(null);
+    try {
+      const res = await driveOSScanner.executarVarreduraAutomatica(pastaGeralOSDriveUrl.trim());
+      setMsgVarreduraOS(
+        `Varredura concluída! ${res.totalEscolasVarredas} escolas verificadas, ${res.totalOSsAtivas} OSs ativas analisadas e ${res.totalAnexosVinculados} anexos vinculados automaticamente no card das escolas!`
+      );
+    } catch (e: any) {
+      setMsgVarreduraOS(`Erro durante a varredura do Drive: ${e?.message || e}`);
+    } finally {
+      setVarrendoOSDrive(false);
+      setTimeout(() => setMsgVarreduraOS(null), 7000);
     }
   };
 
@@ -357,6 +404,84 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
             >
               <RefreshCw className={`w-3.5 h-3.5 ${sincronizandoAta ? 'animate-spin' : ''}`} />
               <span>{sincronizandoAta ? 'Buscando Ordens de Serviço da Planilha...' : 'Sincronizar Orçamentos da Ata Agora'}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* SEÇÃO DA PASTA GERAL DE ORDENS DE SERVIÇO (GOOGLE DRIVE - TODAS AS GRES) */}
+        <div className="p-4 rounded-2xl bg-gradient-to-br from-[#0c2419]/90 to-slate-950 border border-emerald-500/30 backdrop-blur-xl shadow-glass relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
+
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2 text-xs font-bold text-white">
+              <FolderSearch className="w-4 h-4 text-emerald-400" />
+              <span>Pasta Geral de Ordens de Serviço (Google Drive)</span>
+            </div>
+            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full border bg-emerald-500/10 border-emerald-500/30 text-emerald-300 flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Varredura Inteligente
+            </span>
+          </div>
+
+          <p className="text-[11px] text-slate-300 leading-relaxed mb-3">
+            Pasta compartilhada contendo as ordens de serviço de <strong>todas as GREs</strong>. O aplicativo varre cada GRE e escola, localiza o número da OS em execução nos arquivos em PDF e <strong>anexa automaticamente</strong> no card da respectiva escola em <strong>Orçamentos</strong>. (O arquivo do orçamento permanece sendo anexado manualmente).
+          </p>
+
+          <div className="space-y-2 mb-3">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+              <Link2 className="w-3 h-3 text-emerald-400" />
+              <span>Link da Pasta Compartilhada de OSs (Drive com todas as GREs):</span>
+            </label>
+            <input
+              type="url"
+              value={pastaGeralOSDriveUrl}
+              onChange={(e) => setPastaGeralOSDriveUrl(e.target.value)}
+              placeholder="https://drive.google.com/drive/folders/..."
+              className="w-full px-3 py-2 rounded-xl bg-slate-950/80 border border-white/10 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400 font-mono text-[11px]"
+            />
+          </div>
+
+          {msgVarreduraOS && (
+            <div className={`p-2.5 rounded-xl text-xs mb-3 flex items-center gap-2 animate-fadeIn ${
+              msgVarreduraOS.includes('Erro')
+                ? 'bg-red-500/15 border border-red-500/30 text-red-200'
+                : 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-200'
+            }`}>
+              <FileCheck className="w-3.5 h-3.5 flex-shrink-0" />
+              <span>{msgVarreduraOS}</span>
+            </div>
+          )}
+
+          <div className="space-y-2 pt-1 border-t border-white/5">
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={handleSalvarPastaGeralOS}
+                disabled={salvandoPastaGeralOS}
+                className="py-2 px-3 rounded-xl bg-white/10 hover:bg-white/15 text-slate-200 text-xs font-bold active:press transition-colors flex items-center justify-center gap-1.5"
+              >
+                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                <span>{salvandoPastaGeralOS ? 'Salvando...' : 'Salvar Pasta'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleRestaurarPadraoPastaGeralOS}
+                className="py-2 px-3 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-slate-200 text-xs font-medium active:press transition-colors flex items-center justify-center gap-1.5"
+              >
+                <RotateCcw className="w-3.5 h-3.5 text-slate-400" />
+                <span>Restaurar Padrão</span>
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleExecutarVarreduraOSAgora}
+              disabled={varrendoOSDrive}
+              className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs active-press transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${varrendoOSDrive ? 'animate-spin' : ''}`} />
+              <span>{varrendoOSDrive ? 'Varrendo Escolas e Buscando OSs no Drive...' : 'Varredura Automática e Anexação de OSs no Drive'}</span>
             </button>
           </div>
         </div>

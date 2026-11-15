@@ -29,6 +29,21 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.032] — Pasta Geral de Ordens de Serviço do Drive (Todas as GREs), Varredura Inteligente por Número de OS, Anexação Automática aos Cards das Escolas e Release v1.0.27 (Build 28)
+- **Data/Hora:** 2026-11-15 02:30 (UTC-3)
+- **Escopos Definidos:**
+  - `PR.032` (Geral): Criação do serviço `driveOSScannerService` integrado a um acervo com 1015 arquivos/PDFs da SEDUC e à Pasta Geral do Google Drive contendo as ordens de serviço de todas as 21 GREs. O motor varre cada GRE e escola, analisa as ordens de serviço em execução/ativas, extrai o número da OS (ex: 2026/794, 2025/943), localiza o arquivo correspondente no Google Drive pelo número da OS no nome do arquivo e anexa automaticamente o link do arquivo ao card da escola na aba de Orçamentos. O arquivo de orçamento permanece estritamente manual para upload/anexação dedicada. Versão oficial atualizada para **v1.0.27 (Build 28)**.
+  - `PR.032.1` (Web / Desktop): Na aba de Configurações, card completo de configuração da *Pasta Geral de Ordens de Serviço (Google Drive)* com input de URL compartilhada, botões de salvar, restaurar padrão e execução de varredura com relatório de status.
+  - `PR.032.2` (Mobile / Android): No smartphone Android, botão direto de atalho *Varredura OS Drive* no cabeçalho da GRE em Orçamentos. No card expandido de cada escola, identificação clara da OS vinculada automaticamente (`● OS vinculada automaticamente do Drive: nomeArquivo.pdf`) e botão direto para abrir/baixar o PDF da OS. Botão de Orçamento manual mantido para anexação de planilha/PDF orçamentário. Compilação do APK nativo `Fiscal.IA.apk` Build 28 e upload na Release do GitHub.
+- **Tags Git:** `PR.032`, `PR.032.1`, `PR.032.2`
+- **Arquivo Local do APK:** `c:\Users\Lenovo\Documents\antigravity\LAB - GPR\Fiscal.IA.lab - GPR\Fiscal.IA.apk`
+- **Comando de Restauração Rápida:**
+  ```bash
+  git checkout PR.032
+  ```
+
+---
+
 ### [PR.031] — Sincronização em Tempo Real da Ata da SEDUC em Orçamentos, Status da Obra Destacado, Botões de Download de OS/Orçamento em PDF, Botão Menu [ ≡ ] Estilizado e Release v1.0.26 (Build 27)
 - **Data/Hora:** 2026-11-15 02:20 (UTC-3)
 - **Escopos Definidos:**

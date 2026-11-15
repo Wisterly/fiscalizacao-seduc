@@ -19,7 +19,8 @@ import {
   Edit3,
   FileCode,
   CheckCircle2,
-  FolderOpen
+  FolderOpen,
+  FolderSearch
 } from 'lucide-react';
 import { OrdemServico, GRE, Escola } from '../../types';
 import { DocumentPreviewModal } from './DocumentPreviewModal';
@@ -27,6 +28,7 @@ import { AttachOSModal } from './AttachOSModal';
 import { GreSelector } from '../vistorias/GreSelector';
 import { syncAtaFromGoogleSheets } from '../../services/sheetsSyncService';
 import { storage } from '../../services/storageService';
+import { driveOSScanner } from '../../services/driveOSScannerService';
 
 interface OrcamentosViewProps {
   ordensServico: OrdemServico[];
@@ -76,6 +78,22 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
 
   // Sincronização ao vivo da Ata de Manutenção
   const [syncingAta, setSyncingAta] = useState(false);
+  const [varrendoDrive, setVarrendoDrive] = useState(false);
+
+  const handleVarreduraDriveLive = async () => {
+    setVarrendoDrive(true);
+    try {
+      const res = await driveOSScanner.executarVarreduraAutomatica();
+      if (onSaveOS && res.ordensAtualizadas.length > 0) {
+        onSaveOS(res.ordensAtualizadas[0]);
+      }
+      alert(`Varredura do Drive concluída! ${res.totalAnexosVinculados} ordens de serviço ativas tiveram arquivos vinculados automaticamente.`);
+    } catch (e: any) {
+      alert(`Erro na varredura do Drive: ${e?.message || e}`);
+    } finally {
+      setVarrendoDrive(false);
+    }
+  };
 
   const handleSyncAtaLive = async () => {
     setSyncingAta(true);
@@ -287,15 +305,28 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
             </button>
           </div>
 
-          <button
-            type="button"
-            onClick={handleSyncAtaLive}
-            disabled={syncingAta}
-            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-cyan-400 active-press disabled:opacity-50 shrink-0"
-            title="Sincronizar Ata de Manutenção ao vivo do Google Sheets"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${syncingAta ? 'animate-spin' : ''}`} />
-          </button>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={handleVarreduraDriveLive}
+              disabled={varrendoDrive}
+              className="p-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 active-press disabled:opacity-50 flex items-center gap-1 text-[11px] font-bold"
+              title="Executar Varredura Automática de Ordens de Serviço na Pasta Compartilhada do Google Drive"
+            >
+              <FolderSearch className={`w-3.5 h-3.5 ${varrendoDrive ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">Varredura OS Drive</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSyncAtaLive}
+              disabled={syncingAta}
+              className="p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-cyan-400 active-press disabled:opacity-50 shrink-0"
+              title="Sincronizar Ata de Manutenção ao vivo do Google Sheets"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${syncingAta ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -512,25 +543,49 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
                                 </div>
                               </div>
 
+                              {/* INDICAÇÃO DE ANEXO AUTOMÁTICO DE OS OU STATUS DOS ARQUIVOS */}
+                              <div className="flex items-center justify-between gap-1 text-[10px] px-1 text-slate-400">
+                                <span className="flex items-center gap-1 truncate">
+                                  {os.osAnexoAutomatico ? (
+                                    <span className="text-emerald-400 font-semibold flex items-center gap-1 truncate">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                      OS vinculada automaticamente do Drive: <strong className="text-white truncate">{os.osPdfNome || 'Arquivo PDF'}</strong>
+                                    </span>
+                                  ) : (
+                                    <span>OS: {os.osPdfNome || 'Pasta Geral do Drive'}</span>
+                                  )}
+                                </span>
+
+                                <span className="text-amber-300 font-medium shrink-0">
+                                  {temOrcamentoPdf ? 'Orçamento anexado' : 'Orçamento: Anexo Manual'}
+                                </span>
+                              </div>
+
                               {/* BOTÕES DE DOWNLOAD DO ORÇAMENTO E DA ORDEM DE SERVIÇO EM DESTAQUE */}
-                              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/10">
-                                {/* Botão Baixar Orçamento */}
+                              <div className="grid grid-cols-2 gap-2 pt-1 border-t border-white/10">
+                                {/* Botão Orçamento (Processo Manual Conforme Especificado) */}
                                 <button
                                   type="button"
                                   onClick={handleDownloadOrcamento}
                                   className="p-2.5 rounded-xl text-[11px] font-extrabold flex items-center justify-center gap-1.5 transition-all active-press border bg-cyan-500/15 border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/25 shadow-sm"
-                                  title="Baixar ou visualizar Orçamento (PDF / Planilha)"
+                                  title="Baixar ou anexar manualmente o arquivo de Orçamento (PDF / Planilha)"
                                 >
-                                  <Download className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                                  <span className="truncate">Baixar Orçamento</span>
+                                  {temOrcamentoPdf ? (
+                                    <Download className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                                  ) : (
+                                    <Plus className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                                  )}
+                                  <span className="truncate">
+                                    {temOrcamentoPdf ? 'Baixar Orçamento' : '+ Anexar Orçamento (Manual)'}
+                                  </span>
                                 </button>
 
-                                {/* Botão Baixar Ordem de Serviço */}
+                                {/* Botão Baixar Ordem de Serviço (Localizada e Anexada Automaticamente do Drive) */}
                                 <button
                                   type="button"
                                   onClick={handleDownloadOS}
                                   className="p-2.5 rounded-xl text-[11px] font-extrabold flex items-center justify-center gap-1.5 transition-all active-press border bg-emerald-500/15 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/25 shadow-sm"
-                                  title="Baixar ou visualizar Ordem de Serviço (PDF)"
+                                  title="Baixar ou visualizar Ordem de Serviço (PDF localizado automaticamente no Drive)"
                                 >
                                   <Download className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                                   <span className="truncate">Baixar Ordem de Serviço</span>

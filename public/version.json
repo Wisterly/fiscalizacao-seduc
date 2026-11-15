@@ -1,15 +1,15 @@
 {
-  "version": "1.0.26",
-  "buildNumber": 27,
+  "version": "1.0.27",
+  "buildNumber": 28,
   "releaseDate": "2026-11-15",
   "minRequiredVersion": "1.0.0",
   "downloadUrl": "https://github.com/Wisterly/fiscalizacao-seduc/releases/download/apk-latest/Fiscal.IA.apk",
   "changelog": [
-    "Sincronização ao vivo da Planilha da Ata de Manutenção da SEDUC em Orçamentos",
-    "Exibição destacada do Status da Obra (A Iniciar, Em Execução, Paralisada, Aguardando Saldo)",
-    "Botões diretos para baixar Orçamento e Ordem de Serviço em PDF",
-    "Configuração de links da Planilha Google Sheets e Pasta Google Drive em Ajustes",
-    "Novo Botão de Menu com contorno branco retangular arredondado [ ≡ ] e Pílula de Nuvem Ativa",
-    "Barra inferior flutuante com acabamento vítreo reflexivo e halo dourado difuso nos 6 ícones principais"
+    "Pasta Geral de Ordens de Serviço do Google Drive com todas as GREs configurável nos Ajustes",
+    "Varredura Automática de OSs no Drive com busca inteligente pelo número da ordem de serviço",
+    "Anexação automática dos arquivos PDF de Ordens de Serviço aos cards das escolas em Orçamentos",
+    "Orçamentos com fluxo 100% manual dedicado para envio e consulta da planilha orçamentária",
+    "Botão de atalho para Varredura de OSs no Drive direto na aba de Orçamentos",
+    "Índice offline com 1015 arquivos e PDFs do acervo da SEDUC integrado"
   ]
 }

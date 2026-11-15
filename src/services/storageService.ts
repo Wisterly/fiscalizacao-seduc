@@ -40,13 +40,17 @@ const STORAGE_KEYS = {
   CARD_ORDER: 'seduc_fiscal_home_cards_order_v1',
   LAST_SYNC: 'seduc_fiscal_last_sync_v1',
   PLANILHA_ATA_URL: 'seduc_fiscal_planilha_ata_url_v1',
-  DRIVE_OBRAS_URL: 'seduc_fiscal_drive_obras_url_v1'
+  DRIVE_OBRAS_URL: 'seduc_fiscal_drive_obras_url_v1',
+  PASTA_GERAL_OS_DRIVE_URL: 'seduc_fiscal_pasta_geral_os_drive_url_v1'
 };
 
 export const DEFAULT_PLANILHA_ATA_URL =
   'https://docs.google.com/spreadsheets/d/1SHZdGIlPEgu_M9U0IRak9hyGbc7lsZLXuhNz7pJfNdc/edit?gid=671056752#gid=671056752';
 
 export const DEFAULT_DRIVE_OBRAS_URL =
+  'https://drive.google.com/drive/folders/1yBJ5EFkqekhkY0-_Yit0K05qGoGBE8je?usp=drive_link';
+
+export const DEFAULT_PASTA_GERAL_OS_DRIVE_URL =
   'https://drive.google.com/drive/folders/1yBJ5EFkqekhkY0-_Yit0K05qGoGBE8je?usp=drive_link';
 
 class StorageService {
@@ -743,6 +747,19 @@ class StorageService {
       localStorage.setItem(STORAGE_KEYS.DRIVE_OBRAS_URL, url.trim());
     } else {
       localStorage.removeItem(STORAGE_KEYS.DRIVE_OBRAS_URL);
+    }
+  }
+
+  getPastaGeralOSDriveUrl(): string {
+    const saved = localStorage.getItem(STORAGE_KEYS.PASTA_GERAL_OS_DRIVE_URL);
+    return saved && saved.trim() ? saved.trim() : DEFAULT_PASTA_GERAL_OS_DRIVE_URL;
+  }
+
+  setPastaGeralOSDriveUrl(url: string): void {
+    if (url && url.trim()) {
+      localStorage.setItem(STORAGE_KEYS.PASTA_GERAL_OS_DRIVE_URL, url.trim());
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.PASTA_GERAL_OS_DRIVE_URL);
     }
   }
 }

@@ -97,6 +97,8 @@ export interface OrdemServico {
   dataEmissaoOS?: string;
   fiscalResponsavel?: string;
   arquivoPdfGerado?: string;
+  osAnexoAutomatico?: boolean;
+  driveFolderOSUrl?: string;
   observacoes: Array<{
     id: string;
     data: string;
