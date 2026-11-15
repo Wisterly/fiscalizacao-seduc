@@ -1,17 +1,44 @@
 import { Escola, OrdemServico } from '../types';
+import { storage } from './storageService';
 
 export const SEDUC_SHEET_ID = '1SHZdGIlPEgu_M9U0IRak9hyGbc7lsZLXuhNz7pJfNdc';
 export const SEDUC_INEP_GID = '89902018';
 export const SEDUC_ATA_GID = '671056752';
 
-export function getInepCsvExportUrl(): string {
+/**
+ * Converte qualquer URL de Google Sheets em endpoints diretos com suporte a CORS (GViz)
+ */
+export function getGoogleSheetAlternativeUrls(rawUrl: string, defaultGid = SEDUC_ATA_GID): string[] {
+  if (!rawUrl || !rawUrl.trim()) {
+    return [
+      `https://docs.google.com/spreadsheets/d/${SEDUC_SHEET_ID}/gviz/tq?tqx=out:csv&gid=${defaultGid}`,
+      `https://docs.google.com/spreadsheets/d/${SEDUC_SHEET_ID}/export?format=csv&gid=${defaultGid}`
+    ];
+  }
+
+  const trimmed = rawUrl.trim();
+  const idMatch = trimmed.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  const sheetId = idMatch ? idMatch[1] : SEDUC_SHEET_ID;
+
+  const gidMatch = trimmed.match(/[?&]gid=([0-9]+)/);
+  const gid = gidMatch ? gidMatch[1] : defaultGid;
+
   const ts = Date.now();
-  return `https://docs.google.com/spreadsheets/d/${SEDUC_SHEET_ID}/export?format=csv&gid=${SEDUC_INEP_GID}&t=${ts}`;
+  return [
+    `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=${gid}&_t=${ts}`,
+    `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}&_t=${ts}`,
+    `https://docs.google.com/spreadsheets/d/${sheetId}/pub?output=csv&gid=${gid}&_t=${ts}`
+  ];
 }
 
-export function getAtaCsvExportUrl(): string {
+export function getInepCsvExportUrl(): string {
   const ts = Date.now();
-  return `https://docs.google.com/spreadsheets/d/${SEDUC_SHEET_ID}/export?format=csv&gid=${SEDUC_ATA_GID}&t=${ts}`;
+  return `https://docs.google.com/spreadsheets/d/${SEDUC_SHEET_ID}/gviz/tq?tqx=out:csv&gid=${SEDUC_INEP_GID}&_t=${ts}`;
+}
+
+export function getAtaCsvExportUrl(customUrl?: string): string {
+  const urls = getGoogleSheetAlternativeUrls(customUrl || storage.getPlanilhaAtaUrl(), SEDUC_ATA_GID);
+  return urls[0];
 }
 
 /**
@@ -66,7 +93,20 @@ function parseCSV(text: string): string[][] {
 }
 
 /**
- * Mapeia o texto da Coluna I (GRE) para o identificador padronizado 'gre-01'..'gre-21'.
+ * Normaliza o cabeçalho para comparação flexível (remove acentos, espaços extras, minúsculas)
+ */
+function normalizeHeader(val: string): string {
+  return (val || '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[_\-\/\\]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Mapeia o texto da GRE para o identificador padronizado 'gre-01'..'gre-21'.
  */
 function extractGreId(greText: string, municipio: string): string {
   if (!greText) {
@@ -78,6 +118,13 @@ function extractGreId(greText: string, municipio: string): string {
   const match = greText.match(/^(\d{1,2})/);
   if (match) {
     const num = parseInt(match[1], 10);
+    if (num >= 1 && num <= 21) {
+      return `gre-${String(num).padStart(2, '0')}`;
+    }
+  }
+  const matchAny = greText.match(/(\d{1,2})/);
+  if (matchAny) {
+    const num = parseInt(matchAny[1], 10);
     if (num >= 1 && num <= 21) {
       return `gre-${String(num).padStart(2, '0')}`;
     }
@@ -96,17 +143,17 @@ export function parseInepCsvToSchools(csvText: string): Escola[] {
 
   for (let i = 1; i < rows.length; i++) {
     const r = rows[i];
-    const sitImovel = (r[5] || '').toUpperCase().trim(); // Coluna F - SITUAÇÃO IMÓVEL
+    const sitImovel = (r[5] || '').toUpperCase().trim();
     if (sitImovel !== 'EM USO') continue;
 
-    const inep = (r[0] || '').trim();        // Coluna A - INEP
-    const sitEduc = (r[1] || '').trim();     // Coluna B - SITUAÇÃO EDUCACIONAL
-    const greRaw = (r[8] || '').trim();      // Coluna I - GRE
-    const municipio = (r[9] || '').trim();   // Coluna J - MUNICIPIO
-    const nome = (r[10] || '').trim();       // Coluna K - NOME ENTIDADE
-    const plusCode = (r[20] || '').trim();   // Coluna U - google PlusCode
-    const bairro = (r[24] || '').trim();     // Coluna Y - BAIRROS
-    const endereco = (r[25] || '').trim();   // Coluna Z - ENDEREÇOS
+    const inep = (r[0] || '').trim();
+    const sitEduc = (r[1] || '').trim();
+    const greRaw = (r[8] || '').trim();
+    const municipio = (r[9] || '').trim();
+    const nome = (r[10] || '').trim();
+    const plusCode = (r[20] || '').trim();
+    const bairro = (r[24] || '').trim();
+    const endereco = (r[25] || '').trim();
 
     const greId = extractGreId(greRaw, municipio);
     if (!greId || !nome) continue;
@@ -136,140 +183,283 @@ export function parseInepCsvToSchools(csvText: string): Escola[] {
     return a.nome.localeCompare(b.nome, 'pt-BR');
   });
 
-  const seenIds = new Map<string, number>();
-  for (const s of schools) {
-    const count = seenIds.get(s.id) || 0;
-    if (count > 0) {
-      seenIds.set(s.id, count + 1);
-      s.id = `${s.id}-anexo-${count}`;
-    } else {
-      seenIds.set(s.id, 1);
-    }
-  }
-
   return schools;
 }
 
 /**
- * Busca e atualiza as escolas EM USO diretamente da planilha oficial no Google Sheets.
+ * Converte o CSV da aba de Ata de Manutenção para objetos OrdemServico filtrando apenas as obras ativas/em execução.
  */
-export async function syncInepFromGoogleSheets(): Promise<Escola[]> {
-  const url = getInepCsvExportUrl();
-  const response = await fetch(url, { cache: 'no-store' });
-  if (!response.ok) {
-    throw new Error(`Falha ao acessar planilha (${response.status})`);
-  }
-  const csvText = await response.text();
-  const parsed = parseInepCsvToSchools(csvText);
-  if (parsed.length === 0) {
-    throw new Error('Nenhuma escola com situação "EM USO" encontrada na resposta.');
-  }
-  return parsed;
-}
-
-/**
- * Converte o CSV da aba de Ata de Manutenção para objetos OrdemServico.
- */
-export function parseAtaCsvToOS(csvText: string, schools: Escola[]): OrdemServico[] {
+export function parseAtaCsvToOS(csvText: string, currentSchools: Escola[]): {
+  ordensServico: OrdemServico[];
+  novasEscolas: Escola[];
+} {
   const rows = parseCSV(csvText);
-  if (rows.length < 2) return [];
+  if (rows.length < 2) return { ordensServico: [], novasEscolas: [] };
+
+  const headerRow = rows[0] || [];
+  let colGre = -1;
+  let colInep = -1;
+  let colEscola = -1;
+  let colMunicipio = -1;
+  let colValor = -1;
+  let colOrdemServico = -1;
+  let colDataOS = -1;
+  let colContrato = -1;
+  let colFiscal = -1;
+  let colConstrutora = -1;
+  let colInicio = -1;
+  let colTermino = -1;
+  let colStatus = -1;
+  let colPercentual = -1;
+  let colDescritivo = -1;
+  let colPdf = -1;
+
+  headerRow.forEach((val, idx) => {
+    const norm = normalizeHeader(val);
+    if (colGre === -1 && (norm === 'gre' || norm.includes('codigo gre') || norm.startsWith('gre'))) colGre = idx;
+    if (colInep === -1 && norm.includes('inep')) colInep = idx;
+    if (colEscola === -1 && (norm.includes('nome entidade') || norm.includes('escola') || norm.includes('unidade'))) colEscola = idx;
+    if (colMunicipio === -1 && norm.includes('municipio')) colMunicipio = idx;
+    if (colValor === -1 && (norm === 'valor' || (norm.includes('valor') && !norm.includes('medido')))) colValor = idx;
+    if (colOrdemServico === -1 && (norm.includes('ordem de servico') || norm === 'os' || norm.includes('o.s'))) colOrdemServico = idx;
+    if (colDataOS === -1 && (norm.includes('data da o.s') || norm.includes('data da os') || norm.includes('data os'))) colDataOS = idx;
+    if (colContrato === -1 && norm.includes('contrato')) colContrato = idx;
+    if (colFiscal === -1 && (norm.includes('fiscal') || norm.includes('orcamentista'))) colFiscal = idx;
+    if (colConstrutora === -1 && (norm.includes('construtora') || norm.includes('empresa'))) colConstrutora = idx;
+    if (colInicio === -1 && norm.includes('inicio')) colInicio = idx;
+    if (colTermino === -1 && (norm.includes('termino') || norm.includes('previsao'))) colTermino = idx;
+    if (colStatus === -1 && (norm === 'status' || norm === 'status da obra')) colStatus = idx;
+    if (colPercentual === -1 && (norm.includes('% executada') || norm.includes('percentual'))) colPercentual = idx;
+    if (colDescritivo === -1 && (norm.includes('descritivo') || norm.includes('objeto'))) colDescritivo = idx;
+    if (colPdf === -1 && (norm.includes('arquivo pdf') || norm.includes('pdf'))) colPdf = idx;
+  });
+
+  // Fallback para índices oficiais da Planilha da Ata SEDUC
+  if (colGre === -1) colGre = 4;
+  if (colInep === -1) colInep = 5;
+  if (colEscola === -1) colEscola = 7;
+  if (colMunicipio === -1) colMunicipio = 8;
+  if (colValor === -1) colValor = 9;
+  if (colOrdemServico === -1) colOrdemServico = 10;
+  if (colDataOS === -1) colDataOS = 11;
+  if (colContrato === -1) colContrato = 12;
+  if (colFiscal === -1) colFiscal = 13;
+  if (colConstrutora === -1) colConstrutora = 14;
+  if (colInicio === -1) colInicio = 15;
+  if (colTermino === -1) colTermino = 16;
+  if (colStatus === -1) colStatus = 17;
+  if (colPercentual === -1) colPercentual = 19;
+  if (colDescritivo === -1) colDescritivo = 24;
+  if (colPdf === -1) colPdf = 26;
 
   const schoolByInep = new Map<string, Escola>();
-  schools.forEach((s) => {
-    if (s.inep) schoolByInep.set(s.inep, s);
-    schoolByInep.set(s.id, s);
+  const schoolByNome = new Map<string, Escola>();
+
+  currentSchools.forEach((s) => {
+    if (s.inep && s.inep !== 'S/ INEP') schoolByInep.set(s.inep.trim(), s);
+    schoolByNome.set(normalizeHeader(s.nome), s);
   });
 
   const osList: OrdemServico[] = [];
+  const novasEscolas: Escola[] = [];
+  const driveBaseFolder = storage.getDriveObrasUrl();
 
   for (let i = 1; i < rows.length; i++) {
     const r = rows[i];
-    const inep = r[5] ? r[5].trim() : '';
-    const numeroOS = r[10] ? r[10].trim() : '';
-    const rawEscolaNome = r[7] ? r[7].trim() : '';
+    if (!Array.isArray(r) || r.length === 0) continue;
 
-    if (!inep && !numeroOS && !rawEscolaNome) continue;
+    const rawEscola = (r[colEscola] || '').trim();
+    const rawNumeroOS = (r[colOrdemServico] || '').trim();
+    const inep = (r[colInep] || '').trim();
+    const municipio = (r[colMunicipio] || '').trim();
+    const rawGre = (r[colGre] || '').trim();
+    const rawStatus = (r[colStatus] || '').toUpperCase().trim();
 
-    const matchedSchool = schoolByInep.get(inep);
-    const escolaId = matchedSchool ? matchedSchool.id : (inep ? `inep-${inep}` : `manual-os-${i}`);
-    const escolaNome = matchedSchool ? matchedSchool.nome : (rawEscolaNome || 'Escola SEDUC');
-    const greId = matchedSchool ? matchedSchool.greId : extractGreId(r[4] || '', r[8] || '');
-    const municipio = matchedSchool ? matchedSchool.municipio : (r[8] ? r[8].trim() : 'PIAUÍ');
+    // Pula linhas vazias ou sem escola/OS
+    if (!rawEscola && !rawNumeroOS) continue;
+    if (rawEscola.toUpperCase().includes('NOME ENTIDADE')) continue;
 
-    const rawStatus = (r[17] || '').toUpperCase();
-    let status: 'ativa' | 'historico' | 'aguardando' = 'ativa';
-    if (rawStatus === 'CONCLUÍDA' || rawStatus.includes('FINALIZADA') || rawStatus === 'CANCELADA') {
-      status = 'historico';
-    } else if (rawStatus === 'EXECUÇÃO' || rawStatus === 'A INICIAR' || rawStatus === 'AGUARDANDO SALDO') {
-      status = 'ativa';
+    // FILTRO ESTREITO SOLICITADO PELO USUÁRIO:
+    // Apenas ordens de serviço operacionais (A INICIAR, EXECUÇÃO, EM EXECUÇÃO, PARALISADA, AGUARDANDO SALDO)
+    // Descarta linhas sem OS emitida válida, CANCELADA ou vazias
+    if (!rawStatus || rawStatus === 'CANCELADA' || rawStatus.includes('SEM O.S') || rawNumeroOS.includes('SEM O.S')) {
+      continue;
     }
 
-    const valorClean = (r[9] || '').replace(/[^\d,\.-]/g, '').replace(/\./g, '').replace(',', '.');
+    // Se o status for CONCLUÍDA, também pulamos porque o usuário pediu apenas as ordens de serviço em execução/ativas
+    if (rawStatus === 'CONCLUÍDA' || rawStatus === 'FINALIZADA') {
+      continue;
+    }
+
+    // Normaliza status amigável
+    let statusObraLabel = 'EM EXECUÇÃO';
+    if (rawStatus.includes('INICIAR')) {
+      statusObraLabel = 'A INICIAR';
+    } else if (rawStatus.includes('PARALISADA') || rawStatus.includes('PARADA')) {
+      statusObraLabel = 'PARALISADA';
+    } else if (rawStatus.includes('AGUARDANDO')) {
+      statusObraLabel = 'AGUARDANDO SALDO';
+    } else if (rawStatus.includes('EXECU')) {
+      statusObraLabel = 'EM EXECUÇÃO';
+    }
+
+    // Localiza ou cria a Escola
+    const greId = extractGreId(rawGre, municipio) || 'gre-01';
+    let matchedSchool = inep ? schoolByInep.get(inep) : undefined;
+    if (!matchedSchool) {
+      matchedSchool = schoolByNome.get(normalizeHeader(rawEscola));
+    }
+
+    let escolaId = '';
+    let escolaNome = rawEscola;
+
+    if (matchedSchool) {
+      escolaId = matchedSchool.id;
+      escolaNome = matchedSchool.nome;
+    } else {
+      // Cria a escola se ainda não existir na base local
+      escolaId = inep ? `inep-${inep}` : `escola-ata-${i}`;
+      const nova: Escola = {
+        id: escolaId,
+        inep: inep || 'S/ INEP',
+        greId,
+        nome: rawEscola,
+        municipio: municipio || 'PIAUÍ',
+        endereco: municipio || 'PIAUÍ',
+        statusConservacao: 'regular',
+        dataUltimaVistoria: 'Sem vistoria',
+        diasSemVisita: 0,
+        demandasUrgentesCount: 0,
+        temOsAtiva: true
+      };
+      novasEscolas.push(nova);
+      schoolByInep.set(inep, nova);
+      schoolByNome.set(normalizeHeader(rawEscola), nova);
+    }
+
+    // Valor da OS
+    const valorClean = (r[colValor] || '').replace(/[^\d,\.-]/g, '').replace(/\./g, '').replace(',', '.');
     const valor = parseFloat(valorClean) || 0;
 
+    // Percentual medido
     let percentual = 0;
-    if (r[19]) {
-      const num = parseFloat(r[19].replace(/[^\d\.]/g, ''));
+    if (r[colPercentual]) {
+      const num = parseFloat(r[colPercentual].replace(/[^\d\.]/g, ''));
       if (!isNaN(num)) percentual = Math.min(100, Math.max(0, num));
-    } else if (rawStatus === 'CONCLUÍDA') {
-      percentual = 100;
-    } else if (rawStatus === 'EXECUÇÃO') {
-      percentual = 50;
+    } else if (statusObraLabel === 'EM EXECUÇÃO') {
+      percentual = 35;
     }
 
-    const objeto = r[24] && r[24].length > 3 ? r[24].trim() : 'Serviços de Manutenção Predial e Reparos Estruturais';
-    const construtora = r[14] ? r[14].trim() : 'Empresa Contratada SEDUC';
-    const fiscal = r[13] ? r[13].trim() : 'Fiscal GPR';
-    const obs = r[21] ? r[21].trim() : '';
+    const construtora = (r[colConstrutora] || '').trim() || 'Empresa Contratada SEDUC';
+    const contratoNumero = (r[colContrato] || '').trim();
+    const dataEmissaoOS = (r[colDataOS] || '').trim();
+    const dataInicio = (r[colInicio] || '').trim() || dataEmissaoOS || '2025-01-01';
+    const prazoFinal = (r[colTermino] || '').trim() || '2026-12-31';
+    const objeto = (r[colDescritivo] || '').trim() || 'Serviços de Manutenção Predial, Reformas e Adequações';
+    const fiscal = (r[colFiscal] || '').trim() || 'Fiscal SEDUC';
+    const arquivoPdfGerado = (r[colPdf] || '').trim();
 
-    const observacoes = obs
-      ? [
-          {
-            id: `obs-csv-${i}`,
-            data: r[20] || r[11] || new Date().toLocaleDateString('pt-BR'),
-            texto: obs,
-            autor: fiscal
-          }
-        ]
-      : [];
+    // Link do Drive / PDF
+    let osPdfUrl: string | undefined = undefined;
+    let orcamentoPdfUrl: string | undefined = undefined;
+
+    if (arquivoPdfGerado) {
+      if (arquivoPdfGerado.startsWith('http')) {
+        osPdfUrl = arquivoPdfGerado;
+      } else {
+        osPdfUrl = `${driveBaseFolder}`;
+      }
+    } else if (driveBaseFolder) {
+      osPdfUrl = driveBaseFolder;
+      orcamentoPdfUrl = driveBaseFolder;
+    }
 
     osList.push({
-      id: `os-ata-${r[0] || i}`,
-      numeroOS: numeroOS || `OS-${r[0] || i}/SEDUC`,
+      id: `os-ata-${inep || rawNumeroOS || i}`,
+      numeroOS: rawNumeroOS || `OS-${i}/SEDUC`,
       escolaId,
       escolaNome,
-      greId: greId || 'gre-01',
-      municipio,
+      greId,
+      municipio: municipio || 'PIAUÍ',
       objeto,
       valorOrcamento: valor,
       percentualMedicao: percentual,
-      dataInicio: r[15] || r[11] || '2025-01-01',
-      prazoFinal: r[16] || '2026-12-31',
-      status,
+      dataInicio,
+      prazoFinal,
+      status: 'ativa',
+      tipoStatus: statusObraLabel === 'EM EXECUÇÃO' ? 'em_execucao' : statusObraLabel === 'PARALISADA' ? 'paralisada' : 'aguardando',
+      statusObra: statusObraLabel,
+      contratoNumero,
+      dataEmissaoOS,
+      fiscalResponsavel: fiscal,
+      arquivoPdfGerado,
+      osPdfUrl,
+      orcamentoPdfUrl,
       empresaContratada: construtora,
-      orcamentoPdfSimulado: `orcamento_${inep || i}.pdf`,
-      memorialDescritivoPdfSimulado: `memorial_${inep || i}.pdf`,
-      osPdfUrl: r[26] ? r[26].trim() : undefined,
-      observacoes
+      orcamentoPdfSimulado: `orcamento_${inep || rawNumeroOS}.pdf`,
+      memorialDescritivoPdfSimulado: `memorial_${inep || rawNumeroOS}.pdf`,
+      observacoes: [
+        {
+          id: `obs-ata-${i}`,
+          data: dataEmissaoOS || new Date().toLocaleDateString('pt-BR'),
+          texto: `Ordem de Serviço ${rawNumeroOS} com status [${statusObraLabel}] e valor ${valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}. Contrato ${contratoNumero || 'S/N'}.`,
+          autor: fiscal
+        }
+      ]
     });
   }
 
-  return osList;
+  return { ordensServico: osList, novasEscolas };
 }
 
 /**
  * Busca e sincroniza as Ordens de Serviço da Ata de Manutenção diretamente do Google Sheets.
  */
-export async function syncAtaFromGoogleSheets(schools: Escola[]): Promise<OrdemServico[]> {
-  const url = getAtaCsvExportUrl();
+export async function syncAtaFromGoogleSheets(schools: Escola[], customUrl?: string): Promise<{
+  ordensServico: OrdemServico[];
+  novasEscolas: Escola[];
+}> {
+  const urlCandidate = customUrl || storage.getPlanilhaAtaUrl();
+  const urls = getGoogleSheetAlternativeUrls(urlCandidate, SEDUC_ATA_GID);
+
+  let csvText = '';
+  let lastError: any = null;
+
+  for (const url of urls) {
+    try {
+      const response = await fetch(url, { cache: 'no-store' });
+      if (response.ok) {
+        csvText = await response.text();
+        if (csvText && csvText.length > 50) {
+          break;
+        }
+      }
+    } catch (e) {
+      lastError = e;
+    }
+  }
+
+  if (!csvText) {
+    throw new Error(`Falha ao acessar a planilha da Ata (${lastError?.message || 'Erro de conexão/CORS'}). Verifique o link informado.`);
+  }
+
+  const result = parseAtaCsvToOS(csvText, schools);
+  if (result.ordensServico.length === 0) {
+    throw new Error('Nenhuma ordem de serviço em execução/ativa encontrada na planilha da Ata.');
+  }
+
+  return result;
+}
+
+/**
+ * Busca e sincroniza as escolas do INEP diretamente do Google Sheets.
+ */
+export async function syncInepFromGoogleSheets(): Promise<Escola[]> {
+  const url = getInepCsvExportUrl();
   const response = await fetch(url, { cache: 'no-store' });
   if (!response.ok) {
-    throw new Error(`Falha ao acessar planilha de Ata de Manutenção (${response.status})`);
+    throw new Error(`Falha ao acessar dados do INEP (${response.status})`);
   }
   const csvText = await response.text();
-  const parsed = parseAtaCsvToOS(csvText, schools);
-  if (parsed.length === 0) {
-    throw new Error('Nenhuma ordem de serviço válida encontrada na planilha.');
-  }
-  return parsed;
+  return parseInepCsvToSchools(csvText);
 }

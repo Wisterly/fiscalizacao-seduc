@@ -159,78 +159,107 @@ export const Header: React.FC<HeaderProps> = ({
             <div className="flex items-center gap-1.5">
               <button
                 onClick={handleOpenMenuDrawer}
-                className="p-1.5 text-slate-300 hover:text-white active-press"
+                className="flex items-center justify-center w-8 h-8 rounded-xl border border-white/80 bg-slate-900/80 hover:bg-white/10 active-press transition-all shadow-sm flex-shrink-0"
                 aria-label="Abrir Menu Lateral"
+                title="Abrir Menu"
               >
-                <Menu className="w-5 h-5" />
+                <div className="flex flex-col justify-center items-center gap-[3px]">
+                  <span className="w-3.5 h-[2px] bg-white rounded-full" />
+                  <span className="w-3.5 h-[2px] bg-white rounded-full" />
+                  <span className="w-3.5 h-[2px] bg-white rounded-full" />
+                </div>
               </button>
             </div>
           </div>
         ) : (
           /* Header Principal */
-          <div className="flex items-center justify-between max-w-full md:max-w-6xl xl:max-w-7xl mx-auto">
-            {/* Canto Superior Esquerdo: Menu Hamburguer + Logo + Nome */}
-            <div className="flex items-center gap-2.5 min-w-0">
-              <button
-                onClick={handleOpenMenuDrawer}
-                className="p-1.5 -ml-1 text-slate-300 hover:text-white active-press rounded-xl hover:bg-white/5"
-                aria-label="Abrir Menu Lateral de Navegação"
-                title="Abrir Menu Completo"
-              >
-                <Menu className="w-5 h-5 stroke-[2.2]" />
-              </button>
+          <div className="max-w-full md:max-w-6xl xl:max-w-7xl mx-auto">
+            <div className="flex items-center justify-between">
+              {/* Canto Superior Esquerdo: Menu Hamburguer com borda branca + Logo + Nome */}
+              <div className="flex items-center gap-2.5 min-w-0">
+                <button
+                  onClick={handleOpenMenuDrawer}
+                  className="flex items-center justify-center w-8 h-8 rounded-xl border border-white/80 bg-slate-900/80 hover:bg-white/10 active-press transition-all shadow-sm flex-shrink-0"
+                  aria-label="Abrir Menu Lateral de Navegação"
+                  title="Abrir Menu Completo"
+                >
+                  <div className="flex flex-col justify-center items-center gap-[3px]">
+                    <span className="w-3.5 h-[2px] bg-white rounded-full" />
+                    <span className="w-3.5 h-[2px] bg-white rounded-full" />
+                    <span className="w-3.5 h-[2px] bg-white rounded-full" />
+                  </div>
+                </button>
 
-              <div className="relative flex-shrink-0">
-                <img
-                  src="/app-icon.png"
-                  alt="Fiscal.IA.lab - GPR"
-                  className="w-8 h-8 rounded-xl object-cover border border-amber-500/30 shadow-glass-glow-gold bg-slate-900"
-                />
+                <div className="relative flex-shrink-0">
+                  <img
+                    src="/app-icon.png"
+                    alt="Fiscal.IA.lab - GPR"
+                    className="w-8 h-8 rounded-xl object-cover border border-amber-500/30 shadow-glass-glow-gold bg-slate-900"
+                  />
+                </div>
+
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <h1 className="text-sm sm:text-base font-extrabold text-white tracking-tight leading-none truncate">
+                      Fiscal.IA.lab
+                    </h1>
+                    <span className="text-[9px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.2 rounded border border-amber-500/20">
+                      GPR
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 font-medium mt-0.5 truncate flex items-center gap-1">
+                    <span>SEDUC Piauí</span>
+                    <span className="w-1 h-1 rounded-full bg-slate-600" />
+                    <span className="text-emerald-400 font-semibold">{isOnline ? 'Online' : 'Offline'}</span>
+                  </p>
+                </div>
               </div>
 
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <h1 className="text-sm sm:text-base font-extrabold text-white tracking-tight leading-none truncate">
-                    Fiscal.IA.lab
-                  </h1>
-                  <span className="text-[9px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.2 rounded border border-amber-500/20">
-                    GPR
-                  </span>
+              {/* Centro: Pílula de Sincronização em Nuvem (Desktop) */}
+              <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-slate-950/80 border border-cyan-500/30 backdrop-blur-md text-[11px] text-slate-300 shadow-sm">
+                <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)] animate-pulse" />
+                <span className="font-semibold text-white">Sincronização em Nuvem & Drive Ativa</span>
+                <span className="text-slate-500">•</span>
+                <span className="text-cyan-300 font-medium">Cross-Platform Web/Mobile</span>
+              </div>
+
+              {/* Canto Superior Direito: Logo Secretaria de Educação com mapa do Piauí + Sino */}
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="h-8 px-2 py-0.5 rounded-xl bg-slate-900/70 border border-white/10 flex items-center justify-center backdrop-blur-md">
+                  <img
+                    src="/logo-piaui-mapa.png"
+                    alt="SEDUC Piauí"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/logo-seduc-piaui.png';
+                    }}
+                    className="h-6 w-auto object-contain max-w-[80px]"
+                    title="Secretaria de Educação - Governo do Piauí"
+                  />
                 </div>
-                <p className="text-[10px] text-slate-400 font-medium mt-0.5 truncate flex items-center gap-1">
-                  <span>SEDUC Piauí</span>
-                  <span className="w-1 h-1 rounded-full bg-slate-600" />
-                  <span className="text-emerald-400 font-semibold">{isOnline ? 'Online' : 'Offline'}</span>
-                </p>
+
+                <button
+                  onClick={() => setShowNotifications(true)}
+                  className="relative p-2 rounded-xl bg-slate-800/80 border border-white/10 active-press text-slate-300 hover:text-white"
+                  aria-label="Notificações"
+                >
+                  <Bell className="w-4 h-4 text-orange-400" />
+                  {alertasPendentes.length > 0 && (
+                    <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-red-600 text-white text-[9px] font-bold flex items-center justify-center shadow-glass-glow-orange border border-slate-900">
+                      {alertasPendentes.length}
+                    </span>
+                  )}
+                </button>
               </div>
             </div>
 
-            {/* Canto Superior Direito: Logo Secretaria de Educação com mapa do Piauí + Sino */}
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <div className="h-8 px-2 py-0.5 rounded-xl bg-slate-900/70 border border-white/10 flex items-center justify-center backdrop-blur-md">
-                <img
-                  src="/logo-piaui-mapa.png"
-                  alt="SEDUC Piauí"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = '/logo-seduc-piaui.png';
-                  }}
-                  className="h-6 w-auto object-contain max-w-[80px]"
-                  title="Secretaria de Educação - Governo do Piauí"
-                />
+            {/* Pílula de Sincronização em Nuvem (Mobile) */}
+            <div className="flex md:hidden justify-center mt-2">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-slate-950/80 border border-cyan-500/30 text-[10px] text-slate-300 shadow-sm">
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_rgba(34,211,238,0.8)] animate-pulse" />
+                <span className="font-semibold text-white text-[9.5px]">Sincronização em Nuvem & Drive Ativa</span>
+                <span className="text-slate-500">•</span>
+                <span className="text-cyan-300 font-medium text-[9.5px]">Cross-Platform</span>
               </div>
-
-              <button
-                onClick={() => setShowNotifications(true)}
-                className="relative p-2 rounded-xl bg-slate-800/80 border border-white/10 active-press text-slate-300 hover:text-white"
-                aria-label="Notificações"
-              >
-                <Bell className="w-4 h-4 text-orange-400" />
-                {alertasPendentes.length > 0 && (
-                  <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-red-600 text-white text-[9px] font-bold flex items-center justify-center shadow-glass-glow-orange border border-slate-900">
-                    {alertasPendentes.length}
-                  </span>
-                )}
-              </button>
             </div>
           </div>
         )}

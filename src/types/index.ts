@@ -92,6 +92,11 @@ export interface OrdemServico {
   orcamentoPdfBlob?: string;
   orcamentoPdfNome?: string;
   tipoStatus?: 'em_execucao' | 'finalizada' | 'aguardando' | 'paralisada';
+  statusObra?: string; // 'A INICIAR', 'EM EXECUÇÃO', 'PARALISADA', 'AGUARDANDO SALDO', etc.
+  contratoNumero?: string;
+  dataEmissaoOS?: string;
+  fiscalResponsavel?: string;
+  arquivoPdfGerado?: string;
   observacoes: Array<{
     id: string;
     data: string;

@@ -40,8 +40,8 @@ export const INITIAL_AMBIENTES: Ambiente[] = [
   { id: 'amb-9', nome: 'Pátio Coberto / Quadra Poliesportiva', isPadrao: true },
 ];
 
-// Dados 100% limpos e zerados para cadastro real pelo usuário
-export const INITIAL_OS: OrdemServico[] = [];
+// Ordens de Serviço oficiais sincronizadas da planilha da Ata de Manutenção da SEDUC
+export const INITIAL_OS: OrdemServico[] = ordensServicoAtaJson as OrdemServico[];
 export const INITIAL_ALERTAS: AlertaUrgente[] = [];
 export const INITIAL_DEMANDAS: Demanda[] = [];
 export const INITIAL_TAREFAS: TarefaDoDia[] = [];

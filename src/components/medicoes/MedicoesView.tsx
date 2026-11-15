@@ -81,12 +81,15 @@ export const MedicoesView: React.FC<MedicoesViewProps> = ({
   const handleSyncAtaLive = async () => {
     setSyncingAta(true);
     try {
-      const updatedOS = await syncAtaFromGoogleSheets(schools);
-      storage.syncOrdensServicoFromAta(updatedOS);
+      const res = await syncAtaFromGoogleSheets(schools);
+      if (res.novasEscolas && res.novasEscolas.length > 0) {
+        res.novasEscolas.forEach(ne => storage.addEscola(ne));
+      }
+      const updatedOS = storage.syncOrdensServicoFromAta(res.ordensServico);
       if (onSaveOS && updatedOS.length > 0) {
         onSaveOS(updatedOS[0]);
       }
-      alert(`Sincronização concluída! ${updatedOS.length} ordens de serviço atualizadas com a base da SEDUC.`);
+      alert(`Sincronização concluída! ${res.ordensServico.length} ordens de serviço atualizadas com a base da SEDUC.`);
     } catch (e: any) {
       alert(`Erro ao sincronizar ata: ${e?.message || e}`);
     } finally {

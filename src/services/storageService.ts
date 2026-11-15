@@ -38,8 +38,16 @@ const STORAGE_KEYS = {
   PROCESSOS: 'seduc_fiscal_processos_v2',
   CATEGORIAS_PROCESSO: 'seduc_fiscal_categorias_processo_v2',
   CARD_ORDER: 'seduc_fiscal_home_cards_order_v1',
-  LAST_SYNC: 'seduc_fiscal_last_sync_v1'
+  LAST_SYNC: 'seduc_fiscal_last_sync_v1',
+  PLANILHA_ATA_URL: 'seduc_fiscal_planilha_ata_url_v1',
+  DRIVE_OBRAS_URL: 'seduc_fiscal_drive_obras_url_v1'
 };
+
+export const DEFAULT_PLANILHA_ATA_URL =
+  'https://docs.google.com/spreadsheets/d/1SHZdGIlPEgu_M9U0IRak9hyGbc7lsZLXuhNz7pJfNdc/edit?gid=671056752#gid=671056752';
+
+export const DEFAULT_DRIVE_OBRAS_URL =
+  'https://drive.google.com/drive/folders/1yBJ5EFkqekhkY0-_Yit0K05qGoGBE8je?usp=drive_link';
 
 class StorageService {
   constructor() {
@@ -188,6 +196,15 @@ class StorageService {
     return updated;
   }
 
+  addEscola(escola: Escola): Escola[] {
+    const list = this.getSchools();
+    const exists = list.some(s => s.id === escola.id || (escola.inep && s.inep === escola.inep));
+    if (exists) return list;
+    const updated = [escola, ...list];
+    this.setItem(STORAGE_KEYS.SCHOOLS, updated);
+    return updated;
+  }
+
   /**
    * Sincroniza escolas importadas da planilha INEP preservando escolas manuais e status locais.
    */
@@ -247,7 +264,14 @@ class StorageService {
 
   // --- Ordens de Serviço & Medição ---
   getOrdensServico(): OrdemServico[] {
-    return this.getItem<OrdemServico[]>(STORAGE_KEYS.OS, INITIAL_OS);
+    const list = this.getItem<OrdemServico[]>(STORAGE_KEYS.OS, INITIAL_OS);
+    if (!list || list.length === 0) {
+      if (INITIAL_OS && INITIAL_OS.length > 0) {
+        this.setItem(STORAGE_KEYS.OS, INITIAL_OS);
+        return INITIAL_OS;
+      }
+    }
+    return list;
   }
 
   saveOrdemServico(os: OrdemServico): OrdemServico[] {
@@ -692,6 +716,33 @@ class StorageService {
       return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     } catch {
       return 'Sincronizado';
+    }
+  }
+
+  // --- Links da Planilha da Ata e Google Drive de Obras ---
+  getPlanilhaAtaUrl(): string {
+    const saved = localStorage.getItem(STORAGE_KEYS.PLANILHA_ATA_URL);
+    return saved && saved.trim() ? saved.trim() : DEFAULT_PLANILHA_ATA_URL;
+  }
+
+  setPlanilhaAtaUrl(url: string): void {
+    if (url && url.trim()) {
+      localStorage.setItem(STORAGE_KEYS.PLANILHA_ATA_URL, url.trim());
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.PLANILHA_ATA_URL);
+    }
+  }
+
+  getDriveObrasUrl(): string {
+    const saved = localStorage.getItem(STORAGE_KEYS.DRIVE_OBRAS_URL);
+    return saved && saved.trim() ? saved.trim() : DEFAULT_DRIVE_OBRAS_URL;
+  }
+
+  setDriveObrasUrl(url: string): void {
+    if (url && url.trim()) {
+      localStorage.setItem(STORAGE_KEYS.DRIVE_OBRAS_URL, url.trim());
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.DRIVE_OBRAS_URL);
     }
   }
 }

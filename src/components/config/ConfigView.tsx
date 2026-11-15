@@ -17,10 +17,13 @@ import {
   UploadCloud,
   ExternalLink,
   Link2,
-  Check
+  Check,
+  ClipboardList,
+  FolderOpen
 } from 'lucide-react';
-import { storage } from '../../services/storageService';
+import { storage, DEFAULT_PLANILHA_ATA_URL, DEFAULT_DRIVE_OBRAS_URL } from '../../services/storageService';
 import { cloudSync } from '../../services/cloudSyncService';
+import { syncAtaFromGoogleSheets } from '../../services/sheetsSyncService';
 import {
   checkForUpdate,
   getInstalledAppInfo,
@@ -54,6 +57,52 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
   const [msgDrive, setMsgDrive] = useState<string | null>(null);
   const [sincronizandoNuvem, setSincronizandoNuvem] = useState(false);
   const [ultimoCloudSync, setUltimoCloudSync] = useState(cloudSync.getUltimoSync());
+
+  // Estado da Planilha da Ata de Manutenção (Orçamentos & OS)
+  const [planilhaAtaUrl, setPlanilhaAtaUrl] = useState(storage.getPlanilhaAtaUrl());
+  const [driveObrasUrl, setDriveObrasUrl] = useState(storage.getDriveObrasUrl());
+  const [salvandoPlanilhaAta, setSalvandoPlanilhaAta] = useState(false);
+  const [msgPlanilhaAta, setMsgPlanilhaAta] = useState<string | null>(null);
+  const [sincronizandoAta, setSincronizandoAta] = useState(false);
+
+  const handleSalvarPlanilhaAta = () => {
+    setSalvandoPlanilhaAta(true);
+    storage.setPlanilhaAtaUrl(planilhaAtaUrl.trim());
+    storage.setDriveObrasUrl(driveObrasUrl.trim());
+    setTimeout(() => {
+      setSalvandoPlanilhaAta(false);
+      setMsgPlanilhaAta('Links da Planilha da Ata e Drive salvos com sucesso!');
+      setTimeout(() => setMsgPlanilhaAta(null), 3500);
+    }, 400);
+  };
+
+  const handleRestaurarPadraoAta = () => {
+    storage.setPlanilhaAtaUrl(DEFAULT_PLANILHA_ATA_URL);
+    storage.setDriveObrasUrl(DEFAULT_DRIVE_OBRAS_URL);
+    setPlanilhaAtaUrl(DEFAULT_PLANILHA_ATA_URL);
+    setDriveObrasUrl(DEFAULT_DRIVE_OBRAS_URL);
+    setMsgPlanilhaAta('Links padrões da SEDUC restaurados com sucesso!');
+    setTimeout(() => setMsgPlanilhaAta(null), 3500);
+  };
+
+  const handleSincronizarAtaAgora = async () => {
+    setSincronizandoAta(true);
+    setMsgPlanilhaAta(null);
+    try {
+      const schools = storage.getSchools();
+      const res = await syncAtaFromGoogleSheets(schools, planilhaAtaUrl.trim());
+      if (res.novasEscolas && res.novasEscolas.length > 0) {
+        res.novasEscolas.forEach(ne => storage.addEscola(ne));
+      }
+      const updated = storage.syncOrdensServicoFromAta(res.ordensServico);
+      setMsgPlanilhaAta(`Sucesso! ${updated.length} ordens de serviço ativas/em execução sincronizadas da planilha.`);
+    } catch (e: any) {
+      setMsgPlanilhaAta(`Erro na sincronização: ${e?.message || e}`);
+    } finally {
+      setSincronizandoAta(false);
+      setTimeout(() => setMsgPlanilhaAta(null), 6000);
+    }
+  };
 
   const handleSalvarDrive = () => {
     setSalvandoDrive(true);
@@ -214,6 +263,100 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
             >
               <FolderSync className={`w-3.5 h-3.5 ${sincronizandoNuvem ? 'animate-spin' : ''}`} />
               <span>{sincronizandoNuvem ? 'Sincronizando...' : 'Sincronizar Nuvem'}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* SEÇÃO DA PLANILHA DA ATA DE MANUTENÇÃO (ORÇAMENTOS & OS) */}
+        <div className="p-4 rounded-2xl bg-gradient-to-br from-[#1c1809]/90 to-slate-950 border border-amber-500/30 backdrop-blur-xl shadow-glass relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
+
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2 text-xs font-bold text-white">
+              <ClipboardList className="w-4 h-4 text-amber-400" />
+              <span>Planilha da Ata de Manutenção (Orçamentos & OS)</span>
+            </div>
+            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full border bg-amber-500/10 border-amber-500/30 text-amber-300 flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+              Sincronização SEDUC
+            </span>
+          </div>
+
+          <p className="text-[11px] text-slate-300 leading-relaxed mb-3">
+            Puxa em tempo real as <strong>Ordens de Serviço em Execução, a Iniciar ou Paralisadas</strong> da planilha oficial da Ata da SEDUC, vinculando-as automaticamente às escolas de cada GRE na aba de <strong>Orçamentos</strong>.
+          </p>
+
+          <div className="space-y-3 mb-3">
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1 mb-1">
+                <Link2 className="w-3 h-3 text-amber-400" />
+                <span>Link Compartilhado da Planilha da Ata (Google Sheets):</span>
+              </label>
+              <input
+                type="url"
+                value={planilhaAtaUrl}
+                onChange={(e) => setPlanilhaAtaUrl(e.target.value)}
+                placeholder="https://docs.google.com/spreadsheets/d/..."
+                className="w-full px-3 py-2 rounded-xl bg-slate-950/80 border border-white/10 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 font-mono text-[11px]"
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1 mb-1">
+                <FolderOpen className="w-3 h-3 text-cyan-400" />
+                <span>Link da Pasta de Obras & Projetos (Google Drive):</span>
+              </label>
+              <input
+                type="url"
+                value={driveObrasUrl}
+                onChange={(e) => setDriveObrasUrl(e.target.value)}
+                placeholder="https://drive.google.com/drive/folders/..."
+                className="w-full px-3 py-2 rounded-xl bg-slate-950/80 border border-white/10 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 font-mono text-[11px]"
+              />
+            </div>
+          </div>
+
+          {msgPlanilhaAta && (
+            <div className={`p-2.5 rounded-xl text-xs mb-3 flex items-center gap-2 animate-fadeIn ${
+              msgPlanilhaAta.includes('Erro')
+                ? 'bg-red-500/15 border border-red-500/30 text-red-200'
+                : 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-200'
+            }`}>
+              <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
+              <span>{msgPlanilhaAta}</span>
+            </div>
+          )}
+
+          <div className="space-y-2 pt-1 border-t border-white/5">
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={handleSalvarPlanilhaAta}
+                disabled={salvandoPlanilhaAta}
+                className="py-2 px-3 rounded-xl bg-white/10 hover:bg-white/15 text-slate-200 text-xs font-bold active:press transition-colors flex items-center justify-center gap-1.5"
+              >
+                <Check className="w-3.5 h-3.5 text-amber-400" />
+                <span>{salvandoPlanilhaAta ? 'Salvando...' : 'Salvar Links'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleRestaurarPadraoAta}
+                className="py-2 px-3 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-slate-200 text-xs font-medium active:press transition-colors flex items-center justify-center gap-1.5"
+              >
+                <RotateCcw className="w-3.5 h-3.5 text-slate-400" />
+                <span>Restaurar Padrão</span>
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleSincronizarAtaAgora}
+              disabled={sincronizandoAta}
+              className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black text-xs active-press transition-all flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${sincronizandoAta ? 'animate-spin' : ''}`} />
+              <span>{sincronizandoAta ? 'Buscando Ordens de Serviço da Planilha...' : 'Sincronizar Orçamentos da Ata Agora'}</span>
             </button>
           </div>
         </div>

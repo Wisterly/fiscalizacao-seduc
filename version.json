@@ -1,14 +1,15 @@
 {
-  "version": "1.0.25",
-  "buildNumber": 26,
+  "version": "1.0.26",
+  "buildNumber": 27,
   "releaseDate": "2026-11-15",
   "minRequiredVersion": "1.0.0",
   "downloadUrl": "https://github.com/Wisterly/fiscalizacao-seduc/releases/download/apk-latest/Fiscal.IA.apk",
   "changelog": [
-    "Barra Inferior Otimizada com 6 Abas: Início, Vistoria, Orçamento, Rotas, Demandas e Galeria",
-    "Ajustes mantido exclusivamente no menu superior de três pontinhos/três linhas",
-    "Novo Design com Efeito Vítreo e Halo Dourado Suave (Glassmorphism inspirado na referência)",
-    "Espaçamento ampliado e ícones maiores para toque confortável com uma mão",
-    "Orçamentos e Medições com 100% das escolas da GRE e expansão universal para cadastro de OS e anexos em PDF"
+    "Sincronização ao vivo da Planilha da Ata de Manutenção da SEDUC em Orçamentos",
+    "Exibição destacada do Status da Obra (A Iniciar, Em Execução, Paralisada, Aguardando Saldo)",
+    "Botões diretos para baixar Orçamento e Ordem de Serviço em PDF",
+    "Configuração de links da Planilha Google Sheets e Pasta Google Drive em Ajustes",
+    "Novo Botão de Menu com contorno branco retangular arredondado [ ≡ ] e Pílula de Nuvem Ativa",
+    "Barra inferior flutuante com acabamento vítreo reflexivo e halo dourado difuso nos 6 ícones principais"
   ]
 }

@@ -80,12 +80,15 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
   const handleSyncAtaLive = async () => {
     setSyncingAta(true);
     try {
-      const updatedOS = await syncAtaFromGoogleSheets(schools);
-      storage.syncOrdensServicoFromAta(updatedOS);
+      const res = await syncAtaFromGoogleSheets(schools);
+      if (res.novasEscolas && res.novasEscolas.length > 0) {
+        res.novasEscolas.forEach(ne => storage.addEscola(ne));
+      }
+      const updatedOS = storage.syncOrdensServicoFromAta(res.ordensServico);
       if (onSaveOS && updatedOS.length > 0) {
         onSaveOS(updatedOS[0]);
       }
-      alert(`Sincronização concluída com sucesso! ${updatedOS.length} ordens de serviço atualizadas do Google Sheets.`);
+      alert(`Sincronização concluída com sucesso! ${res.ordensServico.length} ordens de serviço ativas/em execução sincronizadas do Google Sheets.`);
     } catch (e: any) {
       alert(`Erro ao sincronizar ata: ${e?.message || e}`);
     } finally {
@@ -157,6 +160,15 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
       );
 
     return matchesMun && matchesStatus && matchesSearch;
+  });
+
+  // Ordena para que escolas com OS em execução apareçam no topo
+  filteredSchools.sort((a, b) => {
+    const aHasOS = osDaGre.some((os) => os.escolaId === a.id || os.escolaNome.toLowerCase() === a.nome.toLowerCase());
+    const bHasOS = osDaGre.some((os) => os.escolaId === b.id || os.escolaNome.toLowerCase() === b.nome.toLowerCase());
+    if (aHasOS && !bHasOS) return -1;
+    if (!aHasOS && bHasOS) return 1;
+    return a.nome.localeCompare(b.nome);
   });
 
   const formatarMoeda = (val: number) => {
@@ -394,100 +406,134 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
                         </div>
 
                         {osList.map((os) => {
-                          const temOSPdf = Boolean(os.osPdfBlob || os.osPdfUrl);
-                          const temOrcamentoPdf = Boolean(os.orcamentoPdfBlob || os.orcamentoPdfUrl);
+                          const temOSPdf = Boolean(os.osPdfBlob || os.osPdfUrl || os.arquivoPdfGerado);
+                          const temOrcamentoPdf = Boolean(os.orcamentoPdfBlob || os.orcamentoPdfUrl || os.orcamentoPdfSimulado);
+                          const driveBase = storage.getDriveObrasUrl();
+
+                          const handleDownloadOS = () => {
+                            if (os.osPdfBlob) {
+                              handleOpenOrDownload(os.osPdfBlob, os.osPdfNome || `OS_${os.numeroOS}.pdf`);
+                            } else if (os.osPdfUrl && os.osPdfUrl.startsWith('http')) {
+                              window.open(os.osPdfUrl, '_blank');
+                            } else if (os.arquivoPdfGerado && os.arquivoPdfGerado.startsWith('http')) {
+                              window.open(os.arquivoPdfGerado, '_blank');
+                            } else if (driveBase) {
+                              window.open(driveBase, '_blank');
+                            } else {
+                              setModalSchool(school);
+                              setModalOS(os);
+                            }
+                          };
+
+                          const handleDownloadOrcamento = () => {
+                            if (os.orcamentoPdfBlob) {
+                              handleOpenOrDownload(
+                                os.orcamentoPdfBlob,
+                                os.orcamentoPdfNome || `Orcamento_${os.numeroOS}.pdf`
+                              );
+                            } else if (os.orcamentoPdfUrl && os.orcamentoPdfUrl.startsWith('http')) {
+                              window.open(os.orcamentoPdfUrl, '_blank');
+                            } else if (driveBase) {
+                              window.open(driveBase, '_blank');
+                            } else {
+                              setPreviewDoc({ os, tipo: 'orcamento' });
+                            }
+                          };
+
+                          const statusLabel = os.statusObra || (os.status === 'ativa' ? 'EM EXECUÇÃO' : 'HISTÓRICO');
+                          const isAIniciar = statusLabel.toUpperCase().includes('INICIAR');
+                          const isExecucao = statusLabel.toUpperCase().includes('EXECUÇÃO') || statusLabel.toUpperCase().includes('EXECUCAO');
+                          const isParalisada = statusLabel.toUpperCase().includes('PARALISADA');
 
                           return (
                             <div
                               key={os.id}
-                              className="p-3 rounded-xl bg-slate-900/90 border border-white/10 space-y-2.5 shadow-sm"
+                              className="p-3.5 rounded-2xl bg-slate-900/90 border border-white/10 space-y-3 shadow-md"
                             >
-                              {/* Topo da OS */}
+                              {/* Topo da OS com Status em Destaque */}
                               <div className="flex items-start justify-between gap-2">
-                                <div className="min-w-0">
-                                  <div className="flex items-center gap-1.5 flex-wrap">
-                                    <span className="font-mono text-xs font-black text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
-                                      {os.numeroOS}
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="font-mono text-xs font-black text-amber-300 bg-amber-500/10 px-2.5 py-0.5 rounded-lg border border-amber-500/25 shadow-sm">
+                                      OS Nº {os.numeroOS}
                                     </span>
+
+                                    {/* STATUS DA OBRA DESTACADO CONFORME SOLICITADO */}
                                     <span
-                                      className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-                                        os.status === 'ativa'
-                                          ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
-                                          : 'bg-slate-700 text-slate-300'
+                                      className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border uppercase tracking-wider flex items-center gap-1.5 shadow-sm ${
+                                        isAIniciar
+                                          ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-amber-500/10'
+                                          : isExecucao
+                                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-emerald-500/10'
+                                          : isParalisada
+                                          ? 'bg-red-500/20 text-red-300 border-red-500/40 shadow-red-500/10'
+                                          : 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
                                       }`}
                                     >
-                                      {os.status === 'ativa' ? 'Em Execução' : 'Histórico'}
+                                      <span
+                                        className={`w-2 h-2 rounded-full animate-pulse ${
+                                          isAIniciar
+                                            ? 'bg-amber-400'
+                                            : isExecucao
+                                            ? 'bg-emerald-400'
+                                            : isParalisada
+                                            ? 'bg-red-400'
+                                            : 'bg-cyan-400'
+                                        }`}
+                                      />
+                                      <span>{statusLabel}</span>
                                     </span>
                                   </div>
-                                  <p className="text-xs font-bold text-white mt-1 leading-snug">
-                                    {os.objeto || 'Reforma geral e manutenção'}
+
+                                  <p className="text-xs font-extrabold text-white mt-1.5 leading-snug">
+                                    {os.objeto || 'Serviços de Manutenção Predial e Reforma Geral'}
                                   </p>
-                                  <p className="text-[10px] text-slate-400 mt-0.5">
-                                    Empresa: <strong className="text-slate-300">{os.empresaContratada}</strong>
-                                  </p>
+
+                                  <div className="text-[11px] text-slate-300 mt-1 space-y-0.5">
+                                    <p>
+                                      Empresa: <strong className="text-white">{os.empresaContratada}</strong>
+                                      {os.contratoNumero && (
+                                        <span className="text-slate-400 ml-1.5">• Contrato: <strong className="text-amber-200">{os.contratoNumero}</strong></span>
+                                      )}
+                                    </p>
+                                    {os.fiscalResponsavel && (
+                                      <p className="text-slate-400">
+                                        Fiscal Responsável: <strong className="text-slate-300">{os.fiscalResponsavel}</strong>
+                                      </p>
+                                    )}
+                                  </div>
                                 </div>
 
                                 <div className="text-right shrink-0">
-                                  <span className="text-[10px] text-slate-400 block">Valor Orçado</span>
-                                  <span className="text-xs font-extrabold text-amber-400 font-mono">
+                                  <span className="text-[10px] text-slate-400 block font-medium">Valor Orçado</span>
+                                  <span className="text-xs sm:text-sm font-extrabold text-amber-400 font-mono">
                                     {formatarMoeda(os.valorOrcamento)}
                                   </span>
                                 </div>
                               </div>
 
-                              {/* LINHA DE BOTÕES DE ANEXO DE PDF (OS E ORÇAMENTO) */}
-                              <div className="grid grid-cols-2 gap-2 pt-1 border-t border-white/5">
-                                {/* Botão Arquivo da OS */}
+                              {/* BOTÕES DE DOWNLOAD DO ORÇAMENTO E DA ORDEM DE SERVIÇO EM DESTAQUE */}
+                              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/10">
+                                {/* Botão Baixar Orçamento */}
                                 <button
                                   type="button"
-                                  onClick={() => {
-                                    if (temOSPdf) {
-                                      handleOpenOrDownload(os.osPdfBlob || os.osPdfUrl, os.osPdfNome || `OS_${os.numeroOS}.pdf`);
-                                    } else {
-                                      setModalSchool(school);
-                                      setModalOS(os);
-                                    }
-                                  }}
-                                  className={`p-2 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all active-press border ${
-                                    temOSPdf
-                                      ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/25 shadow-sm'
-                                      : 'bg-white/5 border-dashed border-white/20 text-slate-400 hover:text-white'
-                                  }`}
-                                  title={temOSPdf ? 'Visualizar ou baixar PDF da Ordem de Serviço' : 'Anexar PDF da Ordem de Serviço'}
+                                  onClick={handleDownloadOrcamento}
+                                  className="p-2.5 rounded-xl text-[11px] font-extrabold flex items-center justify-center gap-1.5 transition-all active-press border bg-cyan-500/15 border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/25 shadow-sm"
+                                  title="Baixar ou visualizar Orçamento (PDF / Planilha)"
                                 >
-                                  <FileText className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                                  <span className="truncate">
-                                    {temOSPdf ? (os.osPdfNome ? `OS: ${os.osPdfNome}` : 'Ver PDF da OS') : '+ Anexar PDF da OS'}
-                                  </span>
+                                  <Download className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                                  <span className="truncate">Baixar Orçamento</span>
                                 </button>
 
-                                {/* Botão Arquivo do Orçamento */}
+                                {/* Botão Baixar Ordem de Serviço */}
                                 <button
                                   type="button"
-                                  onClick={() => {
-                                    if (temOrcamentoPdf) {
-                                      handleOpenOrDownload(
-                                        os.orcamentoPdfBlob || os.orcamentoPdfUrl,
-                                        os.orcamentoPdfNome || `Orcamento_${os.numeroOS}.pdf`
-                                      );
-                                    } else {
-                                      // Se não tiver blob anexado, abre o preview do memorial/planilha oficial
-                                      setPreviewDoc({ os, tipo: 'orcamento' });
-                                    }
-                                  }}
-                                  className={`p-2 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all active-press border ${
-                                    temOrcamentoPdf
-                                      ? 'bg-cyan-500/15 border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/25 shadow-sm'
-                                      : 'bg-amber-500/10 border-amber-500/20 text-amber-300 hover:bg-amber-500/20'
-                                  }`}
-                                  title={temOrcamentoPdf ? 'Visualizar ou baixar PDF do Orçamento' : 'Visualizar Planilha / Anexar Orçamento'}
+                                  onClick={handleDownloadOS}
+                                  className="p-2.5 rounded-xl text-[11px] font-extrabold flex items-center justify-center gap-1.5 transition-all active-press border bg-emerald-500/15 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/25 shadow-sm"
+                                  title="Baixar ou visualizar Ordem de Serviço (PDF)"
                                 >
-                                  <FileCode className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                                  <span className="truncate">
-                                    {temOrcamentoPdf
-                                      ? (os.orcamentoPdfNome ? `Orçamento: ${os.orcamentoPdfNome}` : 'Ver Orçamento')
-                                      : 'Planilha / Orçamento'}
-                                  </span>
+                                  <Download className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                  <span className="truncate">Baixar Ordem de Serviço</span>
                                 </button>
                               </div>
 

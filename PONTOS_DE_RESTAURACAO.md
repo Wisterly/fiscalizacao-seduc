@@ -29,6 +29,21 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.031] — Sincronização em Tempo Real da Ata da SEDUC em Orçamentos, Status da Obra Destacado, Botões de Download de OS/Orçamento em PDF, Botão Menu [ ≡ ] Estilizado e Release v1.0.26 (Build 27)
+- **Data/Hora:** 2026-11-15 02:20 (UTC-3)
+- **Escopos Definidos:**
+  - `PR.031` (Geral): Integração nativa da planilha da Ata de Manutenção da SEDUC com a aba de Orçamentos, importando ordens de serviço ativas/em execução diretamente do Google Sheets via endpoint GViz com suporte total a CORS. Seção dedicada em Ajustes (`ConfigView`) para configuração do link da planilha e pasta do Google Drive com botão de sincronização forçada e restauração do padrão SEDUC. Exibição de 96 ordens de serviço oficiais, incluindo o CETI Família Agrícola Dom Edilberto III (8ª GRE, Cajazeiras do Piauí, OS 2026/794, R$ 447.912,66, Status A INICIAR). Atualização oficial para a versão **v1.0.26 (Build 27)**.
+  - `PR.031.1` (Web / Desktop): Cabeçalho com pílula de conectividade `● Sincronização em Nuvem & Drive Ativa • Cross-Platform Web/Mobile` de alta visibilidade e acabamento aeroespacial com halo ciano pulsante. Novo botão de menu estilizado com contorno retangular arredondado branco [ ≡ ].
+  - `PR.031.2` (Mobile / Android): No smartphone Android, o botão de menu [ ≡ ] ganha borda retangular arredondada branca e três traços horizontais nítidos no topo. Pílula de status visível de forma sutil e compacta no cabeçalho mobile. Card expandido da escola na aba de Orçamentos exibe o badge de Status da Obra em destaque luminoso (A INICIAR em âmbar, EM EXECUÇÃO em esmeralda, PARALISADA em vermelho) e dois botões dedicados logo abaixo para baixar o Orçamento e a Ordem de Serviço em PDF. Barra inferior flutuante com acabamento vítreo reflexivo cristalino, halo circular dourado difuso no ícone ativo e ergonomia perfeita para 6 abas essenciais. Compilação do APK nativo `Fiscal.IA.apk` Build 27.
+- **Tags Git:** `PR.031`, `PR.031.1`, `PR.031.2`
+- **Arquivo Local do APK:** `c:\Users\Lenovo\Documents\antigravity\LAB - GPR\Fiscal.IA.lab - GPR\Fiscal.IA.apk`
+- **Comando de Restauração Rápida:**
+  ```bash
+  git checkout PR.031
+  ```
+
+---
+
 ### [PR.030] — Barra Inferior Otimizada com 6 Abas (Ajustes Exclusivo no Menu Superior), Temática Vítrea com Halo Dourado Suave e Release v1.0.25 (Build 26)
 - **Data/Hora:** 2026-11-15 01:55 (UTC-3)
 - **Escopos Definidos:**
