@@ -1,15 +1,17 @@
 {
-  "version": "1.0.22",
-  "buildNumber": 23,
+  "version": "1.0.24",
+  "buildNumber": 25,
   "releaseDate": "2026-11-15",
   "minRequiredVersion": "1.0.0",
   "downloadUrl": "https://github.com/Wisterly/fiscalizacao-seduc/releases/download/apk-latest/Fiscal.IA.apk",
   "changelog": [
-    "Reorganização Interativa dos Cards na Home: pressione e segure para ativar o modo 'solto' com animação de tremor, drag & drop e setas",
-    "Novo Módulo de Medições de Obras desacoplado de Orçamentos: progresso por escola, resumo financeiro, contratos e saldos",
-    "Novo Módulo de Acompanhamento de Processos SEI: estrutura hierárquica de anexos para Medições e Diárias em modo visitante/consulta pública",
-    "Sistema de Alertas Inteligentes de Processos: avisos em tempo real para SEDUC Empenho e SEDUC QRE",
-    "Barra Inferior e Menu Lateral com 9 Módulos Completos: Início, Vistorias, Orçamentos, Medições, Rotas, Demandas, Processos, Galeria e Ajustes",
-    "Limpeza Radical de Mocks: banco de dados 100% zerado e otimizado, sem medições ou dados testes fictícios"
+    "Orçamentos & OS: Exibição de 100% das escolas da GRE selecionada com expansão universal",
+    "Cadastro Direto de OS & Orçamentos: botão destacado para cadastrar em qualquer escola zerada",
+    "Anexos em PDF da OS e da Planilha Orçamentária: upload direto de arquivos e visualização",
+    "Medições de Obras com Expansão Universal: botão para cadastrar medição manual ou vincular OS existente",
+    "Medição Manual Interativa: slider de 0 a 100% com cálculo ao vivo de valor medido R$ e saldo contratual",
+    "Barra Inferior Ergonômica com 7 Abas: Início, Vistoria, Orçamento, Rotas, Demandas, Galeria e Ajustes com efeito vítreo neon",
+    "Menu Superior Completo: gaveta lateral com os 9 módulos integrados",
+    "Card de Atualização Simplificado com botão único 'Instalar'"
   ]
 }

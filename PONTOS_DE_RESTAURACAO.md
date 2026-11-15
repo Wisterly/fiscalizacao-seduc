@@ -29,6 +29,21 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.029] — Atualização Oficial para v1.0.24 (Build 25), Sistema Anti-Cache Web (F5 Instantâneo) e Varredura OTA Multi-Canal (Vercel + GitHub)
+- **Data/Hora:** 2026-11-15 01:45 (UTC-3)
+- **Escopos Definidos:**
+  - `PR.029` (Geral): Incremento oficial do versionamento para **v1.0.24 (Build 25)** em todos os pontos do sistema (`version.json`, `public/version.json`, `android/app/build.gradle` e `appUpdater.ts`). Implementação de arquitetura multi-canal de verificação de atualização: consulta prioritária na Vercel (sem latência de CDN) com fallback no GitHub raw e detecção imediata de novas compilações.
+  - `PR.029.1` (Web / Desktop): Inclusão de meta tags HTTP anti-cache (`no-cache`, `no-store`, `must-revalidate`, `Expires: 0`) no `index.html`, garantindo que pressionar F5 no navegador recarregue imediatamente os novos módulos sem retenção de cache antigo. Adição de botão de download direto do APK v1.0.24 na tela de Ajustes.
+  - `PR.029.2` (Mobile / Android): No smartphone Android, o `versionCode` do APK foi elevado para 25. O app antigo (build 23) agora detecta imediatamente a nova versão (`25 > 23`) ao abrir, ao fazer pull-to-refresh ou ao clicar em "Verificar Atualizações Agora" nos Ajustes, exibindo o modal com o botão "Instalar". Compilação do APK nativo `Fiscal.IA.apk` e upload direto na release `apk-latest`.
+- **Tags Git:** `PR.029`, `PR.029.1`, `PR.029.2`
+- **Arquivo Local do APK:** `c:\Users\Lenovo\Documents\antigravity\LAB - GPR\Fiscal.IA.lab - GPR\Fiscal.IA.apk`
+- **Comando de Restauração Rápida:**
+  ```bash
+  git checkout PR.029
+  ```
+
+---
+
 ### [PR.028] — Exibição de Todas as Escolas da GRE em Orçamentos e Medições, Expansão Interativa Universal com Cadastro Direto de OS, Anexos em PDF e Medição Manual/Vinculada
 - **Data/Hora:** 2026-11-15 01:28 (UTC-3)
 - **Escopos Definidos:**

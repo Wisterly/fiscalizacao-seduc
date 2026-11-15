@@ -60,26 +60,52 @@ export interface AppUpdateManagerPlugin {
 export const AppUpdateManager = registerPlugin<AppUpdateManagerPlugin>('AppUpdateManager');
 
 export const GITHUB_REPO_URL = 'https://raw.githubusercontent.com/Wisterly/fiscalizacao-seduc';
+export const VERCEL_APP_URL = 'https://fiscalizacao-seduc.vercel.app';
 export const DEFAULT_APK_DOWNLOAD_URL =
   'https://github.com/Wisterly/fiscalizacao-seduc/releases/download/apk-latest/Fiscal.IA.apk';
 
+export const CURRENT_APP_VERSION = '1.0.24';
+export const CURRENT_BUILD_NUMBER = 25;
+
 /**
- * Consulta atualizações na CDN do GitHub (conforme especificação do Prompt Mestre).
+ * Busca os metadados de versão com fallback em múltiplos canais (Vercel -> GitHub -> Local)
  */
-export async function checkForAppUpdates(repoUrl = GITHUB_REPO_URL): Promise<UpdateInfo | null> {
+async function fetchRemoteVersionMetadata(): Promise<VersionMetadata | null> {
+  const timestamp = Date.now();
+  const endpoints = [
+    `${VERCEL_APP_URL}/version.json?_t=${timestamp}`,
+    `${GITHUB_REPO_URL}/main/version.json?_t=${timestamp}`,
+    `/version.json?_t=${timestamp}`
+  ];
+
+  for (const url of endpoints) {
+    try {
+      const response = await fetch(url, { cache: 'no-store' });
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.buildNumber) {
+          return data as VersionMetadata;
+        }
+      }
+    } catch {
+      // Tenta o próximo endpoint
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Consulta atualizações na CDN do GitHub / Vercel.
+ */
+export async function checkForAppUpdates(): Promise<UpdateInfo | null> {
   try {
     const isNative = Capacitor.isNativePlatform();
+    const remote = await fetchRemoteVersionMetadata();
+    if (!remote) return null;
 
-    // Buscar versão remota sem cache
-    const response = await fetch(`${repoUrl}/main/version.json?_t=${Date.now()}`, {
-      cache: 'no-store'
-    });
-
-    if (!response.ok) return null;
-
-    const remote: VersionMetadata = await response.json();
-    let currentBuild = 1;
-    let currentVersion = '1.0.0';
+    let currentBuild = CURRENT_BUILD_NUMBER;
+    let currentVersion = CURRENT_APP_VERSION;
 
     if (isNative) {
       try {
@@ -148,8 +174,8 @@ export async function checkForUpdate(): Promise<{
   error?: string;
 }> {
   let installed: AppInfo = {
-    versionCode: 1,
-    versionName: '1.0.0',
+    versionCode: CURRENT_BUILD_NUMBER,
+    versionName: CURRENT_APP_VERSION,
     packageName: 'br.com.gprlab.fiscalia',
     canRequestPackageInstalls: true,
     platform: Capacitor.getPlatform()
@@ -164,16 +190,11 @@ export async function checkForUpdate(): Promise<{
   }
 
   try {
-    const timestamp = Date.now();
-    const response = await fetch(`${GITHUB_REPO_URL}/main/version.json?_t=${timestamp}`, {
-      cache: 'no-store'
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status} ao consultar version.json`);
+    const metadata = await fetchRemoteVersionMetadata();
+    if (!metadata) {
+      throw new Error('Não foi possível obter os metadados de versão da nuvem.');
     }
 
-    const metadata: VersionMetadata = await response.json();
     const hasUpdate = metadata.buildNumber > installed.versionCode;
 
     return {

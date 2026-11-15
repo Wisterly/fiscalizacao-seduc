@@ -25,7 +25,10 @@ import {
   checkForUpdate,
   getInstalledAppInfo,
   AppInfo,
-  VersionMetadata
+  VersionMetadata,
+  CURRENT_APP_VERSION,
+  CURRENT_BUILD_NUMBER,
+  DEFAULT_APK_DOWNLOAD_URL
 } from '../../utils/appUpdater';
 
 interface ConfigViewProps {
@@ -237,7 +240,7 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
             <div className="p-2 rounded-xl bg-slate-950/70 border border-white/5">
               <span className="text-[10px] text-slate-400 block">Versão Instalada:</span>
               <span className="font-mono text-amber-300 font-bold text-xs">
-                v{installedInfo?.versionName || '1.0.1'} (#{installedInfo?.versionCode || 2})
+                v{installedInfo?.versionName || CURRENT_APP_VERSION} (#{installedInfo?.versionCode || CURRENT_BUILD_NUMBER})
               </span>
             </div>
             <div className="p-2 rounded-xl bg-slate-950/70 border border-white/5">
@@ -261,14 +264,26 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
             </div>
           )}
 
-          <button
-            onClick={handleManualCheckUpdate}
-            disabled={checkingUpdate}
-            className="w-full py-2.5 px-3 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/35 text-amber-300 text-xs font-bold active-press transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${checkingUpdate ? 'animate-spin' : ''}`} />
-            <span>{checkingUpdate ? 'Buscando Nova Versão na Nuvem...' : 'Verificar Atualizações Agora'}</span>
-          </button>
+          <div className="space-y-2">
+            <button
+              onClick={handleManualCheckUpdate}
+              disabled={checkingUpdate}
+              className="w-full py-2.5 px-3 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/35 text-amber-300 text-xs font-bold active-press transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${checkingUpdate ? 'animate-spin' : ''}`} />
+              <span>{checkingUpdate ? 'Buscando Nova Versão na Nuvem...' : 'Verificar Atualizações Agora'}</span>
+            </button>
+
+            <a
+              href={DEFAULT_APK_DOWNLOAD_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full py-2 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 hover:text-white text-[11px] font-semibold flex items-center justify-center gap-1.5 active-press transition-colors"
+            >
+              <Download className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Baixar Novo APK Direto (v{CURRENT_APP_VERSION})</span>
+            </a>
+          </div>
         </div>
 
         {/* Perfil do Fiscal */}
