@@ -231,27 +231,17 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
           )}
         </div>
 
-        {/* Rodapé com Botões de Ação */}
+        {/* Rodapé com Botão Único de Instalação */}
         <div className="p-4 pt-3 border-t border-white/10 bg-slate-950/80 space-y-2">
           {!isDownloading ? (
             <>
-              {/* Botão Principal: Instalar & Fechar Aplicativo */}
+              {/* Botão Principal: Instalar */}
               <button
                 onClick={handleStartUpdateInApp}
-                className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 text-slate-950 font-extrabold text-xs shadow-glass-glow-gold hover:opacity-95 active-press flex items-center justify-center gap-2 transition-transform"
+                className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 text-slate-950 font-black text-sm shadow-glass-glow-gold hover:opacity-95 active-press flex items-center justify-center gap-2 transition-transform"
               >
                 <Download className="w-4 h-4 stroke-[2.5]" />
-                <span>Instalar Atualização (Fecha o App)</span>
-              </button>
-
-              {/* Botão Alternativo: Baixar via Gerenciador do Android e Fechar */}
-              <button
-                onClick={handleDownloadAndCloseApp}
-                className="w-full py-2.5 px-3 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-cyan-300 text-xs font-bold active-press flex items-center justify-center gap-1.5 transition-colors"
-                title="Baixa diretamente pela barra de notificações do Android e fecha o app agora"
-              >
-                <LogOut className="w-3.5 h-3.5" />
-                <span>Baixar no Android & Fechar Agora</span>
+                <span>Instalar</span>
               </button>
 
               {!metadata.mandatory && (
