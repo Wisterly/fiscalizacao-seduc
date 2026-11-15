@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { App as CapApp } from '@capacitor/app';
 import { storage } from './services/storageService';
-import { syncInepFromGoogleSheets } from './services/sheetsSyncService';
+import { syncInepFromGoogleSheets, syncAtaFromGoogleSheets } from './services/sheetsSyncService';
 import {
   GRE,
   Escola,
@@ -131,6 +131,23 @@ export function App() {
     } catch (err) {
       console.warn('Checagem OTA no refresh:', err);
     }
+  }, []);
+
+  // Sincronização automática em segundo plano das ordens de serviço da Ata da SEDUC
+  useEffect(() => {
+    const syncAtaSilencioso = async () => {
+      try {
+        const res = await syncAtaFromGoogleSheets(storage.getSchools());
+        if (res.ordensServico && res.ordensServico.length > 0) {
+          const atualizadas = storage.syncOrdensServicoFromAta(res.ordensServico);
+          setOrdensServico(atualizadas);
+          setSchools(storage.getSchools());
+        }
+      } catch (err) {
+        console.warn('Sincronização silenciosa da ata na inicialização:', err);
+      }
+    };
+    syncAtaSilencioso();
   }, []);
 
   // Varredura de atualização OTA na inicialização do aplicativo (em até 1.5 a 2 segundos)

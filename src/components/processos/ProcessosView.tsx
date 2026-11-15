@@ -48,6 +48,9 @@ export const ProcessosView: React.FC<ProcessosViewProps> = ({ onBack }) => {
   const [showNovaCategoriaModal, setShowNovaCategoriaModal] = useState(false);
   const [showNovoProcessoModal, setShowNovoProcessoModal] = useState(false);
   const [showNovoDocumentoModal, setShowNovoDocumentoModal] = useState(false);
+  const [showImportarSeiModal, setShowImportarSeiModal] = useState(false);
+  const [textoImportacaoSEI, setTextoImportacaoSEI] = useState('');
+  const [modoSubstituirDocs, setModoSubstituirDocs] = useState(true);
 
   // Formulário Nova Categoria
   const [novaCategoriaNome, setNovaCategoriaNome] = useState('');
@@ -234,6 +237,117 @@ export const ProcessosView: React.FC<ProcessosViewProps> = ({ onBack }) => {
     setProcessos(updated);
   };
 
+  /**
+   * Parser inteligente que recebe a árvore de documentos ou andamentos copiados do SEI
+   * e extrai automaticamente todos os documentos reais (número, nome, tipo, unidade e data)
+   */
+  const handleProcessarImportacaoSEI = () => {
+    if (!selectedProcesso || !textoImportacaoSEI.trim()) return;
+
+    const linhas = textoImportacaoSEI
+      .split('\n')
+      .map((l) => l.trim())
+      .filter((l) => l.length > 2);
+
+    const docsImportados: DocumentoProcessoSEI[] = [];
+
+    linhas.forEach((linha, idx) => {
+      // Ignora linhas irrelevantes
+      const lower = linha.toLowerCase();
+      if (
+        lower.includes('árvore de documentos') ||
+        lower.includes('processo nº') ||
+        lower.includes('consultar andamento') ||
+        lower.includes('sei - sistema eletrônico')
+      ) {
+        return;
+      }
+
+      let numeroOrdem = String(idx + 1).padStart(3, '0');
+      let nomeDoc = linha;
+      let unidade = 'SEDUC/GPR';
+      let dataAnex = new Date().toLocaleDateString('pt-BR');
+
+      // 1. Extração de data (dd/mm/aaaa)
+      const dataMatch = linha.match(/(\d{2}\/\d{2}\/\d{4}(?:\s+\d{2}:\d{2})?)/);
+      if (dataMatch) {
+        dataAnex = dataMatch[1];
+        nomeDoc = nomeDoc.replace(dataMatch[0], '');
+      }
+
+      // 2. Extração de unidade entre parênteses ex: (SEDUC/GPR), (SEDUC/DAF), (SEDUC/GAB)
+      const unidMatch = linha.match(/\(([^)]+)\)/);
+      if (unidMatch) {
+        unidade = unidMatch[1];
+        nomeDoc = nomeDoc.replace(unidMatch[0], '');
+      }
+
+      // 3. Extração de número de ordem ou identificador de documento
+      const ordemMatch = linha.match(/^(\d{1,5})[\s\.\-_:]+/);
+      if (ordemMatch) {
+        numeroOrdem = ordemMatch[1].padStart(3, '0');
+        nomeDoc = nomeDoc.replace(ordemMatch[0], '');
+      }
+
+      // Limpeza de caracteres residuais
+      nomeDoc = nomeDoc.replace(/^[\s\.\-_/:]+|[\s\.\-_/:]+$/g, '').trim();
+      if (!nomeDoc) nomeDoc = `Documento ${numeroOrdem}`;
+
+      // Determinação de Tipo
+      let tipo = 'Documento SEI';
+      const docLower = nomeDoc.toLowerCase();
+      if (docLower.includes('empenho')) tipo = 'Nota de Empenho';
+      else if (docLower.includes('qre')) tipo = 'SEDUC QRE';
+      else if (docLower.includes('atesto')) tipo = 'Termo de Atesto';
+      else if (docLower.includes('nota fiscal') || docLower.includes('danfe')) tipo = 'Nota Fiscal';
+      else if (docLower.includes('pdf') || docLower.includes('roteiro') || docLower.includes('boletim')) tipo = 'Anexo PDF';
+      else if (docLower.includes('despacho')) tipo = 'Despacho';
+      else if (docLower.includes('portaria')) tipo = 'Portaria';
+      else if (docLower.includes('requerimento')) tipo = 'Requerimento';
+
+      docsImportados.push({
+        id: `doc-sei-${Date.now()}-${idx}`,
+        numeroOrdem,
+        nomeDocumento: nomeDoc,
+        tipo,
+        unidadeGeradora: unidade,
+        dataAnexacao: dataAnex
+      });
+    });
+
+    if (docsImportados.length === 0) {
+      alert('Nenhum documento identificado no texto colado. Copie e cole os documentos da árvore ou do andamento do SEI.');
+      return;
+    }
+
+    const novosDocs = modoSubstituirDocs
+      ? docsImportados
+      : [...selectedProcesso.documentos, ...docsImportados];
+
+    const processoAtualizado: ProcessoAcompanhamento = {
+      ...selectedProcesso,
+      documentos: novosDocs
+    };
+
+    const updated = storage.saveProcesso(processoAtualizado);
+    setProcessos(updated);
+    setTextoImportacaoSEI('');
+    setShowImportarSeiModal(false);
+
+    // Verificação de alertas disparados
+    const alertasDisparados = processoAtualizado.alertasMonitorados
+      .filter((a) => a.ativo)
+      .filter((a) => novosDocs.some((d) => d.nomeDocumento.toLowerCase().includes(a.nomeDocumentoAlvo.toLowerCase())));
+
+    if (alertasDisparados.length > 0) {
+      alert(
+        `✓ Sucesso! ${docsImportados.length} documentos reais foram importados para a árvore do SEI.\n\n⚠️ ALERTA DISPARADO: Foram encontrados documentos que você marcou para monitorar:\n${alertasDisparados.map((a) => `• ${a.nomeDocumentoAlvo}`).join('\n')}`
+      );
+    } else {
+      alert(`✓ Sucesso! ${docsImportados.length} documentos reais foram importados para a árvore do processo.`);
+    }
+  };
+
   const handleToggleAlertaConfig = (alertaId: string) => {
     if (!selectedProcesso) return;
     const novosAlertas = selectedProcesso.alertasMonitorados.map((a) =>
@@ -319,11 +433,25 @@ export const ProcessosView: React.FC<ProcessosViewProps> = ({ onBack }) => {
               </p>
             </div>
 
-            <div className="text-right shrink-0">
+            <div className="text-right shrink-0 space-y-1.5">
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                 Em Tramitação
               </span>
-              <span className="block text-[10px] text-slate-400 mt-1">
+              <a
+                href={
+                  selectedProcesso.numeroProcesso.startsWith('http')
+                    ? selectedProcesso.numeroProcesso
+                    : `https://sei.pi.gov.br/sei/modulos/pesquisa/md_pesq_processo_pesquisar.php?palavra_chave=${encodeURIComponent(selectedProcesso.numeroProcesso)}`
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 text-[10px] font-black tracking-wide transition-all active:scale-95 shadow-sm block"
+                title="Abrir diretamente na página do SEI Piauí"
+              >
+                <ExternalLink className="w-3 h-3" />
+                <span>Abrir no SEI</span>
+              </a>
+              <span className="block text-[9.5px] text-slate-400">
                 Unidade: {selectedProcesso.unidadeAtual || 'SEDUC/GPR'}
               </span>
             </div>
@@ -447,13 +575,24 @@ export const ProcessosView: React.FC<ProcessosViewProps> = ({ onBack }) => {
               </p>
             </div>
 
-            <button
-              onClick={() => setShowNovoDocumentoModal(true)}
-              className="p-1.5 px-2.5 rounded-xl bg-cyan-500 text-slate-950 font-bold text-xs flex items-center gap-1 shadow-glass-glow-turq active-press"
-            >
-              <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-              <span>Anexar Doc</span>
-            </button>
+            <div className="flex items-center gap-1.5 flex-wrap shrink-0">
+              <button
+                onClick={() => setShowImportarSeiModal(true)}
+                className="p-1.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-extrabold text-[11px] flex items-center gap-1 shadow-glass-glow-gold active:scale-95 transition-all"
+                title="Copie e cole a árvore de documentos ou andamentos do SEI para importar todos os arquivos reais instantaneamente"
+              >
+                <FileCheck className="w-3.5 h-3.5 stroke-[2.5]" />
+                <span>Importar do SEI</span>
+              </button>
+
+              <button
+                onClick={() => setShowNovoDocumentoModal(true)}
+                className="p-1.5 px-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-white/10 text-slate-200 text-[11px] font-bold flex items-center gap-1 active:scale-95 transition-all"
+              >
+                <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                <span>Anexar Manual</span>
+              </button>
+            </div>
           </div>
 
           {/* Botões de Ação Rápida para Simular SEDUC Empenho / SEDUC QRE */}
@@ -593,6 +732,88 @@ export const ProcessosView: React.FC<ProcessosViewProps> = ({ onBack }) => {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL: IMPORTAR ÁRVORE DE DOCUMENTOS DO SEI */}
+        {showImportarSeiModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn">
+            <div className="w-full max-w-lg bg-[#0D1424] border border-amber-500/30 rounded-3xl p-5 shadow-2xl space-y-3.5 max-h-[90vh] overflow-y-auto">
+              <div className="flex items-start justify-between gap-2 border-b border-white/10 pb-2.5">
+                <div>
+                  <h3 className="text-sm font-black text-white flex items-center gap-1.5">
+                    <FileCheck className="w-4 h-4 text-amber-400" />
+                    <span>Importar Árvore Real do SEI</span>
+                  </h3>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    Cole a listagem de documentos da árvore ou andamentos do processo copiada do SEI Piauí.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowImportarSeiModal(false)}
+                  className="p-1 rounded-xl bg-slate-800 text-slate-400 hover:text-white"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Dica de uso rápido */}
+              <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-200 space-y-1">
+                <p className="font-bold">Como funciona a importação em 1 passo:</p>
+                <ol className="list-decimal list-inside space-y-0.5 text-slate-300">
+                  <li>Abra o processo no SEI e selecione com o mouse os documentos na árvore lateral ou tela de andamentos;</li>
+                  <li>Copie (Ctrl+C) e cole (Ctrl+V) no campo abaixo;</li>
+                  <li>O parser identificará automaticamente cada arquivo, número de ordem, data e setor gerador!</li>
+                </ol>
+              </div>
+
+              {/* Caixa de Texto para Colar */}
+              <div>
+                <label className="text-[11px] font-bold text-slate-300 block mb-1">
+                  Texto da Árvore de Documentos / Andamentos do SEI:
+                </label>
+                <textarea
+                  rows={8}
+                  placeholder="Exemplo do que colar:&#10;001 Requerimento de Concessão de Diárias (SEDUC/GPR) 10/11/2026&#10;002 Roteiro de Vistoria Técnica (SEDUC/GPR) 10/11/2026&#10;003 Portaria de Concessão de Diárias (SEDUC/GAB) 12/11/2026&#10;004 SEDUC Empenho (SEDUC/DAF) 14/11/2026&#10;005 SEDUC QRE (SEDUC/DAF) 15/11/2026"
+                  value={textoImportacaoSEI}
+                  onChange={(e) => setTextoImportacaoSEI(e.target.value)}
+                  className="w-full text-xs font-mono bg-slate-950 border border-white/15 rounded-2xl p-3 text-white placeholder-slate-600 focus:outline-none focus:border-amber-400 leading-relaxed"
+                />
+              </div>
+
+              {/* Opções de Importação */}
+              <div className="flex items-center justify-between text-xs text-slate-300 p-2 rounded-xl bg-slate-900 border border-white/5">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={modoSubstituirDocs}
+                    onChange={(e) => setModoSubstituirDocs(e.target.checked)}
+                    className="rounded accent-amber-500"
+                  />
+                  <span>Substituir árvore atual pelos documentos colados</span>
+                </label>
+              </div>
+
+              {/* Botões de Ação */}
+              <div className="flex gap-2 justify-end pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowImportarSeiModal(false)}
+                  className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleProcessarImportacaoSEI}
+                  disabled={!textoImportacaoSEI.trim()}
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 disabled:opacity-50 text-slate-950 font-black text-xs shadow-glass-glow-gold active:scale-95 transition-all flex items-center gap-1.5"
+                >
+                  <FileCheck className="w-4 h-4 stroke-[2.5]" />
+                  <span>Processar e Montar Árvore Real</span>
+                </button>
+              </div>
             </div>
           </div>
         )}

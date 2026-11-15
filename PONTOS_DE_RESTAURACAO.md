@@ -29,6 +29,21 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.034] — Sincronização Forçada das 154 Escolas em Execução (Auto-Merge e Cache v5), Novo Importador Inteligente da Árvore Real do SEI, Monitoramento Push de Documentos e Release v1.0.29 (Build 30)
+- **Data/Hora:** 2026-11-15 03:15 (UTC-3)
+- **Escopos Definidos:**
+  - `PR.034` (Geral): Resolução definitiva da visualização das ordens de serviço da Planilha da Ata de Manutenção da SEDUC. O `storageService` foi migrado para a chave `seduc_fiscal_os_v5` com versionamento forçado de cache (`CURRENT_OS_CACHE_VERSION`), garantindo que o aplicativo faça a carga instantânea das 154 ordens de serviço em execução (incluindo o CETI Orlando Carvalho com valor de R$ 627.751,30 e status diário Parada) mesmo em navegadores e celulares que já tinham cache legado anterior. Implementação de sincronização automática e silenciosa em segundo plano ao abrir o app (`syncAtaFromGoogleSheets`). Criação do **Importador Inteligente de Árvore do SEI**: parser inteligente que interpreta listas e andamentos copiados do SEI Piauí e extrai número de documento, nome, tipo, unidade geradora e data/hora de juntada, montando a árvore de arquivos reais no app e disparando notificações e alertas configurados (ex: *SEDUC Empenho*, *SEDUC QRE*, *Termo de Atesto*, *Nota Fiscal*). Versão atualizada para **v1.0.29 (Build 30)**.
+  - `PR.034.1` (Web / Desktop): Na visualização Web, a aba de Processos ganha modal expansivo para colar a árvore de documentos do SEI, botão de atalho direto para abrir o processo no SEI Piauí com a sessão do usuário, e a aba de Orçamentos passa a carregar imediatamente todas as escolas com OS em execução agrupadas por GRE e município.
+  - `PR.034.2` (Mobile / Android): No smartphone Android, o importador do SEI permite ao fiscal colar rapidamente o texto copiado do SEI pelo celular e ter a visualização completa de todos os arquivos do processo. Abertura do app dispara a sincronização silenciosa e recarrega os dados em cache sem exigir F5 ou limpeza de dados. Compilação do APK nativo `Fiscal.IA.apk` Build 30 com `versionCode 30` e `versionName 1.0.29`.
+- **Tags Git:** `PR.034`, `PR.034.1`, `PR.034.2`
+- **Arquivo Local do APK:** `c:\Users\Lenovo\Documents\antigravity\LAB - GPR\Fiscal.IA.lab - GPR\Fiscal.IA.apk`
+- **Comando de Restauração Rápida:**
+  ```bash
+  git checkout PR.034
+  ```
+
+---
+
 ### [PR.033] — Nova Barra de Navegação Flutuante Glassmorphism, Botão [ ≡ ] Fiel, Filtro Estrito Coluna R (Obras em Execução), Badge de Status Diário (Coluna S), 154 OSs Reais (CETI Orlando Carvalho) e Release v1.0.28 (Build 29)
 - **Data/Hora:** 2026-11-15 02:45 (UTC-3)
 - **Escopos Definidos:**

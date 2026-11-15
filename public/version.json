@@ -1,15 +1,15 @@
 {
-  "version": "1.0.28",
-  "buildNumber": 29,
+  "version": "1.0.29",
+  "buildNumber": 30,
   "releaseDate": "2026-11-15",
   "minRequiredVersion": "1.0.0",
   "downloadUrl": "https://github.com/Wisterly/fiscalizacao-seduc/releases/download/apk-latest/Fiscal.IA.apk",
   "changelog": [
-    "Nova Barra Inferior Flutuante com Glassmorphism vítreo escuro e iluminação âmbar suave nos 6 itens",
-    "Novo Botão de Menu Superior idêntico ao design de referência com moldura branca e 3 traços paralelos",
-    "Filtro estrito na Planilha da Ata pela Coluna R (Obras em Execução) e exibição do Status Diário da Coluna S (Parada, Em andamento, etc.)",
-    "Ordem de Serviço do CETI Orlando Carvalho e demais 154 escolas em execução integradas com valores e status diário reais",
-    "Download e busca direta dos arquivos PDF das Ordens de Serviço nas pastas de cada GRE no Google Drive",
-    "Ajustes concentrado exclusivamente no menu superior de três linhas para máxima ergonomia no mobile"
+    "Correção de Cache e Sincronização Automática das 154 Ordens de Serviço da Planilha da Ata ao abrir o aplicativo",
+    "CETI Orlando Carvalho e demais escolas em execução carregadas com status diário real (Parada, etc.) e valores oficiais",
+    "Novo Importador Inteligente da Árvore Real de Documentos do SEI Piauí por colagem de texto ou andamentos",
+    "Parser com reconhecimento de número de ordem, nome do documento, tipo, unidade geradora e data de juntada",
+    "Monitoramento de Documentos e Alertas Inteligentes no SEI (SEDUC Empenho, SEDUC QRE, Atesto, Nota Fiscal)",
+    "Botão de atalho direto para abrir o processo no SEI Piauí com sua sessão autenticada"
   ]
 }

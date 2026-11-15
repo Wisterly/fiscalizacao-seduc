@@ -29,7 +29,7 @@ const STORAGE_KEYS = {
   GRES: 'seduc_fiscal_gres_v4',
   SCHOOLS: 'seduc_fiscal_schools_inep_v7',
   AMBIENTES: 'seduc_fiscal_ambientes_v1',
-  OS: 'seduc_fiscal_os_v3',
+  OS: 'seduc_fiscal_os_v5',
   ALERTAS: 'seduc_fiscal_alertas_v3',
   DEMANDAS: 'seduc_fiscal_demandas_v3',
   TAREFAS: 'seduc_fiscal_tarefas_v3',
@@ -168,6 +168,23 @@ class StorageService {
       return s;
     });
 
+    // Enriquecimento dinâmico: marca temOsAtiva se a escola tiver ordens de serviço em execução cadastradas
+    try {
+      const ordens = this.getOrdensServico();
+      const inepsComOS = new Set(ordens.filter(o => o.status === 'ativa').map(o => o.escolaId.replace('inep-', '')));
+      const nomesComOS = new Set(ordens.filter(o => o.status === 'ativa').map(o => o.escolaNome.trim().toUpperCase()));
+
+      enriched.forEach(school => {
+        const hasOS = (school.inep ? inepsComOS.has(school.inep) : false) || nomesComOS.has(school.nome.trim().toUpperCase());
+        if (school.temOsAtiva !== hasOS) {
+          school.temOsAtiva = hasOS;
+          changed = true;
+        }
+      });
+    } catch (e) {
+      console.warn('Erro ao atualizar temOsAtiva dinamicamente:', e);
+    }
+
     if (changed) {
       this.setItem(STORAGE_KEYS.SCHOOLS, enriched);
     }
@@ -268,10 +285,17 @@ class StorageService {
 
   // --- Ordens de Serviço & Medição ---
   getOrdensServico(): OrdemServico[] {
+    const CURRENT_OS_CACHE_VERSION = 'v5_154_execucao_real_orlando';
+    const savedVersion = localStorage.getItem('seduc_fiscal_os_cache_ver');
     const list = this.getItem<OrdemServico[]>(STORAGE_KEYS.OS, INITIAL_OS);
-    if (!list || list.length === 0) {
+
+    // Se o cache for de versão legada ou tiver menos de 100 ordens, força a atualização com o acervo oficial
+    if (!list || list.length < 100 || savedVersion !== CURRENT_OS_CACHE_VERSION) {
       if (INITIAL_OS && INITIAL_OS.length > 0) {
         this.setItem(STORAGE_KEYS.OS, INITIAL_OS);
+        try {
+          localStorage.setItem('seduc_fiscal_os_cache_ver', CURRENT_OS_CACHE_VERSION);
+        } catch (e) {}
         return INITIAL_OS;
       }
     }
