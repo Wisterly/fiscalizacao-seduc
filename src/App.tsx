@@ -411,15 +411,15 @@ export function App() {
   };
 
   const handleSaveOS = (os: OrdemServico) => {
-    const list = storage.getOrdensServico();
-    const exists = list.some(item => item.id === os.id);
-    const updated = exists ? list.map(item => item.id === os.id ? os : item) : [os, ...list];
-    try {
-      localStorage.setItem('seduc_fiscal_os_v1', JSON.stringify(updated));
-    } catch (e) {
-      console.error(e);
-    }
+    const updated = storage.saveOrdemServico(os);
     setOrdensServico(updated);
+    setSchools(storage.getSchools());
+  };
+
+  const handleDeleteOS = (osId: string) => {
+    const updated = storage.deleteOrdemServico(osId);
+    setOrdensServico(updated);
+    setSchools(storage.getSchools());
   };
 
   // --- Handlers de Demandas ---
@@ -541,7 +541,8 @@ export function App() {
                 schools={schools}
                 selectedGre={selectedOrcamentosGre}
                 onSelectGre={setSelectedOrcamentosGre}
-                onUpdateMedicao={handleUpdateMedicaoOS}
+                onSaveOS={handleSaveOS}
+                onDeleteOS={handleDeleteOS}
                 targetOsId={targetOsId}
                 onBack={() => {
                   if (selectedOrcamentosGre) {
@@ -566,6 +567,8 @@ export function App() {
                 selectedGre={selectedMedicoesGre}
                 onSelectGre={setSelectedMedicoesGre}
                 onUpdateMedicao={handleUpdateMedicaoOS}
+                onSaveOS={handleSaveOS}
+                onDeleteOS={handleDeleteOS}
                 onBack={() => {
                   if (selectedMedicoesGre) {
                     setSelectedMedicoesGre(null);

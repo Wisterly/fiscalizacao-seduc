@@ -18,9 +18,9 @@ export const AttachOSModal: React.FC<AttachOSModalProps> = ({
   const isEditing = Boolean(os);
 
   const [numeroOS, setNumeroOS] = useState(os?.numeroOS || '');
-  const [objeto, setObjeto] = useState(os?.objeto || 'Reforma geral e manutenção estrutural');
+  const [objeto, setObjeto] = useState(os?.objeto || '');
   const [empresaContratada, setEmpresaContratada] = useState(os?.empresaContratada || '');
-  const [valorOrcamento, setValorOrcamento] = useState(os ? String(os.valorOrcamento) : '150000');
+  const [valorOrcamento, setValorOrcamento] = useState(os ? String(os.valorOrcamento) : '');
   const [percentualMedicao, setPercentualMedicao] = useState(os ? os.percentualMedicao : 0);
   const [status, setStatus] = useState<'ativa' | 'historico'>(os?.status === 'historico' ? 'historico' : 'ativa');
 
@@ -259,7 +259,7 @@ export const AttachOSModal: React.FC<AttachOSModalProps> = ({
                 <span>{osPdfNome ? `PDF: ${osPdfNome}` : 'Anexar PDF da OS do Celular/PC'}</span>
                 <input
                   type="file"
-                  accept="application/pdf"
+                  accept="application/pdf,image/*"
                   onChange={handleUploadOSPdf}
                   className="hidden"
                 />
@@ -318,7 +318,7 @@ export const AttachOSModal: React.FC<AttachOSModalProps> = ({
                 <span>{orcamentoPdfNome ? `PDF: ${orcamentoPdfNome}` : 'Anexar PDF do Orçamento'}</span>
                 <input
                   type="file"
-                  accept="application/pdf"
+                  accept="application/pdf,image/*"
                   onChange={handleUploadOrcamentoPdf}
                   className="hidden"
                 />

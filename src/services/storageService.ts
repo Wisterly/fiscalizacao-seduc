@@ -250,6 +250,52 @@ class StorageService {
     return this.getItem<OrdemServico[]>(STORAGE_KEYS.OS, INITIAL_OS);
   }
 
+  saveOrdemServico(os: OrdemServico): OrdemServico[] {
+    const list = this.getOrdensServico();
+    const exists = list.some(item => item.id === os.id);
+    const updated = exists ? list.map(item => item.id === os.id ? os : item) : [os, ...list];
+    this.setItem(STORAGE_KEYS.OS, updated);
+
+    // Sincroniza flag de temOsAtiva na escola
+    try {
+      const schools = this.getSchools();
+      const schoolIndex = schools.findIndex(s => s.id === os.escolaId);
+      if (schoolIndex >= 0) {
+        schools[schoolIndex].temOsAtiva = os.status === 'ativa';
+        schools[schoolIndex].osId = os.id;
+        this.setItem(STORAGE_KEYS.SCHOOLS, schools);
+      }
+    } catch (e) {
+      console.warn('Erro ao atualizar flag temOsAtiva na escola:', e);
+    }
+
+    return updated;
+  }
+
+  deleteOrdemServico(osId: string): OrdemServico[] {
+    const list = this.getOrdensServico();
+    const osToDelete = list.find(o => o.id === osId);
+    const updated = list.filter(item => item.id !== osId);
+    this.setItem(STORAGE_KEYS.OS, updated);
+
+    if (osToDelete) {
+      try {
+        const schools = this.getSchools();
+        const schoolIndex = schools.findIndex(s => s.id === osToDelete.escolaId);
+        if (schoolIndex >= 0) {
+          const hasRemainingActive = updated.some(o => o.escolaId === osToDelete.escolaId && o.status === 'ativa');
+          schools[schoolIndex].temOsAtiva = hasRemainingActive;
+          if (!hasRemainingActive) delete schools[schoolIndex].osId;
+          this.setItem(STORAGE_KEYS.SCHOOLS, schools);
+        }
+      } catch (e) {
+        console.warn('Erro ao atualizar escola após remoção de OS:', e);
+      }
+    }
+
+    return updated;
+  }
+
   updateMedicaoOS(osId: string, novoPercentual: number, novaObservacao?: string): OrdemServico[] {
     const list = this.getOrdensServico();
     const updated = list.map(os => {

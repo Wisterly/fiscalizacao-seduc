@@ -29,6 +29,21 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.028] — Exibição de Todas as Escolas da GRE em Orçamentos e Medições, Expansão Interativa Universal com Cadastro Direto de OS, Anexos em PDF e Medição Manual/Vinculada
+- **Data/Hora:** 2026-11-15 01:28 (UTC-3)
+- **Escopos Definidos:**
+  - `PR.028` (Geral): Reformulação completa da arquitetura de listagem em Orçamentos e Medições: seleção da GRE exibe 100% das escolas pertencentes à referida regional (`schoolsDaGre`). Implementação de expansão universal em cada card de escola, mesmo quando a escola ainda não possui nenhuma OS ou medição cadastrada. Criação de métodos oficiais no `storageService.ts` (`saveOrdemServico`, `deleteOrdemServico`) com persistência na chave `seduc_fiscal_os_v3` e sincronização automática da flag `temOsAtiva` nas escolas.
+  - `PR.028.1` (Orçamentos & OS): Na aba de Orçamentos, cada escola da GRE é listada individualmente com contador e filtros. Ao clicar, o card expande: se tiver OSs, lista com visualização/download direto dos PDFs de Ordem de Serviço e Planilha Orçamentária, além de edição e exclusão. Se não tiver nenhuma OS, exibe painel convidativo com botão destacado `+ Cadastrar Orçamento & Ordem de Serviço`, abrindo o modal com campos de dados da obra, upload de PDF/imagem e link externo.
+  - `PR.028.2` (Medições de Obras): Na aba de Medições, cada escola expande com 1 clique. Caso não possua OS, disponibiliza 2 opções: 1) `+ Cadastrar Manualmente` (modal completo com slider de avanço físico de 0 a 100%, cálculo automático em R$ de valor medido e saldo contratual, anexo de boletim de medição em PDF ou imagem); 2) `🔗 Vincular de OS Existente` (vinculação de OSs da escola, da GRE ou sincronização da Ata SEDUC do Google Sheets). Barra neon turquesa e dourada atualizada em tempo real. Empacotamento Capacitor e compilação do APK nativo `Fiscal.IA.apk`.
+- **Tags Git:** `PR.028`, `PR.028.1`, `PR.028.2`
+- **Arquivo Local do APK:** `c:\Users\Lenovo\Documents\antigravity\LAB - GPR\Fiscal.IA.lab - GPR\Fiscal.IA.apk`
+- **Comando de Restauração Rápida:**
+  ```bash
+  git checkout PR.028
+  ```
+
+---
+
 ### [PR.027] — 6 Cards Interativos na Home com Modo Solto (Jiggle/Drag & Drop), Novo Módulo de Medições Desacoplado, Acompanhamento de Processos SEI, Barra Inferior Ergonômica com 7 Abas e Destaque Vítreo Neon, Menu Superior com os 9 Módulos
 - **Data/Hora:** 2026-11-15 01:12 (UTC-3)
 - **Escopos Definidos:**
