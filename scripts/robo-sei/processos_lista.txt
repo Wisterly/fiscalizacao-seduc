@@ -1,0 +1,11 @@
+# ==============================================================================
+# LISTA DE PROCESSOS SEI PARA MONITORAMENTO AUTOMÁTICO
+# Fiscal.IA - SEDUC-PI
+# ==============================================================================
+# Instruções:
+# Basta colar abaixo os números dos processos do SEI que você deseja monitorar.
+# Coloque um número de processo por linha.
+# O robô irá verificar todos eles automaticamente!
+# ==============================================================================
+
+00011.081091/2026-94

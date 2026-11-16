@@ -21,38 +21,105 @@ const { execSync } = require('child_process');
 const DIR_ATUAL = __dirname;
 const CONFIG_PATH = path.join(DIR_ATUAL, 'sei_config.json');
 const CONFIG_TEMPLATE_PATH = path.join(DIR_ATUAL, 'sei_config.template.json');
+const LISTA_TXT_PATH = path.join(DIR_ATUAL, 'processos_lista.txt');
+const EXPORTADOS_JSON_PATH = path.join(DIR_ATUAL, 'processos_exportados.json');
 const HISTORICO_PATH = path.join(DIR_ATUAL, 'historico_alertas.json');
 
-// Carrega configurações
+// Carrega e consolida todos os processos de todas as fontes (JSON, TXT e App)
 function carregarConfig() {
+  let config = null;
+
   if (fs.existsSync(CONFIG_PATH)) {
     try {
       const raw = fs.readFileSync(CONFIG_PATH, 'utf8').replace(/^\uFEFF/, '');
-      return JSON.parse(raw);
+      config = JSON.parse(raw);
     } catch (e) {
       console.error('❌ Erro ao ler sei_config.json:', e.message);
     }
   }
-  if (fs.existsSync(CONFIG_TEMPLATE_PATH)) {
+
+  if (!config && fs.existsSync(CONFIG_TEMPLATE_PATH)) {
     try {
       const raw = fs.readFileSync(CONFIG_TEMPLATE_PATH, 'utf8').replace(/^\uFEFF/, '');
-      return JSON.parse(raw);
+      config = JSON.parse(raw);
     } catch (e) {}
   }
-  return {
-    usuario: process.env.SEI_USUARIO || '',
-    senha: process.env.SEI_SENHA || '',
-    idOrgao: '8',
-    nomeOrgao: 'SEDUC-PI',
-    ntfyTopic: 'antigravity-alert-lenovo',
-    processos: [
-      {
-        numero: '00011.081091/2026-94',
-        titulo: 'Processo de Diárias - Fiscalização',
-        alertas: ['SEDUC RE', 'SEDUC Empenho']
-      }
-    ]
-  };
+
+  if (!config) {
+    config = {
+      usuario: process.env.SEI_USUARIO || '',
+      senha: process.env.SEI_SENHA || '',
+      idOrgao: '8',
+      nomeOrgao: 'SEDUC-PI',
+      ntfyTopic: 'antigravity-alert-lenovo',
+      processos: [
+        {
+          numero: '00011.081091/2026-94',
+          titulo: 'Processo de Diárias - Fiscalização',
+          alertas: ['SEDUC RE', 'SEDUC Empenho']
+        }
+      ]
+    };
+  }
+
+  if (!Array.isArray(config.processos)) {
+    config.processos = [];
+  }
+
+  // 1. Incorpora processos vindos de processos_lista.txt
+  if (fs.existsSync(LISTA_TXT_PATH)) {
+    try {
+      const conteudoTxt = fs.readFileSync(LISTA_TXT_PATH, 'utf8');
+      const linhas = conteudoTxt.split(/\r?\n/).map(l => l.trim()).filter(l => l && !l.startsWith('#'));
+      linhas.forEach((num) => {
+        if (num.length >= 5) {
+          const jaExiste = config.processos.some(p => p.numero.trim() === num);
+          if (!jaExiste) {
+            config.processos.push({
+              numero: num,
+              titulo: `Processo SEI ${num}`,
+              alertas: ['SEDUC RE', 'SEDUC Empenho']
+            });
+          }
+        }
+      });
+    } catch (e) {
+      console.error('Aviso ao ler processos_lista.txt:', e.message);
+    }
+  }
+
+  // 2. Incorpora processos vindos de processos_exportados.json (exportados do app)
+  if (fs.existsSync(EXPORTADOS_JSON_PATH)) {
+    try {
+      const rawExp = fs.readFileSync(EXPORTADOS_JSON_PATH, 'utf8').replace(/^\uFEFF/, '');
+      const exportados = JSON.parse(rawExp);
+      const listaExp = Array.isArray(exportados) ? exportados : (exportados.processos || []);
+      listaExp.forEach((pExp) => {
+        const num = pExp.numeroProcesso || pExp.numero;
+        if (num && num.length >= 5) {
+          const indexExistente = config.processos.findIndex(p => p.numero.trim() === num.trim());
+          const alertasExp = Array.isArray(pExp.alertasMonitorados)
+            ? pExp.alertasMonitorados.filter(a => a.ativo).map(a => a.nomeDocumentoAlvo)
+            : (pExp.alertas || ['SEDUC RE', 'SEDUC Empenho']);
+
+          if (indexExistente >= 0) {
+            config.processos[indexExistente].titulo = pExp.titulo || config.processos[indexExistente].titulo;
+            if (alertasExp.length > 0) config.processos[indexExistente].alertas = alertasExp;
+          } else {
+            config.processos.push({
+              numero: num.trim(),
+              titulo: pExp.titulo || `Processo SEI ${num}`,
+              alertas: alertasExp.length > 0 ? alertasExp : ['SEDUC RE', 'SEDUC Empenho']
+            });
+          }
+        }
+      });
+    } catch (e) {
+      console.error('Aviso ao ler processos_exportados.json:', e.message);
+    }
+  }
+
+  return config;
 }
 
 // Carrega histórico de documentos já notificados
@@ -193,17 +260,20 @@ async function executarRobo() {
 
   if (!config.usuario || !config.senha) {
     console.log('⚠️ AVISO: Credenciais de usuário e senha não configuradas em sei_config.json.');
-    console.log('Preencha seu usuário e senha no arquivo sei_config.json para ativar o login automático.');
-    console.log('Executando teste de conexão e disparo de alerta para o processo de teste...');
-    
-    // Teste de simulação de aviso
-    console.log(`\n🔍 Processo monitorado: ${config.processos[0].numero}`);
-    console.log(`📋 Documentos alvo: ${config.processos[0].alertas.join(', ')}`);
+    console.log('Preencha seu usuário e senha no arquivo sei_config.json ou execute instalar_robo.bat.');
+    console.log(`\n📋 Total de Processos Cadastrados no Monitor: ${config.processos.length}`);
+    config.processos.forEach((p, idx) => {
+      console.log(`  ${idx + 1}. [${p.numero}] - ${p.titulo} (Alertas: ${p.alertas.join(', ')})`);
+    });
     console.log(`📡 Tópico Push celular: ${config.ntfyTopic}`);
     return;
   }
 
   console.log(`🔑 Realizando login no SIP/SEI como [${config.usuario}] - Órgão: SEDUC-PI...`);
+  console.log(`📋 Total de Processos a monitorar: ${config.processos.length}`);
+  config.processos.forEach((p, idx) => {
+    console.log(`  ${idx + 1}. [${p.numero}] - ${p.titulo} (Alertas: ${p.alertas.join(', ')})`);
+  });
 
   try {
     // 1. POST no SIP Login
@@ -224,8 +294,10 @@ async function executarRobo() {
     console.log(`Resposta do SIP: Status ${loginRes.statusCode}`);
 
     // 2. Para cada processo configurado, consulta o andamento
+    let countProc = 0;
     for (const proc of config.processos) {
-      console.log(`\n🔎 Verificando processo: ${proc.numero} (${proc.titulo || 'Geral'})...`);
+      countProc++;
+      console.log(`\n🔎 [${countProc}/${config.processos.length}] Verificando processo: ${proc.numero} (${proc.titulo || 'Geral'})...`);
 
       const buscaUrl = `https://sei.pi.gov.br/sei/controlador.php?acao=protocolo_pesquisar_rapido&acao_origem=procedimento_controlar&palavra_pesquisa=${encodeURIComponent(proc.numero)}`;
       const buscaRes = await client.request(buscaUrl);
@@ -260,6 +332,11 @@ async function executarRobo() {
         } else {
           console.log(`⏳ Documento '${termo}' ainda NÃO foi juntado ao processo.`);
         }
+      }
+
+      // Intervalo de cortesia de 800ms entre as pesquisas de cada processo
+      if (countProc < config.processos.length) {
+        await new Promise(r => setTimeout(r, 800));
       }
     }
 

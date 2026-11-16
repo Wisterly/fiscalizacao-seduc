@@ -1,0 +1,18 @@
+{
+    "usuario":  "kayropaula@seduc.pi.gov.br / #Kayro1996*",
+    "senha":  "#Kayro1996*",
+    "idOrgao":  "8",
+    "nomeOrgao":  "SEDUC-PI",
+    "ntfyTopic":  "antigravity-alert-lenovo",
+    "intervaloMinutos":  120,
+    "processos":  [
+                      {
+                          "numero":  "00011.081091/2026-94",
+                          "titulo":  "Processo de Diárias - Fiscalização SEDUC",
+                          "alertas":  [
+                                          "SEDUC RE",
+                                          "SEDUC Empenho"
+                                      ]
+                      }
+                  ]
+}

@@ -1,14 +1,14 @@
 {
-  "version": "1.0.30",
-  "buildNumber": 31,
+  "version": "1.0.31",
+  "buildNumber": 32,
   "releaseDate": "2026-11-15",
   "minRequiredVersion": "1.0.0",
   "downloadUrl": "https://github.com/Wisterly/fiscalizacao-seduc/releases/download/apk-latest/Fiscal.IA.apk",
   "changelog": [
-    "Nova Barra de Navegação Inferior Dock Glassmorphism com halo âmbar e 6 botões (Início, Vistoria, Orçamento, Rotas, Demandas, Galeria)",
-    "Ajustes mantido exclusivamente no menu de 3 pontinhos/cabeçalho conforme solicitação",
-    "Correção terminológica oficial: substituição de SEDUC QRE por SEDUC RE em 100% do sistema",
-    "Cadastro nativo do processo SEI de teste 00011.081091/2026-94 com monitoramento ativo de SEDUC Empenho e SEDUC RE",
-    "Orientações e ferramentas de sincronização com o SEI Piauí contra bloqueio de CAPTCHA"
+    "Monitoramento Dinâmico Multi-Processos no Robô SEI Monitor com consolidação automática de fontes",
+    "Assistente de 1 clique 'adicionar_processo.bat' e lista rápida 'processos_lista.txt' para inclusão instantânea",
+    "Novo botão '⚡ Sincronizar com Robô' no aplicativo Fiscal.IA para exportar todos os processos cadastrados",
+    "Varredura sequencial com intervalo suave de cortesia de 800ms e alertas push individuais no celular",
+    "Histórico anti-repetição 'historico_alertas.json' para evitar notificações duplicadas"
   ]
 }

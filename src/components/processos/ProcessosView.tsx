@@ -17,7 +17,9 @@ import {
   Search,
   Sparkles,
   Layers,
-  FileCheck
+  FileCheck,
+  Bot,
+  Download
 } from 'lucide-react';
 import {
   ProcessoAcompanhamento,
@@ -380,6 +382,47 @@ export const ProcessosView: React.FC<ProcessosViewProps> = ({ onBack }) => {
     const updated = storage.saveProcesso(atualizado);
     setProcessos(updated);
     setNovoNomeAlerta('');
+  };
+
+  const handleExportarParaRobo = () => {
+    if (processos.length === 0) {
+      alert('Nenhum processo cadastrado para sincronizar com o robô.');
+      return;
+    }
+
+    const payload = {
+      geradoEm: new Date().toISOString(),
+      totalProcessos: processos.length,
+      processos: processos.map((p) => ({
+        numero: p.numeroProcesso,
+        titulo: p.titulo,
+        categoria: p.categoriaNome,
+        alertas: p.alertasMonitorados.filter((a) => a.ativo).map((a) => a.nomeDocumentoAlvo)
+      }))
+    };
+
+    // Baixa o arquivo processos_exportados.json
+    try {
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'processos_exportados.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e) {}
+
+    // Também copia os números para o clipboard para colar facilmente em processos_lista.txt
+    try {
+      const listaNumeros = processos.map((p) => p.numeroProcesso).join('\n');
+      navigator.clipboard?.writeText(listaNumeros);
+    } catch (e) {}
+
+    alert(
+      `✓ SUCESSO!\n\nForam sincronizados ${processos.length} processos para o Robô SEI.\n\n1. O arquivo 'processos_exportados.json' foi gerado para a pasta scripts/robo-sei.\n2. Os números dos processos também foram copiados para a sua área de transferência!\n\nO robô monitorará todos eles automaticamente nas próximas varreduras!`
+    );
   };
 
   // ==========================================
@@ -1067,13 +1110,25 @@ export const ProcessosView: React.FC<ProcessosViewProps> = ({ onBack }) => {
           </p>
         </div>
 
-        <button
-          onClick={() => setShowNovaCategoriaModal(true)}
-          className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-white/10 font-bold text-xs active-press flex items-center gap-1"
-        >
-          <Plus className="w-3.5 h-3.5 text-cyan-400" />
-          <span>Nova Categoria</span>
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={handleExportarParaRobo}
+            className="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/20 to-yellow-500/20 hover:from-amber-500/30 hover:to-yellow-500/30 text-amber-300 border border-amber-500/40 font-bold text-xs active-press flex items-center gap-1.5 shadow-sm"
+            title="Exportar todos os processos cadastrados no aplicativo para o Robô SEI Monitor"
+          >
+            <Bot className="w-3.5 h-3.5 text-amber-400" />
+            <span className="hidden sm:inline">Sincronizar com Robô</span>
+            <span className="sm:hidden">Robô SEI</span>
+          </button>
+
+          <button
+            onClick={() => setShowNovaCategoriaModal(true)}
+            className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-white/10 font-bold text-xs active-press flex items-center gap-1"
+          >
+            <Plus className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Nova Categoria</span>
+          </button>
+        </div>
       </div>
 
       {/* GRID DE CARDS DAS CATEGORIAS */}

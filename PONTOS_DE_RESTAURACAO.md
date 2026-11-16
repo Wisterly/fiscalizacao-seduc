@@ -29,6 +29,21 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.036] — Monitoramento Dinâmico Multi-Processos no Robô SEI, Assistente 'adicionar_processo.bat', Lista Rápida TXT, Sincronização no App e Release v1.0.31 (Build 32)
+- **Data/Hora:** 2026-11-15 22:45 (UTC-3)
+- **Escopos Definidos:**
+  - `PR.036` (Geral): Implementação de suporte completo a múltiplos processos no Robô SEI Monitor com consolidação inteligente de 3 origens: `sei_config.json`, `processos_lista.txt` e `processos_exportados.json`. Criação do assistente interativo em 1 clique `adicionar_processo.bat` (e `.ps1`) para cadastrar novos processos dinamicamente informando número, descrição e tipo de monitoramento. Adição do botão **'⚡ Sincronizar com Robô'** no módulo de Processos do aplicativo Fiscal.IA para exportar e copiar em lote todos os processos cadastrados. Varredura com intervalo de cortesia de 800ms e controle de alertas individuais no celular. Versão atualizada para **v1.0.31 (Build 32)**.
+  - `PR.036.1` (Web / Desktop): Na visualização Web, a barra de processos ganha o botão de exportação direta para o robô, permitindo sincronizar todos os processos salvos com 1 clique e baixar o arquivo consolidado para a pasta de automação.
+  - `PR.036.2` (Mobile / Android): No smartphone Android, o aplicativo compila com nova versão `versionName 1.0.31` e `versionCode 32`. A função de sincronização copia a lista completa de processos para a área de transferência do celular, permitindo colar em qualquer arquivo de monitoramento.
+- **Tags Git:** `PR.036`, `PR.036.1`, `PR.036.2`
+- **Arquivo Local do APK:** `c:\Users\Lenovo\Documents\antigravity\LAB - GPR\Fiscal.IA.lab - GPR\Fiscal.IA.apk`
+- **Comando de Restauração Rápida:**
+  ```bash
+  git checkout PR.036
+  ```
+
+---
+
 ### [PR.035] — Barra Inferior Dock Glassmorphism Fiel com Halo Âmbar (6 Itens), Ajustes Exclusivo no Menu 3 Pontinhos, Correção Oficial SEDUC RE, Processo de Teste SEI 00011.081091/2026-94 e Release v1.0.30 (Build 31)
 - **Data/Hora:** 2026-11-15 03:40 (UTC-3)
 - **Escopos Definidos:**
