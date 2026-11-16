@@ -67,7 +67,7 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
   };
 
   const [selectedMunicipio, setSelectedMunicipio] = useState<string>('todos');
-  const [filtroStatus, setFiltroStatus] = useState<'todas' | 'com_os' | 'sem_os'>('todas');
+  const [filtroStatus, setFiltroStatus] = useState<'todas' | 'com_os' | 'execucao' | 'a_iniciar' | 'sem_os'>('todas');
   const [searchTerm, setSearchTerm] = useState('');
   const [escolaExpandidaId, setEscolaExpandidaId] = useState<string | null>(null);
 
@@ -153,39 +153,73 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
   // Municípios da GRE selecionada
   const municipiosDaGre = Array.from(new Set(schoolsDaGre.map((s) => s.municipio))).sort();
 
+  // Função utilitária de normalização de texto
+  const normStr = (str?: string) =>
+    (str || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]/g, ' ')
+      .trim();
+
+  // Helper para obter as OSs da escola com verificação por ID, INEP e Nome Normalizado
+  const getOsListForSchool = (school: Escola) => {
+    const schoolNorm = normStr(school.nome);
+    return osDaGre.filter((os) => {
+      if (os.escolaId && os.escolaId === school.id) return true;
+      if (school.inep && school.inep !== 'S/ INEP' && os.escolaId === `inep-${school.inep}`) return true;
+      const osNorm = normStr(os.escolaNome);
+      return osNorm === schoolNorm;
+    });
+  };
+
   // Filtragem das escolas
   const filteredSchools = schoolsDaGre.filter((school) => {
-    const osDaEscola = osDaGre.filter(
-      (os) => os.escolaId === school.id || os.escolaNome.toLowerCase() === school.nome.toLowerCase()
-    );
+    const osDaEscola = getOsListForSchool(school);
 
     const matchesMun = selectedMunicipio === 'todos' || school.municipio === selectedMunicipio;
+
+    const temExecucao = osDaEscola.some(
+      (os) => (os.statusObra || '').toUpperCase().includes('EXECU') || (os.statusDiario || '').toLowerCase().includes('andamento')
+    );
+    const temAIniciar = osDaEscola.some(
+      (os) => (os.statusObra || '').toUpperCase().includes('INICIAR') || (os.statusDiario || '').toLowerCase().includes('iniciar')
+    );
 
     const matchesStatus =
       filtroStatus === 'todas' ||
       (filtroStatus === 'com_os' && osDaEscola.length > 0) ||
+      (filtroStatus === 'execucao' && temExecucao) ||
+      (filtroStatus === 'a_iniciar' && temAIniciar) ||
       (filtroStatus === 'sem_os' && osDaEscola.length === 0);
 
+    const termNorm = normStr(searchTerm);
+    // Tolerância fonética/digitação para Amanda Bulamarque -> Armando Burlamaqui
+    const termAdjusted = termNorm.replace(/amanda\s*bulamarque/g, 'armando burlamaqui').replace(/bulamarque/g, 'burlamaqui');
+
     const matchesSearch =
-      !searchTerm ||
-      school.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      school.municipio.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      !termNorm ||
+      normStr(school.nome).includes(termNorm) ||
+      normStr(school.nome).includes(termAdjusted) ||
+      normStr(school.municipio).includes(termNorm) ||
+      (school.inep && school.inep.includes(termNorm)) ||
       osDaEscola.some(
         (os) =>
-          os.numeroOS.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          os.objeto.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          os.empresaContratada.toLowerCase().includes(searchTerm.toLowerCase())
+          normStr(os.numeroOS).includes(termNorm) ||
+          normStr(os.objeto).includes(termNorm) ||
+          normStr(os.empresaContratada).includes(termNorm) ||
+          normStr(os.fiscalResponsavel).includes(termNorm)
       );
 
     return matchesMun && matchesStatus && matchesSearch;
   });
 
-  // Ordena para que escolas com OS em execução apareçam no topo
+  // Ordena para que escolas com OS apareçam no topo
   filteredSchools.sort((a, b) => {
-    const aHasOS = osDaGre.some((os) => os.escolaId === a.id || os.escolaNome.toLowerCase() === a.nome.toLowerCase());
-    const bHasOS = osDaGre.some((os) => os.escolaId === b.id || os.escolaNome.toLowerCase() === b.nome.toLowerCase());
-    if (aHasOS && !bHasOS) return -1;
-    if (!aHasOS && bHasOS) return 1;
+    const aList = getOsListForSchool(a);
+    const bList = getOsListForSchool(b);
+    if (aList.length > 0 && bList.length === 0) return -1;
+    if (aList.length === 0 && bList.length > 0) return 1;
     return a.nome.localeCompare(b.nome);
   });
 
@@ -290,7 +324,29 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
                   : 'border border-white/10 bg-slate-900/60 text-slate-400 hover:text-slate-200 font-medium'
               }`}
             >
-              Com OS ({schoolsDaGre.filter((s) => osDaGre.some((o) => o.escolaId === s.id || o.escolaNome.toLowerCase() === s.nome.toLowerCase())).length})
+              Com OS ({schoolsDaGre.filter((s) => getOsListForSchool(s).length > 0).length})
+            </button>
+
+            <button
+              onClick={() => setFiltroStatus('execucao')}
+              className={`px-3 py-1.5 rounded-full text-xs transition-all active-press ${
+                filtroStatus === 'execucao'
+                  ? 'border-2 border-emerald-400 bg-emerald-500/15 text-emerald-300 font-extrabold shadow-[0_0_12px_rgba(16,185,129,0.25)]'
+                  : 'border border-white/10 bg-slate-900/60 text-slate-400 hover:text-slate-200 font-medium'
+              }`}
+            >
+              Em Execução ({schoolsDaGre.filter((s) => getOsListForSchool(s).some((os) => (os.statusObra || '').toUpperCase().includes('EXECU') || (os.statusDiario || '').toLowerCase().includes('andamento'))).length})
+            </button>
+
+            <button
+              onClick={() => setFiltroStatus('a_iniciar')}
+              className={`px-3 py-1.5 rounded-full text-xs transition-all active-press ${
+                filtroStatus === 'a_iniciar'
+                  ? 'border-2 border-blue-400 bg-blue-500/15 text-blue-300 font-extrabold shadow-[0_0_12px_rgba(59,130,246,0.25)]'
+                  : 'border border-white/10 bg-slate-900/60 text-slate-400 hover:text-slate-200 font-medium'
+              }`}
+            >
+              A Iniciar ({schoolsDaGre.filter((s) => getOsListForSchool(s).some((os) => (os.statusObra || '').toUpperCase().includes('INICIAR') || (os.statusDiario || '').toLowerCase().includes('iniciar'))).length})
             </button>
 
             <button
@@ -301,7 +357,7 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
                   : 'border border-white/10 bg-slate-900/60 text-slate-400 hover:text-slate-200 font-medium'
               }`}
             >
-              Sem OS ({schoolsDaGre.filter((s) => !osDaGre.some((o) => o.escolaId === s.id || o.escolaNome.toLowerCase() === s.nome.toLowerCase())).length})
+              Sem OS ({schoolsDaGre.filter((s) => getOsListForSchool(s).length === 0).length})
             </button>
           </div>
 
@@ -341,9 +397,7 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
           </div>
         ) : (
           filteredSchools.map((school) => {
-            const osList = osDaGre.filter(
-              (os) => os.escolaId === school.id || os.escolaNome.toLowerCase() === school.nome.toLowerCase()
-            );
+            const osList = getOsListForSchool(school);
             const isExpandida = escolaExpandidaId === school.id;
             const totalOrcadoEscola = osList.reduce((acc, os) => acc + (os.valorOrcamento || 0), 0);
 
@@ -473,7 +527,8 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
                           const statusDiarioTexto = (os.statusDiario || os.statusObra || 'Em andamento').trim();
                           const isParada = statusDiarioTexto.toLowerCase().includes('parada') || statusDiarioTexto.toLowerCase().includes('paralisada');
                           const isRitmoLento = statusDiarioTexto.toLowerCase().includes('lento') || statusDiarioTexto.toLowerCase().includes('ritmo');
-                          const isAndamento = statusDiarioTexto.toLowerCase().includes('andamento') || statusDiarioTexto.toLowerCase().includes('execu');
+                          const isAIniciar = statusDiarioTexto.toLowerCase().includes('iniciar') || (os.statusObra || '').toUpperCase().includes('INICIAR');
+                          const isAndamento = !isAIniciar && (statusDiarioTexto.toLowerCase().includes('andamento') || statusDiarioTexto.toLowerCase().includes('execu'));
                           const isPendencia = statusDiarioTexto.toLowerCase().includes('pend');
 
                           return (
@@ -489,13 +544,15 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
                                       OS Nº {os.numeroOS}
                                     </span>
 
-                                    {/* BADGE DE STATUS DIÁRIO (Coluna S) */}
+                                    {/* BADGE DE STATUS DIÁRIO (Coluna S / Status Geral R) */}
                                     <span
                                       className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border uppercase tracking-wider flex items-center gap-1.5 shadow-sm ${
                                         isParada
                                           ? 'bg-red-500/20 text-red-300 border-red-500/40 shadow-red-500/10'
                                           : isRitmoLento
                                           ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-amber-500/10'
+                                          : isAIniciar
+                                          ? 'bg-blue-500/20 text-blue-300 border-blue-500/40 shadow-blue-500/10'
                                           : isAndamento
                                           ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-emerald-500/10'
                                           : isPendencia
@@ -509,6 +566,8 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
                                             ? 'bg-red-400'
                                             : isRitmoLento
                                             ? 'bg-amber-400'
+                                            : isAIniciar
+                                            ? 'bg-blue-400'
                                             : isAndamento
                                             ? 'bg-emerald-400'
                                             : isPendencia

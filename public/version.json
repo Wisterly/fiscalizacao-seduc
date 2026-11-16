@@ -1,14 +1,14 @@
 {
-  "version": "1.0.32",
-  "buildNumber": 33,
+  "version": "1.0.33",
+  "buildNumber": 34,
   "releaseDate": "2026-11-15",
   "minRequiredVersion": "1.0.0",
   "downloadUrl": "https://github.com/Wisterly/fiscalizacao-seduc/releases/download/apk-latest/Fiscal.IA.apk",
   "changelog": [
-    "Esqueleto Estrutural do Processo no Aplicativo com Linha do Tempo das Fases (1 a 4)",
-    "Árvore viva de documentos numerada (001, 002, 003...) com identificação de setor e data",
-    "Implementação automática de SEDUC Empenho e SEDUC RE no esqueleto com badges luminosos",
-    "Alerta sonoro sintetizado em tempo real no app quando o empenho ou RE forem detectados",
-    "Sincronização e cadastro de novos processos 100% pelo aplicativo"
+    "Correção no filtro da planilha oficial da Ata SEDUC: inclusão das 66 obras com status A INICIAR (total de 211 obras ativas no estado)",
+    "Inclusão e exibição imediata do CETI Armando Burlamaqui (Oeiras - 8ª GRE, OS 2025/943 no valor de R$ 128.229,78) e demais unidades A INICIAR",
+    "Novas pílulas de filtro rápido na aba de Orçamentos: Todas, Com OS, Em Execução, A Iniciar e Sem OS",
+    "Busca inteligente com tolerância fonética e normalização automática para nomes de escolas e responsáveis",
+    "Atualização automática do cache local para versão v6 garantindo recarregamento imediato"
   ]
 }

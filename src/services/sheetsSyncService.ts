@@ -283,16 +283,19 @@ export function parseAtaCsvToOS(csvText: string, currentSchools: Escola[]): {
     if (!rawEscola && !rawNumeroOS) continue;
     if (rawEscola.toUpperCase().includes('NOME ENTIDADE')) continue;
 
-    // FILTRO ESTREITO SOLICITADO PELO USUÁRIO:
-    // Apenas ordens de serviço onde a Coluna R (Status Geral) conste EXECUÇÃO ou EM EXECUÇÃO
-    if (!rawStatus.includes('EXECU')) {
+    // FILTRO DE OBRAS ATIVAS (SEDUC ATA):
+    // Inclui ordens de serviço onde a Coluna R (Status Geral) conste EXECUÇÃO ou A INICIAR
+    const isExecucao = rawStatus.includes('EXECU');
+    const isAIniciar = rawStatus.includes('INICIAR');
+
+    if (!isExecucao && !isAIniciar) {
       continue;
     }
 
     // Normaliza status diário e tipoStatus
-    const statusDiarioNormalizado = rawStatusDiario || 'Em andamento';
+    const statusDiarioNormalizado = rawStatusDiario || (isAIniciar ? 'A Iniciar' : 'Em andamento');
     const isParada = statusDiarioNormalizado.toLowerCase().includes('parada') || statusDiarioNormalizado.toLowerCase().includes('paralisada');
-    const statusObraLabel = 'EM EXECUÇÃO';
+    const statusObraLabel = isAIniciar ? 'A INICIAR' : 'EM EXECUÇÃO';
 
     // Localiza ou cria a Escola
     const greId = extractGreId(rawGre, municipio) || 'gre-01';
@@ -380,8 +383,8 @@ export function parseAtaCsvToOS(csvText: string, currentSchools: Escola[]): {
       dataInicio,
       prazoFinal,
       status: 'ativa',
-      tipoStatus: isParada ? 'paralisada' : 'em_execucao',
-      statusObra: 'EM EXECUÇÃO',
+      tipoStatus: isParada ? 'paralisada' : isAIniciar ? 'aguardando' : 'em_execucao',
+      statusObra: statusObraLabel,
       statusDiario: statusDiarioNormalizado,
       contratoNumero,
       dataEmissaoOS,

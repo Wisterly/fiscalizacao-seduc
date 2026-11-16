@@ -29,7 +29,7 @@ const STORAGE_KEYS = {
   GRES: 'seduc_fiscal_gres_v4',
   SCHOOLS: 'seduc_fiscal_schools_inep_v7',
   AMBIENTES: 'seduc_fiscal_ambientes_v1',
-  OS: 'seduc_fiscal_os_v5',
+  OS: 'seduc_fiscal_os_v6',
   ALERTAS: 'seduc_fiscal_alertas_v3',
   DEMANDAS: 'seduc_fiscal_demandas_v3',
   TAREFAS: 'seduc_fiscal_tarefas_v3',
@@ -66,6 +66,7 @@ class StorageService {
       const chavesAntigas = [
         'seduc_fiscal_os_v1',
         'seduc_fiscal_os_v2',
+        'seduc_fiscal_os_v5',
         'seduc_fiscal_alertas_v1',
         'seduc_fiscal_alertas_v2',
         'seduc_fiscal_demandas_v1',
@@ -285,7 +286,7 @@ class StorageService {
 
   // --- Ordens de Serviço & Medição ---
   getOrdensServico(): OrdemServico[] {
-    const CURRENT_OS_CACHE_VERSION = 'v5_154_execucao_real_orlando';
+    const CURRENT_OS_CACHE_VERSION = 'v6_211_execucao_e_iniciar_armando_burlamaqui';
     const savedVersion = localStorage.getItem('seduc_fiscal_os_cache_ver');
     const list = this.getItem<OrdemServico[]>(STORAGE_KEYS.OS, INITIAL_OS);
 

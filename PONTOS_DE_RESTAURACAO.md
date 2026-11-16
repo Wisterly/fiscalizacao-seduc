@@ -29,6 +29,21 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.038] — Correção e Inclusão das Obras 'A INICIAR' na Ata SEDUC (211 OSs Ativas), CETI Armando Burlamaqui (8ª GRE), Filtros Rápidos de Status, Busca Fonética e Release v1.0.33 (Build 34)
+- **Data/Hora:** 2026-11-15 23:15 (UTC-3)
+- **Escopos Definidos:**
+  - `PR.038` (Geral): Correção da trava no serviço de sincronização (`sheetsSyncService.ts`) e na base oficial (`ordensServicoAta.json`) que limitava o filtro apenas a status com termo estrito `EXECUÇÃO`, descartando automaticamente as 66 obras oficiais marcadas como `A INICIAR` na Coluna R da Planilha Oficial da Ata SEDUC. Com o ajuste, a base passou de 145 para **211 Ordens de Serviço ativas** em todo o estado do Piauí. O CETI Armando Burlamaqui (Oeiras - 8ª GRE, INEP `22080392`, OS `2025/943` no valor de R$ 128.229,78, construtora `R Melo Construtora LTDA` e fiscal `Kayro Rocha`) agora é carregado de forma nativa e automática, juntamente com todas as outras obras a iniciar. Implementação de novas pílulas de filtro rápido na aba de Orçamentos: **Todas**, **Com OS**, **Em Execução**, **A Iniciar** e **Sem OS**. Criação de busca inteligente com tolerância fonética que reconhece buscas como "Amanda Bulamarque" direcionando com precisão para "Armando Burlamaqui". Incremento do cache local para versão `v6` (`seduc_fiscal_os_v6`) garantindo atualização instantânea para todos os usuários sem prender em caches legados. Versão atualizada para **v1.0.33 (Build 34)**.
+  - `PR.038.1` (Web / Desktop): Na visualização Web da aba de Orçamentos, o fiscal ou gestor agora pode alternar entre "Em Execução" e "A Iniciar" com um clique, identificando imediatamente as obras da sua regional (incluindo as 11 obras ativas da 8ª GRE) e visualizando badges luminosos azuis dedicados para o status "A Iniciar".
+  - `PR.038.2` (Mobile / Android): No smartphone Android, o aplicativo compila com nova versão `versionName 1.0.33` e `versionCode 34`. As novas pílulas de filtro deslizam horizontalmente com feedback tátil e o enriquecimento automático marca as escolas com `temOsAtiva: true` em todo o ecossistema móvel.
+- **Tags Git:** `PR.038`, `PR.038.1`, `PR.038.2`
+- **Arquivo Local do APK:** `c:\Users\Lenovo\Documents\antigravity\LAB - GPR\Fiscal.IA.lab - GPR\Fiscal.IA.apk`
+- **Comando de Restauração Rápida:**
+  ```bash
+  git checkout PR.038
+  ```
+
+---
+
 ### [PR.037] — Esqueleto Estrutural do Processo no App, Linha do Tempo das Fases (1 a 4), Efeito Sonoro Nativo Web Audio, Auto-Implementação de SEDUC RE/Empenho e Release v1.0.32 (Build 33)
 - **Data/Hora:** 2026-11-15 23:05 (UTC-3)
 - **Escopos Definidos:**
