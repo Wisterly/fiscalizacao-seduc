@@ -85,6 +85,9 @@ export interface OrdemServico {
   orcamentoPdfSimulado: string;
   memorialDescritivoPdfSimulado: string;
   // Suporte híbrido a download, anexo manual e links externos (Drive/Cloud)
+  drivePdfUrl?: string;
+  downloadPdfUrl?: string;
+  valorTotal?: number;
   osPdfUrl?: string;
   osPdfBlob?: string;
   osPdfNome?: string;
@@ -100,6 +103,24 @@ export interface OrdemServico {
   arquivoPdfGerado?: string;
   osAnexoAutomatico?: boolean;
   driveFolderOSUrl?: string;
+  anexos?: Array<{
+    id: string;
+    tipo: string;
+    nomeArquivo: string;
+    url?: string;
+    downloadUrl?: string;
+    tamanhoBytes?: number;
+    dataUpload?: string;
+  }>;
+  servicosContratados?: Array<{
+    id: string;
+    descricao: string;
+    unidade: string;
+    quantidade: number;
+    valorUnitario: number;
+    valorTotal: number;
+    percentualExecutado: number;
+  }>;
   observacoes: Array<{
     id: string;
     data: string;

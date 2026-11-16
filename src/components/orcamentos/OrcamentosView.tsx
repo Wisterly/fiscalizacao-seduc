@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   FileText,
   Search,
@@ -68,7 +68,7 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
 
   const [selectedMunicipio, setSelectedMunicipio] = useState<string>('todos');
   const [filtroStatus, setFiltroStatus] = useState<'com_os' | 'sem_os' | 'todas'>('com_os');
-  const [filtroDiario, setFiltroDiario] = useState<'todos' | 'parada' | 'ritmo_lento' | 'em_andamento'>('todos');
+  const [filtroDiario, setFiltroDiario] = useState<'todos' | 'parada' | 'ritmo_lento' | 'em_andamento' | 'aguardando_inicio'>('todos');
   const [searchTerm, setSearchTerm] = useState('');
   const [escolaExpandidaId, setEscolaExpandidaId] = useState<string | null>(null);
 
@@ -151,9 +151,6 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
   const schoolsDaGre = schools.filter((s) => s.greId === activeGre.id);
   const osDaGre = ordensServico.filter((os) => os.greId === activeGre.id);
 
-  // Municípios da GRE selecionada
-  const municipiosDaGre = Array.from(new Set(schoolsDaGre.map((s) => s.municipio))).sort();
-
   // Função utilitária de normalização de texto
   const normStr = (str?: string) =>
     (str || '')
@@ -163,43 +160,90 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
       .replace(/[^a-z0-9]/g, ' ')
       .trim();
 
-  // Helper para obter as OSs da escola com verificação por ID, INEP e Nome Normalizado
+  // Remove prefixos comuns de entidades para match tolerante
+  const cleanSchoolPrefix = (str?: string) =>
+    normStr(str)
+      .replace(/^(ceti|ceja|u e|unidade escolar|escola estadual|centro estadual|centro de atendimento|polo uapi|sede)\s+/g, '')
+      .trim();
+
+  // Helper para obter as OSs da escola com verificação por ID, INEP e Nome Normalizado / Sem Prefixo
   const getOsListForSchool = (school: Escola) => {
     const schoolNorm = normStr(school.nome);
+    const schoolClean = cleanSchoolPrefix(school.nome);
     return osDaGre.filter((os) => {
       if (os.escolaId && os.escolaId === school.id) return true;
       if (school.inep && school.inep !== 'S/ INEP' && os.escolaId === `inep-${school.inep}`) return true;
       const osNorm = normStr(os.escolaNome);
-      return osNorm === schoolNorm;
+      if (osNorm === schoolNorm) return true;
+      const osClean = cleanSchoolPrefix(os.escolaNome);
+      return osClean && osClean === schoolClean;
     });
   };
 
+  // Garante que toda OS da GRE pertença a uma escola existente na listagem da GRE
+  const todasEscolasDaGre = useMemo(() => {
+    const list = [...schoolsDaGre];
+    osDaGre.forEach((os) => {
+      const jaExiste = list.some((s) => {
+        if (s.id === os.escolaId) return true;
+        if (s.inep && s.inep !== 'S/ INEP' && os.escolaId === `inep-${s.inep}`) return true;
+        if (normStr(s.nome) === normStr(os.escolaNome)) return true;
+        const sClean = cleanSchoolPrefix(s.nome);
+        const osClean = cleanSchoolPrefix(os.escolaNome);
+        return sClean && sClean === osClean;
+      });
+
+      if (!jaExiste) {
+        list.push({
+          id: os.escolaId || `escola-os-${os.id}`,
+          inep: (os.escolaId && os.escolaId.startsWith('inep-')) ? os.escolaId.replace('inep-', '') : 'S/ INEP',
+          greId: os.greId || activeGre.id,
+          nome: os.escolaNome,
+          municipio: os.municipio || 'PIAUÍ',
+          endereco: os.municipio || 'PIAUÍ',
+          statusConservacao: 'regular',
+          dataUltimaVistoria: 'Sem vistoria',
+          diasSemVisita: 0,
+          demandasUrgentesCount: 0,
+          temOsAtiva: true
+        });
+      }
+    });
+    return list;
+  }, [schoolsDaGre, osDaGre, activeGre.id]);
+
+  // Municípios da GRE selecionada
+  const municipiosDaGre = Array.from(new Set(todasEscolasDaGre.map((s) => s.municipio))).sort();
+
   // Filtragem das escolas segundo as diretrizes estritas do usuário:
-  // - Com OS: apenas escolas com ordem de serviço em EXECUÇÃO na Coluna R
-  // - Sem OS: escolas sem ordem de serviço em execução (concluída, cancelada, aguardando saldo, a iniciar ou sem OS)
-  const filteredSchools = schoolsDaGre.filter((school) => {
+  // - Com OS: escolas com ordem de serviço em EXECUÇÃO ou A INICIAR na Coluna R
+  // - Sem OS: escolas sem ordem de serviço ativa (concluída, cancelada, aguardando saldo ou sem OS)
+  const filteredSchools = todasEscolasDaGre.filter((school) => {
     const osDaEscola = getOsListForSchool(school);
 
     const matchesMun = selectedMunicipio === 'todos' || school.municipio === selectedMunicipio;
 
-    // Tem OS em Execução (Coluna R = EXECUÇÃO)
-    const hasOsEmExecucao = osDaEscola.some(
-      (os) => (os.statusObra || '').toUpperCase().includes('EXECU') || os.status === 'ativa'
-    );
+    // Tem OS em Execução ou A Iniciar (Coluna R = EXECUÇÃO ou A INICIAR)
+    const hasOsAtiva = osDaEscola.some((os) => {
+      const stObra = (os.statusObra || '').toUpperCase();
+      return stObra.includes('EXECU') || stObra.includes('INICIAR') || os.status === 'ativa';
+    });
 
     const matchesStatus =
       filtroStatus === 'todas' ||
-      (filtroStatus === 'com_os' && hasOsEmExecucao) ||
-      (filtroStatus === 'sem_os' && !hasOsEmExecucao);
+      (filtroStatus === 'com_os' && hasOsAtiva) ||
+      (filtroStatus === 'sem_os' && !hasOsAtiva);
 
-    // Filtro pelo Status Diário da Coluna S (Parada, Ritmo Lento, Em andamento)
+    // Filtro pelo Status Diário da Coluna S (Parada, Ritmo Lento, Em andamento, Aguardando Início)
     const matchesDiario =
       filtroDiario === 'todos' ||
       osDaEscola.some((os) => {
         const s = (os.statusDiario || '').toLowerCase();
+        const stObra = (os.statusObra || '').toLowerCase();
         if (filtroDiario === 'parada') return s.includes('parada') || s.includes('paralisada');
         if (filtroDiario === 'ritmo_lento') return s.includes('lento') || s.includes('ritmo');
         if (filtroDiario === 'em_andamento') return s.includes('andamento') || s.includes('execu');
+        if (filtroDiario === 'aguardando_inicio') return s.includes('início') || s.includes('inicio') || stObra.includes('iniciar');
         return true;
       });
 
@@ -219,7 +263,8 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
           normStr(os.objeto).includes(termNorm) ||
           normStr(os.empresaContratada).includes(termNorm) ||
           normStr(os.fiscalResponsavel).includes(termNorm) ||
-          normStr(os.statusDiario).includes(termNorm)
+          normStr(os.statusDiario).includes(termNorm) ||
+          normStr(os.statusObra).includes(termNorm)
       );
 
     return matchesMun && matchesStatus && matchesDiario && matchesSearch;
@@ -258,7 +303,7 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
                 <span>{activeGre.nome}</span>
               </span>
               <span className="text-[10px] text-amber-300/80 block truncate">
-                Sede: {activeGre.sede} • {schoolsDaGre.length} escolas • {osDaGre.length} OSs cadastradas
+                Sede: {activeGre.sede} • {todasEscolasDaGre.length} escolas • {osDaGre.length} OSs cadastradas
               </span>
             </div>
           </div>
@@ -328,7 +373,7 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
               }`}
             >
               <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-              <span>Com OS ({schoolsDaGre.filter((s) => getOsListForSchool(s).some(os => (os.statusObra || '').toUpperCase().includes('EXECU') || os.status === 'ativa')).length})</span>
+              <span>Com OS ({todasEscolasDaGre.filter((s) => getOsListForSchool(s).some(os => (os.statusObra || '').toUpperCase().includes('EXECU') || (os.statusObra || '').toUpperCase().includes('INICIAR') || os.status === 'ativa')).length})</span>
             </button>
 
             <button
@@ -342,7 +387,7 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
                   : 'border border-white/10 bg-slate-900/60 text-slate-400 hover:text-slate-200 font-medium'
               }`}
             >
-              Sem OS ({schoolsDaGre.filter((s) => !getOsListForSchool(s).some(os => (os.statusObra || '').toUpperCase().includes('EXECU') || os.status === 'ativa')).length})
+              Sem OS ({todasEscolasDaGre.filter((s) => !getOsListForSchool(s).some(os => (os.statusObra || '').toUpperCase().includes('EXECU') || (os.statusObra || '').toUpperCase().includes('INICIAR') || os.status === 'ativa')).length})
             </button>
 
             <button
@@ -356,7 +401,7 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
                   : 'border border-white/10 bg-slate-900/60 text-slate-400 hover:text-slate-200 font-medium'
               }`}
             >
-              Todas ({schoolsDaGre.length})
+              Todas ({todasEscolasDaGre.length})
             </button>
           </div>
 
@@ -384,7 +429,7 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
           </div>
         </div>
 
-        {/* SUB-PÍLULAS DE STATUS DIÁRIO (Coluna S: Parada, Ritmo Lento, Em andamento) */}
+        {/* SUB-PÍLULAS DE STATUS DIÁRIO (Coluna S: Parada, Ritmo Lento, Em andamento, A Iniciar) */}
         {filtroStatus !== 'sem_os' && (
           <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-0.5">
             <span className="text-[10px] uppercase font-bold text-slate-400 shrink-0 mr-0.5">Diário:</span>
@@ -407,7 +452,7 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
               }`}
             >
               <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
-              <span>Parada ({schoolsDaGre.filter((s) => getOsListForSchool(s).some(os => (os.statusDiario || '').toLowerCase().includes('parada') || (os.statusDiario || '').toLowerCase().includes('paralisada'))).length})</span>
+              <span>Parada ({todasEscolasDaGre.filter((s) => getOsListForSchool(s).some(os => (os.statusDiario || '').toLowerCase().includes('parada') || (os.statusDiario || '').toLowerCase().includes('paralisada'))).length})</span>
             </button>
             <button
               onClick={() => setFiltroDiario('ritmo_lento')}
@@ -418,7 +463,7 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
               }`}
             >
               <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-              <span>Ritmo Lento ({schoolsDaGre.filter((s) => getOsListForSchool(s).some(os => (os.statusDiario || '').toLowerCase().includes('lento') || (os.statusDiario || '').toLowerCase().includes('ritmo'))).length})</span>
+              <span>Ritmo Lento ({todasEscolasDaGre.filter((s) => getOsListForSchool(s).some(os => (os.statusDiario || '').toLowerCase().includes('lento') || (os.statusDiario || '').toLowerCase().includes('ritmo'))).length})</span>
             </button>
             <button
               onClick={() => setFiltroDiario('em_andamento')}
@@ -429,7 +474,18 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
               }`}
             >
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-              <span>Em Execução ({schoolsDaGre.filter((s) => getOsListForSchool(s).some(os => (os.statusDiario || '').toLowerCase().includes('andamento') || (os.statusDiario || '').toLowerCase().includes('execu'))).length})</span>
+              <span>Em Execução ({todasEscolasDaGre.filter((s) => getOsListForSchool(s).some(os => (os.statusDiario || '').toLowerCase().includes('andamento') || (os.statusDiario || '').toLowerCase().includes('execu'))).length})</span>
+            </button>
+            <button
+              onClick={() => setFiltroDiario('aguardando_inicio')}
+              className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all active-press flex items-center gap-1 ${
+                filtroDiario === 'aguardando_inicio'
+                  ? 'bg-purple-500/25 text-purple-300 border border-purple-500/50 shadow-sm'
+                  : 'bg-purple-500/10 text-purple-400/80 border border-purple-500/20 hover:text-purple-300'
+              }`}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
+              <span>A Iniciar ({todasEscolasDaGre.filter((s) => getOsListForSchool(s).some(os => (os.statusDiario || '').toLowerCase().includes('início') || (os.statusDiario || '').toLowerCase().includes('inicio') || (os.statusObra || '').toUpperCase().includes('INICIAR'))).length})</span>
             </button>
           </div>
         )}
@@ -540,13 +596,17 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
                         </div>
 
                         {osList.map((os) => {
-                          const temOSPdf = Boolean(os.osPdfBlob || os.osPdfUrl || os.arquivoPdfGerado);
+                          const temOSPdf = Boolean(os.osPdfBlob || os.osPdfUrl || os.drivePdfUrl || os.downloadPdfUrl || os.arquivoPdfGerado);
                           const temOrcamentoPdf = Boolean(os.orcamentoPdfBlob || os.orcamentoPdfUrl || os.orcamentoPdfSimulado);
                           const driveBase = storage.getDriveObrasUrl();
 
                           const handleDownloadOS = () => {
                             if (os.osPdfBlob) {
                               handleOpenOrDownload(os.osPdfBlob, os.osPdfNome || `OS_${os.numeroOS}.pdf`);
+                            } else if (os.downloadPdfUrl && os.downloadPdfUrl.startsWith('http')) {
+                              window.open(os.downloadPdfUrl, '_blank');
+                            } else if (os.drivePdfUrl && os.drivePdfUrl.startsWith('http')) {
+                              window.open(os.drivePdfUrl, '_blank');
                             } else if (os.osPdfUrl && os.osPdfUrl.startsWith('http')) {
                               window.open(os.osPdfUrl, '_blank');
                             } else if (os.arquivoPdfGerado && os.arquivoPdfGerado.startsWith('http')) {
@@ -573,10 +633,10 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
                           };
 
                           // O usuário solicitou que o status exibido em destaque seja o STATUS DIÁRIO (Coluna S da Planilha da Ata)
-                          const statusDiarioTexto = (os.statusDiario || os.statusObra || 'Em andamento').trim();
+                          const statusDiarioTexto = (os.statusDiario || (os.statusObra === 'A INICIAR' ? 'Aguardando Início' : 'Em andamento')).trim();
                           const isParada = statusDiarioTexto.toLowerCase().includes('parada') || statusDiarioTexto.toLowerCase().includes('paralisada');
                           const isRitmoLento = statusDiarioTexto.toLowerCase().includes('lento') || statusDiarioTexto.toLowerCase().includes('ritmo');
-                          const isAIniciar = statusDiarioTexto.toLowerCase().includes('iniciar') || (os.statusObra || '').toUpperCase().includes('INICIAR');
+                          const isAIniciar = (os.statusObra || '').toUpperCase().includes('INICIAR') || statusDiarioTexto.toLowerCase().includes('iniciar') || statusDiarioTexto.toLowerCase().includes('início');
                           const isAndamento = !isAIniciar && (statusDiarioTexto.toLowerCase().includes('andamento') || statusDiarioTexto.toLowerCase().includes('execu'));
                           const isPendencia = statusDiarioTexto.toLowerCase().includes('pend');
 
@@ -585,7 +645,7 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
                               key={os.id}
                               className="p-3.5 rounded-2xl bg-slate-900/90 border border-white/10 space-y-3 shadow-md"
                             >
-                              {/* Topo da OS com Status Diário em Destaque Obrigatório */}
+                              {/* Topo da OS com Status Diário e Status da Obra em Destaque Obrigatório */}
                               <div className="flex items-start justify-between gap-2">
                                 <div className="min-w-0 flex-1">
                                   <div className="flex items-center gap-2 flex-wrap">
@@ -593,7 +653,18 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
                                       OS Nº {os.numeroOS}
                                     </span>
 
-                                    {/* BADGE DE STATUS DIÁRIO (Coluna S / Status Geral R) */}
+                                    {/* BADGE DE STATUS GERAL DA OBRA (Coluna R: EM EXECUÇÃO / A INICIAR) */}
+                                    <span
+                                      className={`text-[10px] font-black px-2 py-0.5 rounded-full border uppercase tracking-wider ${
+                                        isAIniciar
+                                          ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                                          : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                                      }`}
+                                    >
+                                      {os.statusObra || (isAIniciar ? 'A INICIAR' : 'EM EXECUÇÃO')}
+                                    </span>
+
+                                    {/* BADGE DE STATUS DIÁRIO (Coluna S) */}
                                     <span
                                       className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border uppercase tracking-wider flex items-center gap-1.5 shadow-sm ${
                                         isParada
@@ -601,11 +672,11 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
                                           : isRitmoLento
                                           ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-amber-500/10'
                                           : isAIniciar
-                                          ? 'bg-blue-500/20 text-blue-300 border-blue-500/40 shadow-blue-500/10'
+                                          ? 'bg-purple-500/20 text-purple-200 border-purple-500/40'
                                           : isAndamento
                                           ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-emerald-500/10'
                                           : isPendencia
-                                          ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
+                                          ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40'
                                           : 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
                                       }`}
                                     >
@@ -616,15 +687,13 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
                                             : isRitmoLento
                                             ? 'bg-amber-400'
                                             : isAIniciar
-                                            ? 'bg-blue-400'
+                                            ? 'bg-purple-400'
                                             : isAndamento
                                             ? 'bg-emerald-400'
-                                            : isPendencia
-                                            ? 'bg-purple-400'
                                             : 'bg-cyan-400'
                                         }`}
                                       />
-                                      <span>● {statusDiarioTexto.toUpperCase()}</span>
+                                      <span>Diário: {statusDiarioTexto.toUpperCase()}</span>
                                     </span>
                                   </div>
 

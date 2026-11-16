@@ -1,15 +1,16 @@
 {
-  "version": "1.0.34",
-  "buildNumber": 35,
-  "releaseDate": "2026-11-15",
+  "version": "1.0.35",
+  "buildNumber": 36,
+  "releaseDate": "2026-11-16",
   "minRequiredVersion": "1.0.0",
   "downloadUrl": "https://github.com/Wisterly/fiscalizacao-seduc/releases/download/apk-latest/Fiscal.IA.apk",
   "changelog": [
-    "Reformulação completa da sincronização de Orçamentos e OS conforme orientações detalhadas da Planilha Oficial",
-    "Mapeamento rigoroso das colunas E (GRE), H (Escola), I (Município), J (Valor), K (Número da OS), N (Fiscal), O (Construtora), R (Status da Obra) e S (Status Diário)",
-    "Filtro estrito: Com OS agrupa exclusivamente as obras em EXECUÇÃO na Coluna R; Concluídas, Canceladas, Aguardando Saldo e A Iniciar direcionadas para Sem OS",
-    "Sub-filtros rápidos por Status Diário da Coluna S: Parada (vermelho), Ritmo Lento (âmbar) e Em Execução (verde)",
-    "Integração automática com o novo Google Drive oficial (1NmRb7W-iezPnBufBZo2DAqao8_eTanZy): 579 arquivos de OSs indexados com vinculação direta para visualização e download",
-    "Configurações atualizadas com os novos links oficiais da Planilha da Ata e Pasta Compartilhada de OSs"
+    "Inclusão das obras com status 'A INICIAR' no filtro 'Com OS' junto com as em 'EXECUÇÃO', totalizando 211 Ordens de Serviço ativas em todo o Piauí",
+    "Correção e homologação completa da 8ª GRE (Oeiras): CETI Armando Burlamaqui (OS 2025/943), CETI Família Agrícola Dom Edilberto III (OS 2026/794) e 100% das 11 ordens ativas",
+    "Sintetização dinâmica de escolas para unidades sem registro prévio na GRE (ex: Cine Rex, UE Marechal Pires Ferreira, Antigo Prédio José Narciso), eliminando 100% das ordens órfãs",
+    "Casamento inteligente e tolerante por INEP, ID e remoção de prefixos institucionais (CETI, CEJA, U.E., Unidade Escolar)",
+    "Novo sub-filtro rápido e badge específico para obras 'A Iniciar' (Aguardando Início) na aba de Orçamentos e OS",
+    "Vinculação direta e download de arquivos em PDF do Google Drive para todas as 211 ordens de serviço ativas",
+    "Atualização forçada do cache local de OS para versão v8 garantindo sincronização instantânea em todos os dispositivos"
   ]
 }

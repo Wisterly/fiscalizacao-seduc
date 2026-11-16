@@ -286,18 +286,19 @@ export function parseAtaCsvToOS(csvText: string, currentSchools: Escola[]): {
     if (rawEscola.toUpperCase().includes('NOME ENTIDADE')) continue;
 
     // REGRA DE OURO SOLICITADA PELO USUÁRIO:
-    // Apenas ordens de serviço onde a Coluna R (Status Geral) conste estritamente EXECUÇÃO (Com OS).
-    // Escolas com Concluída, Cancelada, Aguardando Saldo, A Iniciar ou em branco ficam em "Sem OS".
+    // Ordens de serviço onde a Coluna R (Status Geral) conste EXECUÇÃO ou A INICIAR (Com OS).
+    // Escolas com Concluída, Cancelada, Aguardando Saldo ou em branco ficam em "Sem OS".
     const isExecucao = rawStatus.includes('EXECU');
-    if (!isExecucao) {
+    const isAIniciar = rawStatus.includes('INICIAR');
+    if (!isExecucao && !isAIniciar) {
       continue;
     }
 
-    // Normaliza status diário da Coluna S (Parada, Ritmo Lento, Em andamento)
-    const statusDiarioNormalizado = rawStatusDiario || 'Em andamento';
+    // Normaliza status diário da Coluna S (Parada, Ritmo Lento, Em andamento, Aguardando Início)
+    const statusDiarioNormalizado = rawStatusDiario || (isAIniciar ? 'Aguardando Início' : 'Em andamento');
     const isParada = statusDiarioNormalizado.toLowerCase().includes('parada') || statusDiarioNormalizado.toLowerCase().includes('paralisada');
     const isRitmoLento = statusDiarioNormalizado.toLowerCase().includes('lento') || statusDiarioNormalizado.toLowerCase().includes('ritmo');
-    const statusObraLabel = 'EM EXECUÇÃO';
+    const statusObraLabel = isExecucao ? 'EM EXECUÇÃO' : 'A INICIAR';
 
     // Localiza ou cria a Escola
     const greId = extractGreId(rawGre, municipio) || 'gre-01';
@@ -343,7 +344,7 @@ export function parseAtaCsvToOS(csvText: string, currentSchools: Escola[]): {
       const num = parseFloat(r[colPercentual].replace(/[^\d\.]/g, ''));
       if (!isNaN(num)) percentual = Math.min(100, Math.max(0, num));
     } else {
-      percentual = 35;
+      percentual = isExecucao ? 15 : 0;
     }
 
     const construtora = (r[colConstrutora] || '').trim() || 'Empresa Contratada SEDUC';
@@ -409,7 +410,7 @@ export function parseAtaCsvToOS(csvText: string, currentSchools: Escola[]): {
         {
           id: `obs-ata-${i}`,
           data: dataEmissaoOS || new Date().toLocaleDateString('pt-BR'),
-          texto: `Ordem de Serviço ${rawNumeroOS} em EXECUÇÃO com status diário [${statusDiarioNormalizado}] e valor ${valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}. Contrato ${contratoNumero || 'S/N'}. Fiscal: ${fiscal}.`,
+          texto: `Ordem de Serviço ${rawNumeroOS} [${statusObraLabel}] com status diário [${statusDiarioNormalizado}] e valor ${valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}. Contrato ${contratoNumero || 'S/N'}. Fiscal: ${fiscal}.`,
           autor: fiscal
         }
       ]

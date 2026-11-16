@@ -29,6 +29,30 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.040] — Diagnóstico de Filtragem por GRE, Inclusão de Obras 'A INICIAR' no Filtro 'Com OS' (211 OSs Ativas), Sintetização de Escolas Órfãs e Release v1.0.35 (Build 36)
+- **Data/Hora:** 2026-11-16 00:05 (UTC-3)
+- **Escopos Definidos:**
+  - `PR.040` (Geral): Diagnóstico aprofundado e correção definitiva do sistema de filtragem de Ordens de Serviço na aba de Orçamentos e OS para todas as 21 GREs:
+    1. **Diagnóstico da 8ª GRE e de Outras GREs:** Descoberta e resolução dos conflitos que impediam ordens de aparecer:
+       - Obras com status `A INICIAR` (Coluna R) eram eliminadas na sincronização, fazendo com que 66 ordens de serviço do Piauí sumissem (incluindo o CETI Armando Burlamaqui - OS 2025/943 e CETI Dom Edilberto III - OS 2026/794 na 8ª GRE).
+       - Descompasso entre unidades com OS e lista básica de escolas da GRE: unidades como Cine Rex, Antigo Prédio UE José Narciso, UE Marechal Pires Ferreira e Centro de Atendimento Vulnerável ficavam órfãs e sem card.
+       - Casamento rígido de nomes impedindo a exibição de escolas quando havia prefixos institucionais ("CETI", "CEJA", "U.E.").
+    2. **Inclusão Estrita de 'A INICIAR' no Filtro 'Com OS':** O filtro "Com OS" agora abrange com precisão tanto obras em `EXECUÇÃO` (145 ordens) quanto `A INICIAR` (66 ordens), totalizando **211 Ordens de Serviço ativas no estado**, 100% visíveis e distribuídas em suas respectivas GREs.
+    3. **Sintetização Dinâmica de Escolas:** Garantia de que qualquer ordem de serviço pertença a uma unidade com card visível na GRE correspondente, eliminando 100% das ordens órfãs.
+    4. **Casamento Tolerante e Busca Fonética:** Remoção de prefixos e tolerância para digitação ("Amanda Bulamarque" -> "CETI Armando Burlamaqui").
+    5. **Sub-Filtro e Badge 'A Iniciar':** Adicionada a sub-pílula de status diário para obras a iniciar e badges duplos no card (Status Geral da Obra: EM EXECUÇÃO / A INICIAR e Status Diário da Coluna S).
+    6. **Cache do Storage v8:** Atualização para `seduc_fiscal_os_v8` e `CURRENT_OS_CACHE_VERSION = 'v8_211_execucao_e_iniciar_drive_1NmRb7W'`, forçando o carregamento das 211 ordens no celular e na web. Versão elevada para **v1.0.35 (Build 36)**.
+  - `PR.040.1` (Web / Desktop): Na visualização Web, a aba de Orçamentos e OS exibe as 211 ordens em cards organizados por GRE com botões diretos de Baixar Ordem de Serviço pelo Google Drive e alternância instantânea de filtros.
+  - `PR.040.2` (Mobile / Android): No smartphone Android, o aplicativo compila com nova versão `versionName 1.0.35` e `versionCode 36`. Sincronização e geração de novo APK oficial `Fiscal.IA.apk` e release no GitHub `apk-latest`.
+- **Tags Git:** `PR.040`, `PR.040.1`, `PR.040.2`
+- **Arquivo Local do APK:** `c:\Users\Lenovo\Documents\antigravity\LAB - GPR\Fiscal.IA.lab - GPR\Fiscal.IA.apk`
+- **Comando de Restauração Rápida:**
+  ```bash
+  git checkout PR.040
+  ```
+
+---
+
 ### [PR.039] — Reformulação da Sincronização de Orçamentos e OS (Colunas E, H, I, J, K, N, O, R e S), Integração do Novo Drive Oficial (579 OSs), Sub-Filtros Diários e Release v1.0.34 (Build 35)
 - **Data/Hora:** 2026-11-15 23:45 (UTC-3)
 - **Escopos Definidos:**

@@ -27,9 +27,9 @@ import {
 
 const STORAGE_KEYS = {
   GRES: 'seduc_fiscal_gres_v4',
-  SCHOOLS: 'seduc_fiscal_schools_inep_v7',
+  SCHOOLS: 'seduc_fiscal_schools_inep_v8',
   AMBIENTES: 'seduc_fiscal_ambientes_v1',
-  OS: 'seduc_fiscal_os_v7',
+  OS: 'seduc_fiscal_os_v8',
   ALERTAS: 'seduc_fiscal_alertas_v3',
   DEMANDAS: 'seduc_fiscal_demandas_v3',
   TAREFAS: 'seduc_fiscal_tarefas_v3',
@@ -296,12 +296,12 @@ class StorageService {
 
   // --- Ordens de Serviço & Medição ---
   getOrdensServico(): OrdemServico[] {
-    const CURRENT_OS_CACHE_VERSION = 'v7_execucao_145_drive_1NmRb7W';
+    const CURRENT_OS_CACHE_VERSION = 'v8_211_execucao_e_iniciar_drive_1NmRb7W';
     const savedVersion = localStorage.getItem('seduc_fiscal_os_cache_ver');
     const list = this.getItem<OrdemServico[]>(STORAGE_KEYS.OS, INITIAL_OS);
 
-    // Se o cache for de versão legada ou tiver menos de 100 ordens, força a atualização com o acervo oficial
-    if (!list || list.length < 100 || savedVersion !== CURRENT_OS_CACHE_VERSION) {
+    // Se o cache for de versão legada ou tiver menos de 200 ordens, força a atualização com o acervo oficial
+    if (!list || list.length < 200 || savedVersion !== CURRENT_OS_CACHE_VERSION) {
       if (INITIAL_OS && INITIAL_OS.length > 0) {
         this.setItem(STORAGE_KEYS.OS, INITIAL_OS);
         try {
