@@ -14,8 +14,9 @@ export type ModuleCardId = 'gres' | 'orcamentos' | 'medicoes' | 'rotas' | 'deman
 
 const DEFAULT_ORDER: ModuleCardId[] = ['gres', 'orcamentos', 'medicoes', 'rotas', 'demandas', 'processos'];
 
-const LONG_PRESS_MS = 450;
+const LONG_PRESS_MS = 400;
 const MOVE_TOLERANCE_PX = 8;
+const SWAP_COOLDOWN_MS = 200;
 
 interface ModuleGridProps {
   onOpenGREs: () => void;
@@ -30,9 +31,9 @@ interface ModuleGridProps {
 
 interface DragState {
   id: ModuleCardId;
-  x: number; // posição atual do dedo
+  x: number;
   y: number;
-  offsetX: number; // ponto do card onde o dedo segurou
+  offsetX: number;
   offsetY: number;
   width: number;
   height: number;
@@ -65,10 +66,10 @@ export const ModuleGrid: React.FC<ModuleGridProps> = ({
   const dragRef = useRef<DragState | null>(null);
   dragRef.current = drag;
 
-  // Controle do press longo
   const pressTimer = useRef<any>(null);
   const pressStart = useRef<{ x: number; y: number; id: ModuleCardId } | null>(null);
   const suppressClick = useRef(false);
+  const lastSwapAtRef = useRef(0);
 
   const clearPress = () => {
     if (pressTimer.current) {
@@ -82,6 +83,8 @@ export const ModuleGrid: React.FC<ModuleGridProps> = ({
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     const slot = slotRefs.current[id];
     if (!slot) return;
+
+    clearPress();
     pressStart.current = { x: e.clientX, y: e.clientY, id };
 
     pressTimer.current = setTimeout(() => {
@@ -89,12 +92,15 @@ export const ModuleGrid: React.FC<ModuleGridProps> = ({
       const start = pressStart.current;
       if (!start) return;
       suppressClick.current = true;
+      lastSwapAtRef.current = 0;
+
       if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
         try {
           navigator.vibrate(40);
         } catch {}
       }
-      setDrag({
+
+      const initialDrag: DragState = {
         id,
         x: start.x,
         y: start.y,
@@ -102,7 +108,9 @@ export const ModuleGrid: React.FC<ModuleGridProps> = ({
         offsetY: start.y - rect.top,
         width: rect.width,
         height: rect.height
-      });
+      };
+      dragRef.current = initialDrag;
+      setDrag(initialDrag);
     }, LONG_PRESS_MS);
   };
 
@@ -111,37 +119,51 @@ export const ModuleGrid: React.FC<ModuleGridProps> = ({
     if (!start || dragRef.current) return;
     const dx = e.clientX - start.x;
     const dy = e.clientY - start.y;
-    if (Math.hypot(dx, dy) > MOVE_TOLERANCE_PX) clearPress(); // virou rolagem
+    if (Math.hypot(dx, dy) > MOVE_TOLERANCE_PX) {
+      clearPress();
+    }
   };
 
-  // Listeners globais enquanto arrasta
   useEffect(() => {
-    if (!drag) return;
+    if (!drag?.id) return;
 
     const onMove = (e: PointerEvent) => {
       const current = dragRef.current;
       if (!current) return;
-      setDrag({ ...current, x: e.clientX, y: e.clientY });
 
-      // Descobre o card sob o dedo e abre espaço trocando posições
+      // Atualiza posição do card flutuante sincronamente (1:1 com dedo/mouse)
+      const updatedDrag: DragState = { ...current, x: e.clientX, y: e.clientY };
+      dragRef.current = updatedDrag;
+      setDrag(updatedDrag);
+
+      // Evita ping-pong enquanto a animação FLIP de 200ms está em curso
+      const now = Date.now();
+      if (now - lastSwapAtRef.current < SWAP_COOLDOWN_MS) return;
+
+      // Descobre qual slot está sob o ponteiro (usando o centro ou a caixa do slot)
       const order = orderRef.current;
       for (const id of order) {
         if (id === current.id) continue;
         const el = slotRefs.current[id];
         if (!el) continue;
         const r = el.getBoundingClientRect();
+
+        // Verifica se o dedo/cursor entrou na área interna do card alvo
         if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
           const from = order.indexOf(current.id);
           const to = order.indexOf(id);
-          if (from !== to) {
-            // Guarda posições atuais para animar os demais cards (FLIP)
+          if (from !== -1 && to !== -1 && from !== to) {
+            // Salva posições atuais antes de alterar a ordem (para animação FLIP)
             Object.keys(slotRefs.current).forEach((k) => {
               const node = slotRefs.current[k];
               if (node) prevRects.current[k] = node.getBoundingClientRect();
             });
+
             const next = [...order];
             next.splice(from, 1);
             next.splice(to, 0, current.id);
+            orderRef.current = next;
+            lastSwapAtRef.current = now;
             setCardOrder(next);
           }
           break;
@@ -151,11 +173,12 @@ export const ModuleGrid: React.FC<ModuleGridProps> = ({
 
     const onEnd = () => {
       storage.saveHomeCardsOrder(orderRef.current);
+      dragRef.current = null;
       setDrag(null);
       clearPress();
       setTimeout(() => {
         suppressClick.current = false;
-      }, 50);
+      }, 60);
     };
 
     const blockScroll = (e: TouchEvent) => {
@@ -174,7 +197,7 @@ export const ModuleGrid: React.FC<ModuleGridProps> = ({
     };
   }, [drag?.id]);
 
-  // Anima os cards que foram empurrados para abrir espaço
+  // Anima suavemente apenas os slots do grid (nunca afeta o card flutuante externo!)
   useLayoutEffect(() => {
     Object.keys(slotRefs.current).forEach((k) => {
       const node = slotRefs.current[k];
@@ -186,7 +209,7 @@ export const ModuleGrid: React.FC<ModuleGridProps> = ({
       if (dx || dy) {
         node.animate(
           [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'translate(0, 0)' }],
-          { duration: 220, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }
+          { duration: 200, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }
         );
       }
     });
@@ -263,6 +286,30 @@ export const ModuleGrid: React.FC<ModuleGridProps> = ({
     }
   };
 
+  const renderCardContent = (cardId: ModuleCardId) => {
+    const card = getCardDetails(cardId);
+    const Icon = card.icon;
+    return (
+      <>
+        <div className={`absolute -top-10 -right-10 w-24 h-24 ${card.glowColor} rounded-full blur-xl group-hover:opacity-100 transition-all`} />
+        <div className="flex items-start justify-between w-full z-10">
+          <div className="w-10 h-10 rounded-2xl bg-white/[0.08] border border-white/15 flex items-center justify-center">
+            <Icon className={`w-5 h-5 stroke-[1.8] ${card.iconColor}`} />
+          </div>
+          <span className="p-1 text-slate-500 group-hover:text-slate-300 transition-colors">
+            <MoreVertical className="w-4 h-4" />
+          </span>
+        </div>
+        <div className="z-10">
+          <h3 className="font-extrabold text-sm text-white leading-tight whitespace-pre-line">{card.title}</h3>
+          <p className="text-[10px] text-slate-300 mt-1 font-medium">{card.subtitle}</p>
+        </div>
+      </>
+    );
+  };
+
+  const draggedCardDetails = drag ? getCardDetails(drag.id) : null;
+
   return (
     <div className="px-4 my-2">
       <div className="flex items-center justify-between mb-1.5 px-0.5">
@@ -272,25 +319,9 @@ export const ModuleGrid: React.FC<ModuleGridProps> = ({
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-3.5">
         {cardOrder.map((cardId) => {
           const card = getCardDetails(cardId);
-          const Icon = card.icon;
-          const isDragging = drag?.id === cardId;
-
-          const cardStyle: React.CSSProperties = isDragging
-            ? {
-                position: 'fixed',
-                left: drag!.x - drag!.offsetX,
-                top: drag!.y - drag!.offsetY,
-                width: drag!.width,
-                height: drag!.height,
-                zIndex: 100,
-                pointerEvents: 'none',
-                transform: 'scale(1.06)',
-                touchAction: 'none'
-              }
-            : {};
+          const isDraggingThis = drag?.id === cardId;
 
           return (
-            // Espaço do grid (permanece reservando o lugar do card enquanto ele é arrastado)
             <div
               key={cardId}
               ref={(el) => {
@@ -298,40 +329,49 @@ export const ModuleGrid: React.FC<ModuleGridProps> = ({
               }}
               className="h-40"
             >
-              <div
-                onPointerDown={(e) => handlePointerDown(cardId, e)}
-                onPointerMove={handlePointerMovePending}
-                onPointerUp={clearPress}
-                onPointerCancel={clearPress}
-                onContextMenu={(e) => e.preventDefault()}
-                onClick={() => handleCardClick(card.action)}
-                style={{ ...cardStyle, WebkitTouchCallout: 'none' } as React.CSSProperties}
-                className={`group relative p-3.5 rounded-3xl bg-gradient-to-br ${card.bgClasses} backdrop-blur-2xl flex flex-col justify-between text-left h-40 w-full transition-shadow overflow-hidden select-none ${
-                  isDragging
-                    ? 'ring-2 ring-amber-400/80 shadow-[0_18px_40px_rgba(0,0,0,0.6),0_0_25px_rgba(245,158,11,0.45)] cursor-grabbing'
-                    : 'active-press cursor-pointer'
-                }`}
-              >
-                <div className={`absolute -top-10 -right-10 w-24 h-24 ${card.glowColor} rounded-full blur-xl group-hover:opacity-100 transition-all`} />
-
-                <div className="flex items-start justify-between w-full z-10">
-                  <div className="w-10 h-10 rounded-2xl bg-white/[0.08] border border-white/15 flex items-center justify-center">
-                    <Icon className={`w-5 h-5 stroke-[1.8] ${card.iconColor}`} />
-                  </div>
-                  <span className="p-1 text-slate-500 group-hover:text-slate-300 transition-colors">
-                    <MoreVertical className="w-4 h-4" />
-                  </span>
+              {isDraggingThis ? (
+                /* Espaço reservado pontilhado onde o card irá encaixar ao soltar */
+                <div className="h-40 w-full rounded-3xl border-2 border-dashed border-amber-400/50 bg-amber-500/5 flex items-center justify-center">
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-400/50 animate-ping" />
                 </div>
-
-                <div className="z-10">
-                  <h3 className="font-extrabold text-sm text-white leading-tight whitespace-pre-line">{card.title}</h3>
-                  <p className="text-[10px] text-slate-300 mt-1 font-medium">{card.subtitle}</p>
+              ) : (
+                <div
+                  onPointerDown={(e) => handlePointerDown(cardId, e)}
+                  onPointerMove={handlePointerMovePending}
+                  onPointerUp={clearPress}
+                  onPointerCancel={clearPress}
+                  onContextMenu={(e) => e.preventDefault()}
+                  onClick={() => handleCardClick(card.action)}
+                  style={{ WebkitTouchCallout: 'none' } as React.CSSProperties}
+                  className={`group relative p-3.5 rounded-3xl bg-gradient-to-br ${card.bgClasses} backdrop-blur-2xl flex flex-col justify-between text-left h-40 w-full transition-shadow overflow-hidden select-none active-press cursor-pointer`}
+                >
+                  {renderCardContent(cardId)}
                 </div>
-              </div>
+              )}
             </div>
           );
         })}
       </div>
+
+      {/* CAMADA FLUTUANTE EXTERNA: Fica fora de qualquer ancestral com transform para acompanhar 1:1 o dedo/cursor */}
+      {drag && draggedCardDetails && (
+        <div
+          style={{
+            position: 'fixed',
+            left: drag.x - drag.offsetX,
+            top: drag.y - drag.offsetY,
+            width: drag.width,
+            height: drag.height,
+            zIndex: 9999,
+            pointerEvents: 'none',
+            transform: 'scale(1.06)',
+            touchAction: 'none'
+          }}
+          className={`p-3.5 rounded-3xl bg-gradient-to-br ${draggedCardDetails.bgClasses} backdrop-blur-2xl flex flex-col justify-between text-left overflow-hidden select-none ring-2 ring-amber-400/90 shadow-[0_20px_50px_rgba(0,0,0,0.75),0_0_30px_rgba(245,158,11,0.5)]`}
+        >
+          {renderCardContent(drag.id)}
+        </div>
+      )}
     </div>
   );
 };

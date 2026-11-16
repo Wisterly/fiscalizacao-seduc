@@ -29,6 +29,13 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.049] — Correção do Arraste de Cards (Camada Flutuante Isolada e Cooldown Anti-Ping-Pong) e Release v1.0.44 (Build 45)
+- **Data/Hora:** 2026-11-16 00:58 (UTC-3)
+- Separado o card flutuante para fora do container animado por FLIP (evitando que transform no pai quebre o position: fixed e faça o card saltar do cursor/dedo), adicionado placeholder pontilhado no grid e cooldown de 200ms entre trocas para eliminar ping-pong.
+- **Tags Git:** `PR.049`, `PR.049.1`, `PR.049.2` | Restauração: `git checkout PR.049`
+
+---
+
 ### [PR.048] — Mover Cards por Arraste com Press Longo (sem botão) e Release v1.0.43 (Build 44)
 - **Data/Hora:** 2026-11-16 00:46 (UTC-3)
 - Removido o botão 'Mover cards' e as setas. Segurando um card (450 ms) ele fica preso ao dedo; ao passar sobre outro, este se afasta com animação e a nova ordem é salva ao soltar.
