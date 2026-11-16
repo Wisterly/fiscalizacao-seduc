@@ -1,12 +1,12 @@
 {
-  "version": "1.0.38",
-  "buildNumber": 39,
+  "version": "1.0.39",
+  "buildNumber": 40,
   "releaseDate": "2026-11-16",
   "minRequiredVersion": "1.0.0",
   "downloadUrl": "https://github.com/Wisterly/fiscalizacao-seduc/releases/download/apk-latest/Fiscal.IA.apk",
   "changelog": [
-    "Padronização integral das 21 GREs (01ª a 21ª) no índice do Google Drive (driveArquivosIndex.json), eliminando a divergência de zero à esquerda ('01ª' vs '2ª'..'9ª' vs '10ª'..'21ª')",
-    "Isolamento rigoroso por greId na varredura automática do Drive (driveOSScannerService.ts e sheetsSyncService.ts), impedindo colisões entre GREs (ex: 02 vs 12) e removendo termos numéricos curtos soltos",
-    "Auditoria completa das 21 GREs: 0 conflitos de greId entre escolas e OSs e correção de 3 vínculos cruzados entre regionais no acervo estático"
+    "CORREÇÃO DEFINITIVA DA SINCRONIZAÇÃO AO VIVO (sheetsSyncService.ts): corrigido bug no mapeamento do cabeçalho que confundia 'Código GRE' (Coluna C: 8000000, 9000000) com 'GRE' (Coluna E: 08ª - OEIRAS)",
+    "Resolvido o conflito que jogava as GREs 03ª a 09ª para a 01ª GRE (Parnaíba), a 02ª para a 20ª GRE e fazia apenas as iniciadas em 1 (10ª a 18ª) funcionarem na sincronização ao vivo",
+    "Aprimorada a função extractGreId para decodificar tanto formatos '08ª - OEIRAS' / '08-Oeiras' quanto códigos numéricos milionários (ex: 8000000 -> gre-08)"
   ]
 }

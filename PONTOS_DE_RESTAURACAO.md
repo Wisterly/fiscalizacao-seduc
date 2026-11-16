@@ -29,6 +29,24 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.044] — Correção Definitiva da Sincronização ao Vivo da Planilha (`Código GRE` vs `GRE` na Coluna E) e Release v1.0.39 (Build 40)
+- **Data/Hora:** 2026-11-16 00:33 (UTC-3)
+- **Escopos Definidos:**
+  - `PR.044` (Geral): Descoberta e correção da causa-raiz que impedia a filtragem ao vivo nas GREs 02ª a 09ª (como a 8ª GRE de Oeiras) enquanto funcionava nas GREs 10ª a 21ª:
+    1. **Conflito no Cabeçalho (`sheetsSyncService.ts`):** Na planilha oficial, a Coluna C (`idx 2`) se chama `"Código GRE"` (contendo códigos milionários `1000000` a `21000000`), e a Coluna E (`idx 4`) se chama `"GRE"` (`08ª - OEIRAS`, `09ª - PICOS`, etc.). A regra anterior `norm.includes('codigo gre')` capturava a Coluna C em vez da Coluna E.
+    2. **Efeito nos Zeros vs Iniciais em 1:** Ao ler a Coluna C, `8000000` (8ª GRE) gerava `80` (`> 21`) e caía no fallback `'gre-01'` (Parnaíba); `2000000` (2ª GRE) virava `20` (20ª GRE); enquanto `10000000`..`18000000` (10ª a 18ª GRE) tinham os 2 primeiros dígitos entre `10` e `18` (`<= 21`) e funcionavam!
+    3. **Correção Aplicada:** `colGre` agora aceita estritamente `norm === 'gre'` (Coluna E), e `extractGreId` também decodifica com segurança tanto formatos `"08ª - OEIRAS"` / `"08-Oeiras"` quanto códigos milionários (`8000000 -> gre-08`). Versão elevada para **v1.0.39 (Build 40)**.
+  - `PR.044.1` (Web / Desktop): Sincronização ao vivo do Google Sheets (`https://fiscalizacao-seduc.vercel.app`) agora aloca todas as 211 ordens nas suas respectivas 21 GREs, incluindo todas as 11 ordens da 8ª GRE (Oeiras).
+  - `PR.044.2` (Mobile / Android): APK Android compilado com `versionName 1.0.39` e `versionCode 40` e publicado na release `apk-latest`.
+- **Tags Git:** `PR.044`, `PR.044.1`, `PR.044.2`
+- **Arquivo Local do APK:** `c:\Users\Lenovo\Documents\antigravity\LAB - GPR\Fiscal.IA.lab - GPR\Fiscal.IA.apk`
+- **Comando de Restauração Rápida:**
+  ```bash
+  git checkout PR.044
+  ```
+
+---
+
 ### [PR.043] — Padronização de Zeros à Esquerda nas 21 GREs (01ª..21ª), Isolamento por GRE no Drive/Sheets e Release v1.0.38 (Build 39)
 - **Data/Hora:** 2026-11-16 00:26 (UTC-3)
 - **Escopos Definidos:**

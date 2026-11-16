@@ -117,14 +117,26 @@ function extractGreId(greText: string, municipio: string): string {
     }
     return '';
   }
-  const match = greText.match(/^(\d{1,2})/);
-  if (match) {
-    const num = parseInt(match[1], 10);
+  const clean = greText.trim();
+
+  // Caso venha código numérico milionário (ex: 8000000 -> 8, 15000000 -> 15)
+  if (/^\d{7,8}$/.test(clean)) {
+    const numMil = Math.floor(parseInt(clean, 10) / 1000000);
+    if (numMil >= 1 && numMil <= 21) {
+      return `gre-${String(numMil).padStart(2, '0')}`;
+    }
+  }
+
+  const match = clean.match(/^0*(\d{1,2})\b|^0*(\d{1,2})[ªº\-]/);
+  const rawNum = match ? (match[1] || match[2]) : null;
+  if (rawNum) {
+    const num = parseInt(rawNum, 10);
     if (num >= 1 && num <= 21) {
       return `gre-${String(num).padStart(2, '0')}`;
     }
   }
-  const matchAny = greText.match(/(\d{1,2})/);
+
+  const matchAny = clean.match(/(\d{1,2})/);
   if (matchAny) {
     const num = parseInt(matchAny[1], 10);
     if (num >= 1 && num <= 21) {
@@ -219,16 +231,16 @@ export function parseAtaCsvToOS(csvText: string, currentSchools: Escola[]): {
 
   headerRow.forEach((val, idx) => {
     const norm = normalizeHeader(val);
-    if (colGre === -1 && (norm === 'gre' || norm.includes('codigo gre') || norm.startsWith('gre'))) colGre = idx;
-    if (colInep === -1 && norm.includes('inep')) colInep = idx;
-    if (colEscola === -1 && (norm.includes('nome entidade') || norm.includes('escola') || norm.includes('unidade'))) colEscola = idx;
-    if (colMunicipio === -1 && norm.includes('municipio')) colMunicipio = idx;
+    if (colGre === -1 && norm === 'gre') colGre = idx;
+    if (colInep === -1 && norm === 'inep') colInep = idx;
+    if (colEscola === -1 && (norm.includes('nome entidade') || norm === 'escola' || norm.includes('unidade'))) colEscola = idx;
+    if (colMunicipio === -1 && norm === 'municipio') colMunicipio = idx;
     if (colValor === -1 && (norm === 'valor' || (norm.includes('valor') && !norm.includes('medido')))) colValor = idx;
     if (colOrdemServico === -1 && (norm.includes('ordem de servico') || norm === 'os' || norm.includes('o.s'))) colOrdemServico = idx;
     if (colDataOS === -1 && (norm.includes('data da o.s') || norm.includes('data da os') || norm.includes('data os'))) colDataOS = idx;
-    if (colContrato === -1 && norm.includes('contrato')) colContrato = idx;
+    if (colContrato === -1 && norm === 'contrato') colContrato = idx;
     if (colFiscal === -1 && (norm.includes('fiscal') || norm.includes('orcamentista'))) colFiscal = idx;
-    if (colConstrutora === -1 && (norm.includes('construtora') || norm.includes('empresa'))) colConstrutora = idx;
+    if (colConstrutora === -1 && norm === 'construtora') colConstrutora = idx;
     if (colInicio === -1 && norm.includes('inicio')) colInicio = idx;
     if (colTermino === -1 && (norm.includes('termino') || norm.includes('previsao'))) colTermino = idx;
     if (colStatus === -1 && (norm === 'status' || norm === 'status da obra')) colStatus = idx;
