@@ -29,6 +29,21 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.037] — Esqueleto Estrutural do Processo no App, Linha do Tempo das Fases (1 a 4), Efeito Sonoro Nativo Web Audio, Auto-Implementação de SEDUC RE/Empenho e Release v1.0.32 (Build 33)
+- **Data/Hora:** 2026-11-15 23:05 (UTC-3)
+- **Escopos Definidos:**
+  - `PR.037` (Geral): Implementação da visualização do Esqueleto Estrutural dos Processos diretamente no aplicativo móvel/web. Cada processo ganha uma Linha do Tempo viva com as 4 Fases de tramitação (Fase 1: Requerimento/Abertura, Fase 2: Autorização/Portaria, Fase 3: SEDUC Empenho e Fase 4: SEDUC RE) com cálculo automático da porcentagem de conclusão. A árvore de documentos lista todos os arquivos na ordem sequencial exata (`001`, `002`, `003`...) com tipo, setor de origem e data. Quando o `SEDUC Empenho` ou `SEDUC RE` são juntados (seja via importação do SEI ou via robô), o sistema implementa o documento automaticamente no esqueleto com selo luminoso (`EMPENHADO`, `RE EMITIDO`), aciona o alerta visual no topo e toca o sinal sonoro sintetizado em tempo real via Web Audio API. Versão atualizada para **v1.0.32 (Build 33)**.
+  - `PR.037.1` (Web / Desktop): Na visualização Web, a barra de progresso do esqueleto e os cards de fases oferecem acompanhamento em tempo real, permitindo aos fiscais analisar o esqueleto de qualquer processo de diárias ou medição instantaneamente.
+  - `PR.037.2` (Mobile / Android): No smartphone Android, o aplicativo compila com nova versão `versionName 1.0.32` e `versionCode 33`. O fiscal pode gerenciar todos os processos pelo próprio celular, abrindo o SEI, colando os documentos e tendo o esqueleto montado e atualizado na hora com som de confirmação.
+- **Tags Git:** `PR.037`, `PR.037.1`, `PR.037.2`
+- **Arquivo Local do APK:** `c:\Users\Lenovo\Documents\antigravity\LAB - GPR\Fiscal.IA.lab - GPR\Fiscal.IA.apk`
+- **Comando de Restauração Rápida:**
+  ```bash
+  git checkout PR.037
+  ```
+
+---
+
 ### [PR.036] — Monitoramento Dinâmico Multi-Processos no Robô SEI, Assistente 'adicionar_processo.bat', Lista Rápida TXT, Sincronização no App e Release v1.0.31 (Build 32)
 - **Data/Hora:** 2026-11-15 22:45 (UTC-3)
 - **Escopos Definidos:**

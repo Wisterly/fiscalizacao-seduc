@@ -226,6 +226,25 @@ export const ProcessosView: React.FC<ProcessosViewProps> = ({ onBack }) => {
     setShowNovoDocumentoModal(false);
   };
 
+  const playAlertaSom = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+      osc.frequency.setValueAtTime(880, ctx.currentTime + 0.12);
+      gain.gain.setValueAtTime(0.25, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.35);
+    } catch (e) {}
+  };
+
   const handleJuntarDocRapido = (nomeDoc: string) => {
     if (!selectedProcesso) return;
     const proximaOrdem = String(selectedProcesso.documentos.length + 1).padStart(3, '0');
@@ -237,6 +256,7 @@ export const ProcessosView: React.FC<ProcessosViewProps> = ({ onBack }) => {
       unidadeGeradora: nomeDoc.includes('Empenho') || nomeDoc.includes('RE') ? 'SEDUC/DAF' : 'SEDUC/GPR'
     });
     setProcessos(updated);
+    playAlertaSom();
   };
 
   /**
@@ -342,6 +362,7 @@ export const ProcessosView: React.FC<ProcessosViewProps> = ({ onBack }) => {
       .filter((a) => novosDocs.some((d) => d.nomeDocumento.toLowerCase().includes(a.nomeDocumentoAlvo.toLowerCase())));
 
     if (alertasDisparados.length > 0) {
+      playAlertaSom();
       alert(
         `✓ Sucesso! ${docsImportados.length} documentos reais foram importados para a árvore do SEI.\n\n⚠️ ALERTA DISPARADO: Foram encontrados documentos que você marcou para monitorar:\n${alertasDisparados.map((a) => `• ${a.nomeDocumentoAlvo}`).join('\n')}`
       );
@@ -429,6 +450,86 @@ export const ProcessosView: React.FC<ProcessosViewProps> = ({ onBack }) => {
   // 1. TELA DE DETALHES DA ESTRUTURA DO PROCESSO SEI
   // ==========================================
   if (selectedProcesso) {
+    const isDiaria = selectedProcesso.categoriaId === 'diaria';
+    const temEmpenho = selectedProcesso.documentos.some((d) => d.nomeDocumento.toLowerCase().includes('empenho'));
+    const temRE = selectedProcesso.documentos.some((d) => d.nomeDocumento.toLowerCase().includes('seduc re') || d.nomeDocumento.toLowerCase().includes('re ') || d.nomeDocumento.toLowerCase().includes('qre'));
+    const temAtestoOuPortaria = selectedProcesso.documentos.some((d) =>
+      d.nomeDocumento.toLowerCase().includes('portaria') ||
+      d.nomeDocumento.toLowerCase().includes('atesto') ||
+      d.nomeDocumento.toLowerCase().includes('autoriza') ||
+      d.nomeDocumento.toLowerCase().includes('despacho')
+    );
+    const temInicial = selectedProcesso.documentos.length > 0;
+
+    const marcosEsqueleto = isDiaria
+      ? [
+          {
+            fase: 'Fase 1',
+            titulo: 'Requerimento & Roteiro',
+            statusDesc: temInicial ? 'Autuado no SEI' : 'Pendente',
+            concluido: temInicial,
+            emAndamento: false
+          },
+          {
+            fase: 'Fase 2',
+            titulo: 'Portaria de Autorização',
+            statusDesc: temAtestoOuPortaria ? 'Emitida pelo Gabinete' : 'Aguardando GAB',
+            concluido: temAtestoOuPortaria,
+            emAndamento: temInicial && !temAtestoOuPortaria
+          },
+          {
+            fase: 'Fase 3',
+            titulo: 'SEDUC Empenho',
+            statusDesc: temEmpenho ? 'Empenho Realizado' : 'Aguardando DAF',
+            concluido: temEmpenho,
+            emAndamento: temAtestoOuPortaria && !temEmpenho,
+            destaque: true
+          },
+          {
+            fase: 'Fase 4',
+            titulo: 'SEDUC RE',
+            statusDesc: temRE ? 'RE Emitido (Aprovado)' : 'Aguardando Concessão',
+            concluido: temRE,
+            emAndamento: temEmpenho && !temRE,
+            destaque: true
+          }
+        ]
+      : [
+          {
+            fase: 'Fase 1',
+            titulo: 'Boletim & Medição',
+            statusDesc: temInicial ? 'Planilha Anexada' : 'Pendente',
+            concluido: temInicial,
+            emAndamento: false
+          },
+          {
+            fase: 'Fase 2',
+            titulo: 'Termo de Atesto',
+            statusDesc: temAtestoOuPortaria ? 'Atestado pelo Fiscal' : 'Em Análise',
+            concluido: temAtestoOuPortaria,
+            emAndamento: temInicial && !temAtestoOuPortaria
+          },
+          {
+            fase: 'Fase 3',
+            titulo: 'Nota Fiscal / DANFE',
+            statusDesc: selectedProcesso.documentos.some((d) => d.nomeDocumento.toLowerCase().includes('fiscal') || d.nomeDocumento.toLowerCase().includes('danfe')) ? 'Nota Juntada' : 'Aguardando Empreiteira',
+            concluido: selectedProcesso.documentos.some((d) => d.nomeDocumento.toLowerCase().includes('fiscal') || d.nomeDocumento.toLowerCase().includes('danfe')),
+            emAndamento: temAtestoOuPortaria,
+            destaque: true
+          },
+          {
+            fase: 'Fase 4',
+            titulo: 'SEDUC Empenho & Pgto',
+            statusDesc: temEmpenho ? 'Liquidado na DAF' : 'Aguardando Pagamento',
+            concluido: temEmpenho,
+            emAndamento: temAtestoOuPortaria && !temEmpenho,
+            destaque: true
+          }
+        ];
+
+    const totalConcluidos = marcosEsqueleto.filter((m) => m.concluido).length;
+    const progressoPercentual = Math.round((totalConcluidos / marcosEsqueleto.length) * 100);
+
     // Alertas disparados encontrados na árvore de documentos
     const alertasAtivosDisparados = selectedProcesso.alertasMonitorados
       .filter((alt) => alt.ativo)
@@ -531,6 +632,62 @@ export const ProcessosView: React.FC<ProcessosViewProps> = ({ onBack }) => {
               </strong>
             </div>
           )}
+        </div>
+
+        {/* ESQUELETO ESTRUTURAL DO PROCESSO: LINHA DO TEMPO DAS FASES */}
+        <div className="p-3.5 rounded-3xl bg-gradient-to-br from-[#0a1526]/95 via-slate-900/90 to-slate-950 border border-cyan-500/25 shadow-glass mb-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5 text-xs font-black text-white">
+              <Layers className="w-4 h-4 text-cyan-400" />
+              <span>Esqueleto Estrutural do Processo</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-extrabold text-cyan-300 bg-cyan-500/10 px-2 py-0.5 rounded-full border border-cyan-500/20">
+                {progressoPercentual}% Concluído
+              </span>
+            </div>
+          </div>
+
+          {/* Barra de Progresso do Esqueleto */}
+          <div className="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-cyan-500 via-amber-400 to-emerald-400 transition-all duration-500"
+              style={{ width: `${progressoPercentual}%` }}
+            />
+          </div>
+
+          {/* 4 Fases do Esqueleto */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+            {marcosEsqueleto.map((marco, i) => (
+              <div
+                key={i}
+                className={`p-2.5 rounded-2xl border transition-all ${
+                  marco.concluido
+                    ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.15)]'
+                    : marco.emAndamento
+                    ? 'bg-amber-950/30 border-amber-500/40 text-amber-300'
+                    : 'bg-slate-950/40 border-white/5 text-slate-500'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[9px] font-extrabold uppercase tracking-wider opacity-90">
+                    {marco.fase}
+                  </span>
+                  {marco.concluido ? (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  ) : (
+                    <Clock className="w-3 h-3 text-slate-500 shrink-0" />
+                  )}
+                </div>
+                <h4 className={`text-xs font-black truncate ${marco.concluido ? 'text-emerald-200' : marco.emAndamento ? 'text-amber-200' : 'text-slate-300'}`}>
+                  {marco.titulo}
+                </h4>
+                <p className="text-[9px] opacity-80 mt-0.5 truncate">
+                  {marco.statusDesc}
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* BANNERS DE ALERTAS INTELIGENTES ATIVOS */}
