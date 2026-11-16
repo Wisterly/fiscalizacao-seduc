@@ -29,6 +29,24 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.043] — Padronização de Zeros à Esquerda nas 21 GREs (01ª..21ª), Isolamento por GRE no Drive/Sheets e Release v1.0.38 (Build 39)
+- **Data/Hora:** 2026-11-16 00:26 (UTC-3)
+- **Escopos Definidos:**
+  - `PR.043` (Geral): Auditoria completa das 21 GREs investigando o conflito entre regionais com zero à esquerda (`01ª`..`09ª`) e iniciadas em `1`/`2` (`10ª`..`21ª`):
+    1. **Padronização do Índice do Drive (`driveArquivosIndex.json`):** Os 579 registros tinham `greKey` inconsistentes (`01ª GRE` com zero vs `2ª GRE`..`9ª GRE` sem zero vs `10ª`..`21ª`). Todos receberam `greId` padronizado (`gre-01`..`gre-21`) e `greKey` uniforme com 2 dígitos (`01ª GRE`..`21ª GRE`).
+    2. **Isolamento Estrito por GRE (`driveOSScannerService.ts` e `sheetsSyncService.ts`):** Exigência de correspondência exata de `greId` antes de comparar termos de busca da OS, além da remoção de termos numéricos curtos soltos (< 4 caracteres sem prefixo `os`), eliminando colisões entre GREs (ex: `02` vs `12` ou `01` vs `10`).
+    3. **Correção de Vínculos Cruzados:** Corrigidos 3 vínculos cruzados no `ordensServicoAta.json` (`2025/724`, `SEM O.S 112` e `SEM O.S 115`). Auditoria atestou 0 conflitos entre `os.greId` e `school.greId` nas 21 GREs. Versão atualizada para **v1.0.38 (Build 39)**.
+  - `PR.043.1` (Web / Desktop): Filtragem 100% homogênea entre todas as 21 GREs no navegador (`https://fiscalizacao-seduc.vercel.app`).
+  - `PR.043.2` (Mobile / Android): APK Android compilado com `versionName 1.0.38` e `versionCode 39` e publicado na release `apk-latest`.
+- **Tags Git:** `PR.043`, `PR.043.1`, `PR.043.2`
+- **Arquivo Local do APK:** `c:\Users\Lenovo\Documents\antigravity\LAB - GPR\Fiscal.IA.lab - GPR\Fiscal.IA.apk`
+- **Comando de Restauração Rápida:**
+  ```bash
+  git checkout PR.043
+  ```
+
+---
+
 ### [PR.042] — Correção Crítica da Tela Preta ao Selecionar GRE em Orçamentos e OS (Rules of Hooks / `useMemo`) e Release v1.0.37 (Build 38)
 - **Data/Hora:** 2026-11-16 00:18 (UTC-3)
 - **Escopos Definidos:**

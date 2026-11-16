@@ -356,9 +356,10 @@ export function parseAtaCsvToOS(csvText: string, currentSchools: Escola[]): {
     const fiscal = (r[colFiscal] || '').trim() || 'Fiscal SEDUC';
     const arquivoPdfGerado = (r[colPdf] || '').trim();
 
-    // VINCULAÇÃO AUTOMÁTICA COM O GOOGLE DRIVE DAS ORDENS DE SERVIÇO
+    // VINCULAÇÃO AUTOMÁTICA COM O GOOGLE DRIVE DAS ORDENS DE SERVIÇO (com isolamento rigoroso por GRE)
     const termos = driveOSScanner.gerarTermosBuscaOS(rawNumeroOS);
     const arquivoEncontrado = (driveArquivosIndex as any[]).find((f: any) => {
+      if (f.greId && f.greId !== greId) return false;
       const fn = (f.fileName || '').toLowerCase();
       return termos.some((t: string) => fn.includes(t.toLowerCase()));
     });

@@ -1,11 +1,12 @@
 {
-  "version": "1.0.37",
-  "buildNumber": 38,
+  "version": "1.0.38",
+  "buildNumber": 39,
   "releaseDate": "2026-11-16",
   "minRequiredVersion": "1.0.0",
   "downloadUrl": "https://github.com/Wisterly/fiscalizacao-seduc/releases/download/apk-latest/Fiscal.IA.apk",
   "changelog": [
-    "Correção crítica (tela preta ao selecionar GRE na aba de Orçamentos e OS): movido hook useMemo para antes do retorno condicional do seletor de GRE, respeitando integralmente as Rules of Hooks do React",
-    "Garantida abertura instantânea de todas as 21 GREs, exibição dos cards de escolas/OSs e funcionamento fluido de todos os filtros e anexos híbridos"
+    "Padronização integral das 21 GREs (01ª a 21ª) no índice do Google Drive (driveArquivosIndex.json), eliminando a divergência de zero à esquerda ('01ª' vs '2ª'..'9ª' vs '10ª'..'21ª')",
+    "Isolamento rigoroso por greId na varredura automática do Drive (driveOSScannerService.ts e sheetsSyncService.ts), impedindo colisões entre GREs (ex: 02 vs 12) e removendo termos numéricos curtos soltos",
+    "Auditoria completa das 21 GREs: 0 conflitos de greId entre escolas e OSs e correção de 3 vínculos cruzados entre regionais no acervo estático"
   ]
 }

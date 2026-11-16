@@ -6,6 +6,7 @@ export interface DriveFileItem {
   inep?: string;
   escola?: string;
   municipio?: string;
+  greId?: string;
   greKey?: string;
   fileName: string;
   fileId: string;
@@ -107,7 +108,6 @@ class DriveOSScannerService {
       termos.add(`${pad6}.${ano}`);
       termos.add(`${num}.${ano}`);
       termos.add(pad6);
-      termos.add(num);
     }
 
     // Trata formato NNN/YYYY (ex: 671/2025 -> 2025.000671)
@@ -121,19 +121,17 @@ class DriveOSScannerService {
       termos.add(`${pad6}.${ano}`);
       termos.add(`${num}.${ano}`);
       termos.add(pad6);
-      termos.add(num);
     }
 
-    // Captura parte após a barra (ex: de 2026/794 pega 794)
+    // Captura parte após a barra (ex: de 2026/794 pega os_794)
     const matchBarra = limpo.match(/\/(\d+)/);
     if (matchBarra && matchBarra[1]) {
-      termos.add(matchBarra[1]);
       termos.add(`os ${matchBarra[1]}`);
       termos.add(`os_${matchBarra[1]}`);
       termos.add(`os-${matchBarra[1]}`);
     }
 
-    return Array.from(termos).filter((t) => t.length >= 2);
+    return Array.from(termos).filter((t) => t.length >= 4);
   }
 
   /**
@@ -144,6 +142,11 @@ class DriveOSScannerService {
     numeroOS: string,
     escola: Escola
   ): boolean {
+    // Exige correspondência exata de GRE (evita conflito entre 01..09 e 10..21)
+    if (arquivo.greId && escola.greId && arquivo.greId !== escola.greId) {
+      return false;
+    }
+
     const nomeNormalizado = this.normalizarTexto(arquivo.fileName);
     const termos = this.gerarTermosBuscaOS(numeroOS);
 

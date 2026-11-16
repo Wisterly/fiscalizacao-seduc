@@ -2612,23 +2612,10 @@
     "dataInicio": "16/09/2025",
     "prazoFinal": "08/01/2027",
     "dataEmissaoOS": "16/09/2025",
-    "drivePdfUrl": "https://drive.google.com/file/d/16JIaW-j5Ma9voAPB1Bf3mjkE-YqL2Om8/view?usp=sharing",
-    "downloadPdfUrl": "https://drive.google.com/uc?export=download&id=16JIaW-j5Ma9voAPB1Bf3mjkE-YqL2Om8",
-    "osPdfUrl": "https://drive.google.com/file/d/16JIaW-j5Ma9voAPB1Bf3mjkE-YqL2Om8/view?usp=sharing",
-    "osPdfNome": "OS 2025.000724 CT 217.2022 - 10ª GRE - CETI DR JOSÉ PINHEIRO MACHADO - LANDRI SALES - PI.pdf",
+    "osPdfNome": "OS_2025_724.pdf",
     "orcamentoPdfSimulado": "orcamento_22055380.pdf",
     "memorialDescritivoPdfSimulado": "memorial_22055380.pdf",
-    "anexos": [
-      {
-        "id": "anexo-16JIaW-j5Ma9voAPB1Bf3mjkE-YqL2Om8",
-        "tipo": "os",
-        "nomeArquivo": "OS 2025.000724 CT 217.2022 - 10ª GRE - CETI DR JOSÉ PINHEIRO MACHADO - LANDRI SALES - PI.pdf",
-        "url": "https://drive.google.com/file/d/16JIaW-j5Ma9voAPB1Bf3mjkE-YqL2Om8/view?usp=sharing",
-        "downloadUrl": "https://drive.google.com/uc?export=download&id=16JIaW-j5Ma9voAPB1Bf3mjkE-YqL2Om8",
-        "tamanhoBytes": 1048576,
-        "dataUpload": "16/11/2026"
-      }
-    ],
+    "anexos": [],
     "observacoes": [
       {
         "id": "obs-diario-1784",
@@ -10717,23 +10704,10 @@
     "dataInicio": "23/06/2026",
     "prazoFinal": "08/09/2026",
     "dataEmissaoOS": "23/06/2026",
-    "drivePdfUrl": "https://drive.google.com/file/d/1gPw1Oq3ck335YfMufTa2PC_HoZ5AgF5l/view?usp=sharing",
-    "downloadPdfUrl": "https://drive.google.com/uc?export=download&id=1gPw1Oq3ck335YfMufTa2PC_HoZ5AgF5l",
-    "osPdfUrl": "https://drive.google.com/file/d/1gPw1Oq3ck335YfMufTa2PC_HoZ5AgF5l/view?usp=sharing",
-    "osPdfNome": "OS 2026.000711 CT 217.2022 -08ª GRE - CETI ROCHA NETO - OEIRAS.pdf",
+    "osPdfNome": "OS_SEM O.S 112.pdf",
     "orcamentoPdfSimulado": "orcamento_22027440.pdf",
     "memorialDescritivoPdfSimulado": "memorial_22027440.pdf",
-    "anexos": [
-      {
-        "id": "anexo-1gPw1Oq3ck335YfMufTa2PC_HoZ5AgF5l",
-        "tipo": "os",
-        "nomeArquivo": "OS 2026.000711 CT 217.2022 -08ª GRE - CETI ROCHA NETO - OEIRAS.pdf",
-        "url": "https://drive.google.com/file/d/1gPw1Oq3ck335YfMufTa2PC_HoZ5AgF5l/view?usp=sharing",
-        "downloadUrl": "https://drive.google.com/uc?export=download&id=1gPw1Oq3ck335YfMufTa2PC_HoZ5AgF5l",
-        "tamanhoBytes": 1048576,
-        "dataUpload": "16/11/2026"
-      }
-    ],
+    "anexos": [],
     "observacoes": [
       {
         "id": "obs-diario-2517",
@@ -10798,23 +10772,10 @@
     "dataInicio": "29/06/2026",
     "prazoFinal": "27/09/2026",
     "dataEmissaoOS": "29/06/2026",
-    "drivePdfUrl": "https://drive.google.com/file/d/1sk0zhikrJkjqTkJ1mV7sPWGH_DZKIL6K/view?usp=sharing",
-    "downloadPdfUrl": "https://drive.google.com/uc?export=download&id=1sk0zhikrJkjqTkJ1mV7sPWGH_DZKIL6K",
-    "osPdfUrl": "https://drive.google.com/file/d/1sk0zhikrJkjqTkJ1mV7sPWGH_DZKIL6K/view?usp=sharing",
-    "osPdfNome": "OS 2024.000115 CT 217.2022 - 03ª GRE - U. E. PROFª NENÉM CAVALCANTE - PIRIPIRI - PI..pdf",
+    "osPdfNome": "OS_SEM O.S 115.pdf",
     "orcamentoPdfSimulado": "orcamento_22105117.pdf",
     "memorialDescritivoPdfSimulado": "memorial_22105117.pdf",
-    "anexos": [
-      {
-        "id": "anexo-1sk0zhikrJkjqTkJ1mV7sPWGH_DZKIL6K",
-        "tipo": "os",
-        "nomeArquivo": "OS 2024.000115 CT 217.2022 - 03ª GRE - U. E. PROFª NENÉM CAVALCANTE - PIRIPIRI - PI..pdf",
-        "url": "https://drive.google.com/file/d/1sk0zhikrJkjqTkJ1mV7sPWGH_DZKIL6K/view?usp=sharing",
-        "downloadUrl": "https://drive.google.com/uc?export=download&id=1sk0zhikrJkjqTkJ1mV7sPWGH_DZKIL6K",
-        "tamanhoBytes": 1048576,
-        "dataUpload": "16/11/2026"
-      }
-    ],
+    "anexos": [],
     "observacoes": [
       {
         "id": "obs-diario-2524",
