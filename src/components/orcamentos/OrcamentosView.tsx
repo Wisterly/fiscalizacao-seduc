@@ -591,16 +591,53 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
                 (os.statusDiario || '').toUpperCase().includes('PARADA') ||
                 (os.statusObra || '').toUpperCase().includes('PARALISADA')
             );
+            const hasRitmoLento = osList.some((os) => {
+              const d = (os.statusDiario || '').toUpperCase();
+              return d.includes('LENTO') || d.includes('RITMO');
+            });
+            const hasAIniciar = osList.some((os) => {
+              const st = (os.statusObra || '').toUpperCase();
+              const d = (os.statusDiario || '').toUpperCase();
+              return st.includes('INICIAR') || d.includes('INÍCIO') || d.includes('INICIO');
+            });
+            const hasOsAtivaCard = osList.length > 0;
+
+            // Tema do card por prioridade: Parada > Ritmo Lento > A Iniciar > Em Execução
+            const cardTheme = hasObraParada
+              ? {
+                  label: 'OBRA PARADA',
+                  card: 'bg-slate-900/90 border-rose-500/50 shadow-lg shadow-rose-950/20',
+                  badge: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
+                  dot: 'bg-rose-500'
+                }
+              : hasRitmoLento
+              ? {
+                  label: 'RITMO LENTO',
+                  card: 'bg-slate-900/90 border-amber-400/60 shadow-lg shadow-amber-950/20',
+                  badge: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+                  dot: 'bg-amber-400'
+                }
+              : hasAIniciar
+              ? {
+                  label: 'A INICIAR',
+                  card: 'bg-slate-900/90 border-purple-500/50 shadow-lg shadow-purple-950/20',
+                  badge: 'bg-purple-500/20 text-purple-300 border-purple-500/40',
+                  dot: 'bg-purple-400'
+                }
+              : hasOsAtivaCard
+              ? {
+                  label: 'EM EXECUÇÃO',
+                  card: 'bg-slate-900/90 border-emerald-500/50 shadow-lg shadow-emerald-950/20',
+                  badge: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+                  dot: 'bg-emerald-400'
+                }
+              : null;
 
             return (
               <div
                 key={school.id}
                 className={`rounded-2xl border backdrop-blur-xl transition-all duration-200 overflow-hidden ${
-                  hasObraParada
-                    ? 'bg-slate-900/90 border-rose-500/50 shadow-lg shadow-rose-950/20'
-                    : osList.length > 0
-                    ? 'bg-slate-900/80 border-amber-500/25 shadow-glass hover:border-amber-400/40'
-                    : 'bg-slate-900/50 border-white/10 hover:border-white/20'
+                  cardTheme ? cardTheme.card : 'bg-slate-900/50 border-white/10 hover:border-white/20'
                 }`}
               >
                 {/* TOPO DO CARD DA ESCOLA (CLICÁVEL PARA EXPANDIR) */}
@@ -624,10 +661,10 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
                           ? '0 Orçamentos / OS'
                           : `${osList.length} ${osList.length === 1 ? 'OS Cadastrada' : 'OSs Cadastradas'}`}
                       </span>
-                      {hasObraParada && (
-                        <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-rose-500/20 text-rose-300 border border-rose-500/40 flex items-center gap-1 animate-pulse">
-                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                          OBRA PARADA
+                      {cardTheme && (
+                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-extrabold border flex items-center gap-1 animate-pulse ${cardTheme.badge}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${cardTheme.dot}`} />
+                          {cardTheme.label}
                         </span>
                       )}
                     </div>
@@ -722,7 +759,13 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
                             <div
                               key={os.id}
                               className={`bg-slate-900 border ${
-                                isParada ? 'border-rose-500/50 shadow-rose-950/30' : 'border-slate-800'
+                                isParada
+                                  ? 'border-rose-500/50 shadow-rose-950/30'
+                                  : isRitmoLento
+                                  ? 'border-amber-400/60 shadow-amber-950/30'
+                                  : isAIniciar
+                                  ? 'border-purple-500/50 shadow-purple-950/30'
+                                  : 'border-emerald-500/50 shadow-emerald-950/30'
                               } rounded-2xl p-4 flex flex-col gap-3 shadow-xl transition-all`}
                             >
                               {/* Topo: Regional, Unidade Escolar, Empresa e Badges (Seção 6.3) */}
@@ -756,16 +799,19 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
                                       🚨 OBRA PARADA
                                     </span>
                                   ) : isRitmoLento ? (
-                                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                                      {statusDiarioTexto}
+                                    <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1 animate-pulse">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                                      RITMO LENTO
                                     </span>
                                   ) : isAIniciar ? (
-                                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30">
-                                      {statusDiarioTexto}
+                                    <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-purple-500/20 text-purple-300 border border-purple-500/40 flex items-center gap-1 animate-pulse">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
+                                      A INICIAR
                                     </span>
                                   ) : (
-                                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                                      {statusDiarioTexto}
+                                    <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1 animate-pulse">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                      EM EXECUÇÃO
                                     </span>
                                   )}
                                 </div>

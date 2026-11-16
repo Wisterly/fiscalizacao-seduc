@@ -1,4 +1,4 @@
-# PONTOS DE RESTAURAÇÃO DE TRILHO DUPLO — FISCALIZAÇÃO SEDUC (GPR LAB)
+﻿# PONTOS DE RESTAURAÇÃO DE TRILHO DUPLO — FISCALIZAÇÃO SEDUC (GPR LAB)
 
 Este documento registra oficialmente todos os **Pontos de Restauração (PR)** estruturados sob a arquitetura de **Trilho Duplo** do aplicativo Fiscalização SEDUC (GPR Lab), garantindo isolamento técnico rigoroso entre a visualização de **Computador (Desktop)** e de **Celular (Mobile / Android)**.
 
@@ -28,6 +28,13 @@ A numeração segue rigorosamente a hierarquia de escopo:
 ---
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
+
+### [PR.046] — Bordas e Selos Piscantes por Status nos Cards de OS e Release v1.0.41 (Build 42)
+- **Data/Hora:** 2026-11-16 00:42 (UTC-3)
+- Cards com OS ganham borda e selo piscante por status: vermelho (Obra Parada), amarelo (Ritmo Lento), roxo (A Iniciar), verde (Em Execução). Prioridade: Parada > Ritmo Lento > A Iniciar > Em Execução.
+- **Tags Git:** `PR.046`, `PR.046.1`, `PR.046.2` | Restauração: `git checkout PR.046`
+
+---
 
 ### [PR.045] — Reset Total da Aba de Medições (Dados Fictícios Zerados) e Release v1.0.40 (Build 41)
 - **Data/Hora:** 2026-11-16 00:40 (UTC-3)
