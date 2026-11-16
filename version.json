@@ -1,12 +1,1 @@
-{
-  "version": "1.0.39",
-  "buildNumber": 40,
-  "releaseDate": "2026-11-16",
-  "minRequiredVersion": "1.0.0",
-  "downloadUrl": "https://github.com/Wisterly/fiscalizacao-seduc/releases/download/apk-latest/Fiscal.IA.apk",
-  "changelog": [
-    "CORREÇÃO DEFINITIVA DA SINCRONIZAÇÃO AO VIVO (sheetsSyncService.ts): corrigido bug no mapeamento do cabeçalho que confundia 'Código GRE' (Coluna C: 8000000, 9000000) com 'GRE' (Coluna E: 08ª - OEIRAS)",
-    "Resolvido o conflito que jogava as GREs 03ª a 09ª para a 01ª GRE (Parnaíba), a 02ª para a 20ª GRE e fazia apenas as iniciadas em 1 (10ª a 18ª) funcionarem na sincronização ao vivo",
-    "Aprimorada a função extractGreId para decodificar tanto formatos '08ª - OEIRAS' / '08-Oeiras' quanto códigos numéricos milionários (ex: 8000000 -> gre-08)"
-  ]
-}
+﻿{"version":"1.0.40","buildNumber":41,"releaseDate":"2026-11-16","minRequiredVersion":"1.0.0","downloadUrl":"https://github.com/Wisterly/fiscalizacao-seduc/releases/download/apk-latest/Fiscal.IA.apk","changelog":["Aba de Medições totalmente resetada: percentuais e medições fictícias zerados (0%) em todas as 211 OSs","Cache local elevado para v9 para limpar medições antigas em todos os aparelhos"]}

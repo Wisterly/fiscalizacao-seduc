@@ -296,7 +296,7 @@ class StorageService {
 
   // --- Ordens de Serviço & Medição ---
   getOrdensServico(): OrdemServico[] {
-    const CURRENT_OS_CACHE_VERSION = 'v8_211_execucao_e_iniciar_drive_1NmRb7W';
+    const CURRENT_OS_CACHE_VERSION = 'v9_medicoes_zeradas_211_drive';
     const savedVersion = localStorage.getItem('seduc_fiscal_os_cache_ver');
     const list = this.getItem<OrdemServico[]>(STORAGE_KEYS.OS, INITIAL_OS);
 

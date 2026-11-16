@@ -29,6 +29,17 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.045] — Reset Total da Aba de Medições (Dados Fictícios Zerados) e Release v1.0.40 (Build 41)
+- **Data/Hora:** 2026-11-16 00:40 (UTC-3)
+- **Escopos Definidos:**
+  - `PR.045` (Geral): Todos os percentuais de medição fictícios (15% nas obras em execução) e serviços com percentual executado foram zerados nas 211 OSs; removido o valor padrão fictício da sincronização (`sheetsSyncService.ts`); cache local elevado para `v9_medicoes_zeradas_211_drive`, limpando medições antigas em todos os aparelhos.
+  - `PR.045.1` (Web / Desktop): Aba de Medições exibe 0% / R$ 0,00 medido em todas as GREs.
+  - `PR.045.2` (Mobile / Android): APK `versionName 1.0.40` / `versionCode 41`.
+- **Tags Git:** `PR.045`, `PR.045.1`, `PR.045.2`
+- **Comando de Restauração Rápida:** `git checkout PR.045`
+
+---
+
 ### [PR.044] — Correção Definitiva da Sincronização ao Vivo da Planilha (`Código GRE` vs `GRE` na Coluna E) e Release v1.0.39 (Build 40)
 - **Data/Hora:** 2026-11-16 00:33 (UTC-3)
 - **Escopos Definidos:**

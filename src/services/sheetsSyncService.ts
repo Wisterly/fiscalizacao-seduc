@@ -356,7 +356,7 @@ export function parseAtaCsvToOS(csvText: string, currentSchools: Escola[]): {
       const num = parseFloat(r[colPercentual].replace(/[^\d\.]/g, ''));
       if (!isNaN(num)) percentual = Math.min(100, Math.max(0, num));
     } else {
-      percentual = isExecucao ? 15 : 0;
+      percentual = 0;
     }
 
     const construtora = (r[colConstrutora] || '').trim() || 'Empresa Contratada SEDUC';
