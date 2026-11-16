@@ -29,6 +29,13 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.050] — Otimização Mobile dos Filtros em Pílulas (DIÁRIO / Status / Municípios) e Release v1.0.45 (Build 46)
+- **Data/Hora:** 2026-11-16 01:33 (UTC-3)
+- No mobile/APK (< md), o bloco DIÁRIO fica em linha própria acima de pílulas arredondadas (rounded-full) com bolinha colorida e quebra automática em 2 linhas (Todos, Parada, Ritmo Lento, Em Execução, A Iniciar), e os filtros de Orçamentos, Medições e Municípios quebram linha sem corte lateral. No desktop (md:), layout mantido integralmente sem alterações.
+- **Tags Git:** `PR.050`, `PR.050.1`, `PR.050.2` | Restauração: `git checkout PR.050`
+
+---
+
 ### [PR.049] — Correção do Arraste de Cards (Camada Flutuante Isolada e Cooldown Anti-Ping-Pong) e Release v1.0.44 (Build 45)
 - **Data/Hora:** 2026-11-16 00:58 (UTC-3)
 - Separado o card flutuante para fora do container animado por FLIP (evitando que transform no pai quebre o position: fixed e faça o card saltar do cursor/dedo), adicionado placeholder pontilhado no grid e cooldown de 200ms entre trocas para eliminar ping-pong.

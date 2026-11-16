@@ -155,7 +155,7 @@ export const SchoolList: React.FC<SchoolListProps> = ({
 
         {/* Pills de Municípios quando houver mais de 1 município na GRE */}
         {municipiosDisponiveis.length > 1 && (
-          <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+          <div className="flex flex-wrap md:flex-nowrap gap-1.5 md:overflow-x-auto no-scrollbar pb-0.5">
             <button
               type="button"
               onClick={() => setSelectedMunicipio('TODOS')}

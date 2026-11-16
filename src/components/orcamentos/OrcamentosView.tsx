@@ -439,9 +439,9 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
       </div>
 
       {/* 3. PÍLULAS DE FILTRO RÁPIDO & SINCRONIZAÇÃO (COM OS / SEM OS / TODAS + STATUS DIÁRIO) */}
-      <div className="px-4 mb-4 space-y-2">
-        <div className="flex items-center justify-between gap-2 overflow-x-auto no-scrollbar pb-1">
-          <div className="flex items-center gap-1.5 shrink-0">
+      <div className="px-4 mb-4 space-y-2.5 md:space-y-2">
+        <div className="flex flex-wrap md:flex-nowrap items-center justify-between gap-2 md:overflow-x-auto no-scrollbar pb-1">
+          <div className="flex flex-wrap md:flex-nowrap items-center gap-1.5 md:shrink-0">
             <button
               onClick={() => {
                 setFiltroStatus('com_os');
@@ -510,64 +510,70 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
           </div>
         </div>
 
-        {/* SUB-PÍLULAS DE STATUS DIÁRIO (Coluna S: Parada, Ritmo Lento, Em andamento, A Iniciar) */}
+        {/* SUB-PÍLULAS DE STATUS DIÁRIO (Mobile: 2 linhas em pílulas arredondadas como no modelo; Desktop: mantido igual) */}
         {filtroStatus !== 'sem_os' && (
-          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-0.5">
-            <span className="text-[10px] uppercase font-bold text-slate-400 shrink-0 mr-0.5">Diário:</span>
-            <button
-              onClick={() => setFiltroDiario('todos')}
-              className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all active-press ${
-                filtroDiario === 'todos'
-                  ? 'bg-slate-700 text-white border border-slate-500'
-                  : 'bg-slate-900/40 text-slate-400 border border-white/5 hover:text-slate-300'
-              }`}
-            >
-              Todos
-            </button>
-            <button
-              onClick={() => setFiltroDiario('parada')}
-              className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all active-press flex items-center gap-1 ${
-                filtroDiario === 'parada'
-                  ? 'bg-red-500/25 text-red-300 border border-red-500/50 shadow-sm'
-                  : 'bg-red-500/10 text-red-400/80 border border-red-500/20 hover:text-red-300'
-              }`}
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
-              <span>Parada ({todasEscolasDaGre.filter((s) => getOsListForSchool(s).some(os => (os.statusDiario || '').toLowerCase().includes('parada') || (os.statusDiario || '').toLowerCase().includes('paralisada'))).length})</span>
-            </button>
-            <button
-              onClick={() => setFiltroDiario('ritmo_lento')}
-              className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all active-press flex items-center gap-1 ${
-                filtroDiario === 'ritmo_lento'
-                  ? 'bg-amber-500/25 text-amber-300 border border-amber-500/50 shadow-sm'
-                  : 'bg-amber-500/10 text-amber-400/80 border border-amber-500/20 hover:text-amber-300'
-              }`}
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-              <span>Ritmo Lento ({todasEscolasDaGre.filter((s) => getOsListForSchool(s).some(os => (os.statusDiario || '').toLowerCase().includes('lento') || (os.statusDiario || '').toLowerCase().includes('ritmo'))).length})</span>
-            </button>
-            <button
-              onClick={() => setFiltroDiario('em_andamento')}
-              className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all active-press flex items-center gap-1 ${
-                filtroDiario === 'em_andamento'
-                  ? 'bg-emerald-500/25 text-emerald-300 border border-emerald-500/50 shadow-sm'
-                  : 'bg-emerald-500/10 text-emerald-400/80 border border-emerald-500/20 hover:text-emerald-300'
-              }`}
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-              <span>Em Execução ({todasEscolasDaGre.filter((s) => getOsListForSchool(s).some(os => (os.statusDiario || '').toLowerCase().includes('andamento') || (os.statusDiario || '').toLowerCase().includes('execu'))).length})</span>
-            </button>
-            <button
-              onClick={() => setFiltroDiario('aguardando_inicio')}
-              className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all active-press flex items-center gap-1 ${
-                filtroDiario === 'aguardando_inicio'
-                  ? 'bg-purple-500/25 text-purple-300 border border-purple-500/50 shadow-sm'
-                  : 'bg-purple-500/10 text-purple-400/80 border border-purple-500/20 hover:text-purple-300'
-              }`}
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
-              <span>A Iniciar ({todasEscolasDaGre.filter((s) => getOsListForSchool(s).some(os => (os.statusDiario || '').toLowerCase().includes('início') || (os.statusDiario || '').toLowerCase().includes('inicio') || (os.statusObra || '').toUpperCase().includes('INICIAR'))).length})</span>
-            </button>
+          <div className="flex flex-col gap-1.5 md:flex-row md:items-center md:gap-1.5 md:overflow-x-auto no-scrollbar pt-0.5">
+            <span className="text-[11px] uppercase font-extrabold tracking-wider text-slate-300 md:text-[10px] md:font-bold md:text-slate-400 shrink-0 md:mr-0.5">
+              <span className="md:hidden">DIÁRIO</span>
+              <span className="hidden md:inline">Diário:</span>
+            </span>
+            <div className="flex flex-wrap md:flex-nowrap items-center gap-1.5">
+              <button
+                onClick={() => setFiltroDiario('todos')}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all active-press flex items-center gap-1.5 md:px-2 md:py-0.5 md:rounded-lg md:text-[10px] ${
+                  filtroDiario === 'todos'
+                    ? 'bg-slate-600/50 text-white border border-slate-300/70 md:bg-slate-700 md:border-slate-500'
+                    : 'bg-slate-900/60 text-slate-300 border border-slate-600/60 hover:text-white md:bg-slate-900/40 md:text-slate-400 md:border-white/5 md:hover:text-slate-300'
+                }`}
+              >
+                <span className="w-2 h-2 rounded-full bg-slate-200 md:hidden" />
+                <span>Todos</span>
+              </button>
+              <button
+                onClick={() => setFiltroDiario('parada')}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all active-press flex items-center gap-1.5 md:px-2 md:py-0.5 md:rounded-lg md:text-[10px] md:gap-1 ${
+                  filtroDiario === 'parada'
+                    ? 'bg-rose-500/25 text-rose-200 border border-rose-400/80 shadow-sm md:bg-red-500/25 md:text-red-300 md:border-red-500/50'
+                    : 'bg-rose-950/30 text-rose-300 border border-rose-500/50 hover:text-rose-200 md:bg-red-500/10 md:text-red-400/80 md:border-red-500/20 md:hover:text-red-300'
+                }`}
+              >
+                <span className="w-2 h-2 rounded-full bg-rose-400 md:w-1.5 md:h-1.5 md:bg-red-400" />
+                <span>Parada ({todasEscolasDaGre.filter((s) => getOsListForSchool(s).some(os => (os.statusDiario || '').toLowerCase().includes('parada') || (os.statusDiario || '').toLowerCase().includes('paralisada'))).length})</span>
+              </button>
+              <button
+                onClick={() => setFiltroDiario('ritmo_lento')}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all active-press flex items-center gap-1.5 md:px-2 md:py-0.5 md:rounded-lg md:text-[10px] md:gap-1 ${
+                  filtroDiario === 'ritmo_lento'
+                    ? 'bg-amber-500/25 text-amber-200 border border-amber-400/90 shadow-sm md:bg-amber-500/25 md:text-amber-300 md:border-amber-500/50'
+                    : 'bg-amber-950/20 text-amber-300 border border-amber-400/60 hover:text-amber-200 md:bg-amber-500/10 md:text-amber-400/80 md:border-amber-500/20 md:hover:text-amber-300'
+                }`}
+              >
+                <span className="w-2 h-2 rounded-full bg-amber-400 md:w-1.5 md:h-1.5" />
+                <span>Ritmo Lento ({todasEscolasDaGre.filter((s) => getOsListForSchool(s).some(os => (os.statusDiario || '').toLowerCase().includes('lento') || (os.statusDiario || '').toLowerCase().includes('ritmo'))).length})</span>
+              </button>
+              <button
+                onClick={() => setFiltroDiario('em_andamento')}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all active-press flex items-center gap-1.5 md:px-2 md:py-0.5 md:rounded-lg md:text-[10px] md:gap-1 ${
+                  filtroDiario === 'em_andamento'
+                    ? 'bg-emerald-500/25 text-emerald-200 border border-emerald-400/90 shadow-sm md:bg-emerald-500/25 md:text-emerald-300 md:border-emerald-500/50'
+                    : 'bg-emerald-950/20 text-emerald-300 border border-emerald-500/60 hover:text-emerald-200 md:bg-emerald-500/10 md:text-emerald-400/80 md:border-emerald-500/20 md:hover:text-emerald-300'
+                }`}
+              >
+                <span className="w-2 h-2 rounded-full bg-emerald-400 md:w-1.5 md:h-1.5" />
+                <span>Em Execução ({todasEscolasDaGre.filter((s) => getOsListForSchool(s).some(os => (os.statusDiario || '').toLowerCase().includes('andamento') || (os.statusDiario || '').toLowerCase().includes('execu'))).length})</span>
+              </button>
+              <button
+                onClick={() => setFiltroDiario('aguardando_inicio')}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all active-press flex items-center gap-1.5 md:px-2 md:py-0.5 md:rounded-lg md:text-[10px] md:gap-1 ${
+                  filtroDiario === 'aguardando_inicio'
+                    ? 'bg-purple-500/25 text-purple-200 border border-purple-400/90 shadow-sm md:bg-purple-500/25 md:text-purple-300 md:border-purple-500/50'
+                    : 'bg-purple-950/20 text-purple-300 border border-purple-500/60 hover:text-purple-200 md:bg-purple-500/10 md:text-purple-400/80 md:border-purple-500/20 md:hover:text-purple-300'
+                }`}
+              >
+                <span className="w-2 h-2 rounded-full bg-purple-400 md:w-1.5 md:h-1.5" />
+                <span>A Iniciar ({todasEscolasDaGre.filter((s) => getOsListForSchool(s).some(os => (os.statusDiario || '').toLowerCase().includes('início') || (os.statusDiario || '').toLowerCase().includes('inicio') || (os.statusObra || '').toUpperCase().includes('INICIAR'))).length})</span>
+              </button>
+            </div>
           </div>
         )}
       </div>

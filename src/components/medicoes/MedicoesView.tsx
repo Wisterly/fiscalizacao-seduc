@@ -260,8 +260,8 @@ export const MedicoesView: React.FC<MedicoesViewProps> = ({
 
       {/* 4. PÍLULAS DE STATUS & SINCRONIZAÇÃO */}
       <div className="px-4 mb-4">
-        <div className="flex items-center justify-between gap-2 overflow-x-auto no-scrollbar pb-1">
-          <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex flex-wrap md:flex-nowrap items-center justify-between gap-2 md:overflow-x-auto no-scrollbar pb-1">
+          <div className="flex flex-wrap md:flex-nowrap items-center gap-1.5 md:shrink-0">
             <button
               onClick={() => setFiltroStatus('todas')}
               className={`px-3 py-1.5 rounded-full text-xs transition-all active-press ${
