@@ -1,15 +1,11 @@
 {
-  "version": "1.0.36",
-  "buildNumber": 37,
+  "version": "1.0.37",
+  "buildNumber": 38,
   "releaseDate": "2026-11-16",
   "minRequiredVersion": "1.0.0",
   "downloadUrl": "https://github.com/Wisterly/fiscalizacao-seduc/releases/download/apk-latest/Fiscal.IA.apk",
   "changelog": [
-    "Implementação integral do padrão do Prompt Mestre (Seções 5 e 6) na aba de Orçamentos e OS",
-    "Sistema Híbrido de Documentos com banco offline IndexedDB (db_orcamentos_os / anexos_obras) integrado ao Google Drive para Orçamentos e Ordens de Serviço",
-    "Upload inline instantâneo de Orçamento e OS direto no card da obra com remoção e visualização offline no aparelho",
-    "Tratamento especial de obras 'Em Execução mas Paradas': borda avermelhada (border-rose-500/50) e badge pulsante 🚨 OBRA PARADA",
-    "Seletores interativos inline no card para alterar diretamente Status Geral e Situação Operacional",
-    "Omissão de previsão/data de término do card conforme regra de negócio da Seção 5.3"
+    "Correção crítica (tela preta ao selecionar GRE na aba de Orçamentos e OS): movido hook useMemo para antes do retorno condicional do seletor de GRE, respeitando integralmente as Rules of Hooks do React",
+    "Garantida abertura instantânea de todas as 21 GREs, exibição dos cards de escolas/OSs e funcionamento fluido de todos os filtros e anexos híbridos"
   ]
 }

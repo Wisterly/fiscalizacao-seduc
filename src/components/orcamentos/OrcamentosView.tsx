@@ -210,27 +210,6 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
     document.body.removeChild(link);
   };
 
-  // SE NÃO HOUVER GRE SELECIONADA: Mostra a primeira tela com o GreSelector oficial!
-  if (!activeGre) {
-    return (
-      <div className="w-full pb-20 pt-1 px-4 animate-fadeIn">
-        <GreSelector
-          gres={gres}
-          schools={schools}
-          selectedGreId={null}
-          titulo="1. Selecionar a GRE para Orçamentos e OS"
-          subtitulo="Acompanhe ordens de serviço, contratos da ata e projetos executivos de todas as escolas"
-          badgeTexto="21 Regiões"
-          onSelectGre={setActiveGre}
-        />
-      </div>
-    );
-  }
-
-  // Escolas e OSs da GRE selecionada
-  const schoolsDaGre = schools.filter((s) => s.greId === activeGre.id);
-  const osDaGre = ordensServico.filter((os) => os.greId === activeGre.id);
-
   // Função utilitária de normalização de texto
   const normStr = (str?: string) =>
     (str || '')
@@ -245,6 +224,10 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
     normStr(str)
       .replace(/^(ceti|ceja|u e|unidade escolar|escola estadual|centro estadual|centro de atendimento|polo uapi|sede)\s+/g, '')
       .trim();
+
+  // Escolas e OSs da GRE selecionada (calculadas antes do return condicional para respeitar as Rules of Hooks)
+  const schoolsDaGre = activeGre ? schools.filter((s) => s.greId === activeGre.id) : [];
+  const osDaGre = activeGre ? ordensServico.filter((os) => os.greId === activeGre.id) : [];
 
   // Helper para obter as OSs da escola com verificação por ID, INEP e Nome Normalizado / Sem Prefixo
   const getOsListForSchool = (school: Escola) => {
@@ -262,6 +245,7 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
 
   // Garante que toda OS da GRE pertença a uma escola existente na listagem da GRE
   const todasEscolasDaGre = useMemo(() => {
+    if (!activeGre) return [];
     const list = [...schoolsDaGre];
     osDaGre.forEach((os) => {
       const jaExiste = list.some((s) => {
@@ -290,7 +274,24 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
       }
     });
     return list;
-  }, [schoolsDaGre, osDaGre, activeGre.id]);
+  }, [schools, ordensServico, activeGre?.id]);
+
+  // SE NÃO HOUVER GRE SELECIONADA: Mostra a primeira tela com o GreSelector oficial!
+  if (!activeGre) {
+    return (
+      <div className="w-full pb-20 pt-1 px-4 animate-fadeIn">
+        <GreSelector
+          gres={gres}
+          schools={schools}
+          selectedGreId={null}
+          titulo="1. Selecionar a GRE para Orçamentos e OS"
+          subtitulo="Acompanhe ordens de serviço, contratos da ata e projetos executivos de todas as escolas"
+          badgeTexto="21 Regiões"
+          onSelectGre={setActiveGre}
+        />
+      </div>
+    );
+  }
 
   // Municípios da GRE selecionada
   const municipiosDaGre = Array.from(new Set(todasEscolasDaGre.map((s) => s.municipio))).sort();

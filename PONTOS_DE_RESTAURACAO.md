@@ -29,6 +29,21 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.042] — Correção Crítica da Tela Preta ao Selecionar GRE em Orçamentos e OS (Rules of Hooks / `useMemo`) e Release v1.0.37 (Build 38)
+- **Data/Hora:** 2026-11-16 00:18 (UTC-3)
+- **Escopos Definidos:**
+  - `PR.042` (Geral): Correção imediata do erro fatal de runtime no React ("Rendered more hooks than during the previous render") que ocorria ao selecionar qualquer GRE na aba de Orçamentos e OS e deixava a tela preta. O hook `useMemo` (`todasEscolasDaGre`) foi movido para antes do retorno condicional (`if (!activeGre) return ...`) em `OrcamentosView.tsx`, garantindo a execução estável dos hooks e abertura instantânea de todas as 21 GREs, filtros, cards e sistema híbrido Drive + IndexedDB. Versão atualizada para **v1.0.37 (Build 38)**.
+  - `PR.042.1` (Web / Desktop): Navegação entre o Seletor de GREs e os cards de obras restaurada com transição fluida em todas as 21 regionais.
+  - `PR.042.2` (Mobile / Android): APK Android compilado com `versionName 1.0.37` e `versionCode 38` e publicado na release `apk-latest`.
+- **Tags Git:** `PR.042`, `PR.042.1`, `PR.042.2`
+- **Arquivo Local do APK:** `c:\Users\Lenovo\Documents\antigravity\LAB - GPR\Fiscal.IA.lab - GPR\Fiscal.IA.apk`
+- **Comando de Restauração Rápida:**
+  ```bash
+  git checkout PR.042
+  ```
+
+---
+
 ### [PR.041] — Implementação Integral do Prompt Mestre na Aba de Orçamentos e OS (Sistema Híbrido Google Drive + IndexedDB, Alerta Obra Parada, Seletores Inline e Release v1.0.36 / Build 37)
 - **Data/Hora:** 2026-11-16 00:12 (UTC-3)
 - **Escopos Definidos:**
