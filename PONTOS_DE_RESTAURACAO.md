@@ -29,6 +29,13 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.047] — Remoção do Card de Sincronização em Nuvem do Cabeçalho e Release v1.0.42 (Build 43)
+- **Data/Hora:** 2026-11-16 00:44 (UTC-3)
+- Removida a pílula 'Sincronização em Nuvem & Drive Ativa • Cross-Platform' do Header (desktop e mobile).
+- **Tags Git:** `PR.047`, `PR.047.1`, `PR.047.2` | Restauração: `git checkout PR.047`
+
+---
+
 ### [PR.046] — Bordas e Selos Piscantes por Status nos Cards de OS e Release v1.0.41 (Build 42)
 - **Data/Hora:** 2026-11-16 00:42 (UTC-3)
 - Cards com OS ganham borda e selo piscante por status: vermelho (Obra Parada), amarelo (Ritmo Lento), roxo (A Iniciar), verde (Em Execução). Prioridade: Parada > Ritmo Lento > A Iniciar > Em Execução.

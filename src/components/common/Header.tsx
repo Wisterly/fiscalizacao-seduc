@@ -215,16 +215,8 @@ export const Header: React.FC<HeaderProps> = ({
                 </div>
               </div>
 
-              {/* Centro: Pílula de Sincronização em Nuvem (Desktop) */}
-              <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-slate-950/80 border border-cyan-500/30 backdrop-blur-md text-[11px] text-slate-300 shadow-sm">
-                <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)] animate-pulse" />
-                <span className="font-semibold text-white">Sincronização em Nuvem & Drive Ativa</span>
-                <span className="text-slate-500">•</span>
-                <span className="text-cyan-300 font-medium">Cross-Platform Web/Mobile</span>
-              </div>
-
               {/* Canto Superior Direito: Logo Secretaria de Educação com mapa do Piauí + Sino */}
-              <div className="flex items-center gap-2 flex-shrink-0">
+              <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
                 <div className="h-8 px-2 py-0.5 rounded-xl bg-slate-900/70 border border-white/10 flex items-center justify-center backdrop-blur-md">
                   <img
                     src="/logo-piaui-mapa.png"
@@ -249,16 +241,6 @@ export const Header: React.FC<HeaderProps> = ({
                     </span>
                   )}
                 </button>
-              </div>
-            </div>
-
-            {/* Pílula de Sincronização em Nuvem (Mobile) */}
-            <div className="flex md:hidden justify-center mt-2">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-slate-950/80 border border-cyan-500/30 text-[10px] text-slate-300 shadow-sm">
-                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_rgba(34,211,238,0.8)] animate-pulse" />
-                <span className="font-semibold text-white text-[9.5px]">Sincronização em Nuvem & Drive Ativa</span>
-                <span className="text-slate-500">•</span>
-                <span className="text-cyan-300 font-medium text-[9.5px]">Cross-Platform</span>
               </div>
             </div>
           </div>
