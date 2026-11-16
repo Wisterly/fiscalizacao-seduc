@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import {
   Map,
   ClipboardList,
@@ -6,18 +6,16 @@ import {
   AlertOctagon,
   TrendingUp,
   FileSearch,
-  MoreVertical,
-  Check,
-  RotateCcw,
-  Move,
-  ChevronLeft,
-  ChevronRight
+  MoreVertical
 } from 'lucide-react';
 import { storage } from '../../services/storageService';
 
 export type ModuleCardId = 'gres' | 'orcamentos' | 'medicoes' | 'rotas' | 'demandas' | 'processos';
 
 const DEFAULT_ORDER: ModuleCardId[] = ['gres', 'orcamentos', 'medicoes', 'rotas', 'demandas', 'processos'];
+
+const LONG_PRESS_MS = 450;
+const MOVE_TOLERANCE_PX = 8;
 
 interface ModuleGridProps {
   onOpenGREs: () => void;
@@ -30,6 +28,16 @@ interface ModuleGridProps {
   demandasPendentesCount: number;
 }
 
+interface DragState {
+  id: ModuleCardId;
+  x: number; // posição atual do dedo
+  y: number;
+  offsetX: number; // ponto do card onde o dedo segurou
+  offsetY: number;
+  width: number;
+  height: number;
+}
+
 export const ModuleGrid: React.FC<ModuleGridProps> = ({
   onOpenGREs,
   onOpenOS,
@@ -37,10 +45,8 @@ export const ModuleGrid: React.FC<ModuleGridProps> = ({
   onOpenRotas,
   onOpenDemandas,
   onOpenProcessos,
-  osAtivasCount,
   demandasPendentesCount
 }) => {
-  // Ordem atual dos cards carregada do storage
   const [cardOrder, setCardOrder] = useState<ModuleCardId[]>(() => {
     const saved = storage.getHomeCardsOrder() as ModuleCardId[];
     if (Array.isArray(saved) && saved.length === DEFAULT_ORDER.length) {
@@ -50,80 +56,148 @@ export const ModuleGrid: React.FC<ModuleGridProps> = ({
     return DEFAULT_ORDER;
   });
 
-  // Modo de reorganização ativo (efeito de tremor e cards soltos)
-  const [isReordering, setIsReordering] = useState(false);
-  const [draggedCardId, setDraggedCardId] = useState<ModuleCardId | null>(null);
+  const [drag, setDrag] = useState<DragState | null>(null);
 
-  // Timer para Long Press (Pressionar e segurar por 450ms)
-  const pressTimerRef = useRef<any>(null);
-  const isLongPressTriggeredRef = useRef(false);
+  const slotRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const prevRects = useRef<Record<string, DOMRect>>({});
+  const orderRef = useRef(cardOrder);
+  orderRef.current = cardOrder;
+  const dragRef = useRef<DragState | null>(null);
+  dragRef.current = drag;
 
-  const startPressTimer = () => {
-    isLongPressTriggeredRef.current = false;
-    pressTimerRef.current = setTimeout(() => {
-      isLongPressTriggeredRef.current = true;
-      setIsReordering(true);
-      if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+  // Controle do press longo
+  const pressTimer = useRef<any>(null);
+  const pressStart = useRef<{ x: number; y: number; id: ModuleCardId } | null>(null);
+  const suppressClick = useRef(false);
+
+  const clearPress = () => {
+    if (pressTimer.current) {
+      clearTimeout(pressTimer.current);
+      pressTimer.current = null;
+    }
+    pressStart.current = null;
+  };
+
+  const handlePointerDown = (id: ModuleCardId, e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    const slot = slotRefs.current[id];
+    if (!slot) return;
+    pressStart.current = { x: e.clientX, y: e.clientY, id };
+
+    pressTimer.current = setTimeout(() => {
+      const rect = slot.getBoundingClientRect();
+      const start = pressStart.current;
+      if (!start) return;
+      suppressClick.current = true;
+      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
         try {
-          navigator.vibrate([40, 30, 40]);
+          navigator.vibrate(40);
         } catch {}
       }
-    }, 450);
+      setDrag({
+        id,
+        x: start.x,
+        y: start.y,
+        offsetX: start.x - rect.left,
+        offsetY: start.y - rect.top,
+        width: rect.width,
+        height: rect.height
+      });
+    }, LONG_PRESS_MS);
   };
 
-  const cancelPressTimer = () => {
-    if (pressTimerRef.current) {
-      clearTimeout(pressTimerRef.current);
-      pressTimerRef.current = null;
-    }
+  const handlePointerMovePending = (e: React.PointerEvent<HTMLDivElement>) => {
+    const start = pressStart.current;
+    if (!start || dragRef.current) return;
+    const dx = e.clientX - start.x;
+    const dy = e.clientY - start.y;
+    if (Math.hypot(dx, dy) > MOVE_TOLERANCE_PX) clearPress(); // virou rolagem
   };
 
-  const handleCardClick = (cardId: ModuleCardId, defaultAction: () => void) => {
-    // Se estava em long press ou está no modo de reorganização, não abre a tela
-    if (isLongPressTriggeredRef.current || isReordering) {
-      return;
-    }
-    defaultAction();
+  // Listeners globais enquanto arrasta
+  useEffect(() => {
+    if (!drag) return;
+
+    const onMove = (e: PointerEvent) => {
+      const current = dragRef.current;
+      if (!current) return;
+      setDrag({ ...current, x: e.clientX, y: e.clientY });
+
+      // Descobre o card sob o dedo e abre espaço trocando posições
+      const order = orderRef.current;
+      for (const id of order) {
+        if (id === current.id) continue;
+        const el = slotRefs.current[id];
+        if (!el) continue;
+        const r = el.getBoundingClientRect();
+        if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
+          const from = order.indexOf(current.id);
+          const to = order.indexOf(id);
+          if (from !== to) {
+            // Guarda posições atuais para animar os demais cards (FLIP)
+            Object.keys(slotRefs.current).forEach((k) => {
+              const node = slotRefs.current[k];
+              if (node) prevRects.current[k] = node.getBoundingClientRect();
+            });
+            const next = [...order];
+            next.splice(from, 1);
+            next.splice(to, 0, current.id);
+            setCardOrder(next);
+          }
+          break;
+        }
+      }
+    };
+
+    const onEnd = () => {
+      storage.saveHomeCardsOrder(orderRef.current);
+      setDrag(null);
+      clearPress();
+      setTimeout(() => {
+        suppressClick.current = false;
+      }, 50);
+    };
+
+    const blockScroll = (e: TouchEvent) => {
+      if (e.cancelable) e.preventDefault();
+    };
+
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onEnd);
+    window.addEventListener('pointercancel', onEnd);
+    window.addEventListener('touchmove', blockScroll, { passive: false });
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onEnd);
+      window.removeEventListener('pointercancel', onEnd);
+      window.removeEventListener('touchmove', blockScroll);
+    };
+  }, [drag?.id]);
+
+  // Anima os cards que foram empurrados para abrir espaço
+  useLayoutEffect(() => {
+    Object.keys(slotRefs.current).forEach((k) => {
+      const node = slotRefs.current[k];
+      const prev = prevRects.current[k];
+      if (!node || !prev) return;
+      const now = node.getBoundingClientRect();
+      const dx = prev.left - now.left;
+      const dy = prev.top - now.top;
+      if (dx || dy) {
+        node.animate(
+          [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'translate(0, 0)' }],
+          { duration: 220, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }
+        );
+      }
+    });
+    prevRects.current = {};
+  }, [cardOrder]);
+
+  const handleCardClick = (action: () => void) => {
+    if (suppressClick.current || dragRef.current) return;
+    action();
   };
 
-  const handleMoveCard = (index: number, direction: 'left' | 'right', e: React.MouseEvent) => {
-    e.stopPropagation();
-    const targetIndex = direction === 'left' ? index - 1 : index + 1;
-    if (targetIndex < 0 || targetIndex >= cardOrder.length) return;
-
-    const newOrder = [...cardOrder];
-    const [removed] = newOrder.splice(index, 1);
-    newOrder.splice(targetIndex, 0, removed);
-    setCardOrder(newOrder);
-    storage.saveHomeCardsOrder(newOrder);
-  };
-
-  // Drag and Drop HTML5
-  const handleDragStart = (cardId: ModuleCardId) => {
-    setDraggedCardId(cardId);
-  };
-
-  const handleDrop = (targetCardId: ModuleCardId) => {
-    if (!draggedCardId || draggedCardId === targetCardId) return;
-
-    const fromIndex = cardOrder.indexOf(draggedCardId);
-    const toIndex = cardOrder.indexOf(targetCardId);
-
-    const newOrder = [...cardOrder];
-    const [removed] = newOrder.splice(fromIndex, 1);
-    newOrder.splice(toIndex, 0, removed);
-
-    setCardOrder(newOrder);
-    storage.saveHomeCardsOrder(newOrder);
-    setDraggedCardId(null);
-  };
-
-  const handleResetOrder = () => {
-    setCardOrder(DEFAULT_ORDER);
-    storage.saveHomeCardsOrder(DEFAULT_ORDER);
-  };
-
-  // Definições visuais e de ação de cada card
   const getCardDetails = (id: ModuleCardId) => {
     switch (id) {
       case 'gres':
@@ -191,126 +265,68 @@ export const ModuleGrid: React.FC<ModuleGridProps> = ({
 
   return (
     <div className="px-4 my-2">
-      {/* BARRA SUPERIOR DE FEEDBACK QUANDO O MODO DE REORGANIZAÇÃO ESTÁ ATIVO */}
-      {isReordering ? (
-        <div className="mb-3 p-3 rounded-2xl bg-gradient-to-r from-amber-950/80 via-slate-900 to-amber-950/80 border-2 border-amber-500/60 shadow-[0_0_25px_rgba(245,158,11,0.3)] flex items-center justify-between gap-2 animate-fadeIn">
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
-            <div>
-              <span className="text-xs font-black text-amber-300 block leading-tight">
-                Modo de Organização Ativo
-              </span>
-              <span className="text-[10px] text-slate-300">
-                Arraste os cards ou use as setas para mover
-              </span>
-            </div>
-          </div>
+      <div className="flex items-center justify-between mb-1.5 px-0.5">
+        <span className="text-[11px] font-semibold text-slate-400">Módulos de Gestão</span>
+      </div>
 
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={handleResetOrder}
-              className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-white/10 active-press"
-              title="Restaurar Ordem Padrão"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={() => setIsReordering(false)}
-              className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-black text-xs shadow-glass-glow-turq active-press flex items-center gap-1"
-            >
-              <Check className="w-4 h-4 stroke-[3]" />
-              <span>Concluir</span>
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="flex items-center justify-between mb-1.5 px-0.5">
-          <span className="text-[11px] font-semibold text-slate-400">
-            Módulos de Gestão
-          </span>
-          <button
-            onClick={() => setIsReordering(true)}
-            className="text-[10px] text-slate-400 hover:text-amber-300 transition-colors flex items-center gap-1 py-0.5 px-1.5 rounded-lg hover:bg-white/5 active-press"
-            title="Segure qualquer card ou clique aqui para reorganizar a posição"
-          >
-            <Move className="w-3 h-3 text-amber-400" />
-            <span>Mover cards</span>
-          </button>
-        </div>
-      )}
-
-      {/* GRID INTERATIVO DOS 6 CARDS COM ANIMAÇÃO DE 'SOLTO' (JIGGLE / WIGGLE) */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-3.5">
-        {cardOrder.map((cardId, index) => {
+        {cardOrder.map((cardId) => {
           const card = getCardDetails(cardId);
           const Icon = card.icon;
+          const isDragging = drag?.id === cardId;
+
+          const cardStyle: React.CSSProperties = isDragging
+            ? {
+                position: 'fixed',
+                left: drag!.x - drag!.offsetX,
+                top: drag!.y - drag!.offsetY,
+                width: drag!.width,
+                height: drag!.height,
+                zIndex: 100,
+                pointerEvents: 'none',
+                transform: 'scale(1.06)',
+                touchAction: 'none'
+              }
+            : {};
 
           return (
+            // Espaço do grid (permanece reservando o lugar do card enquanto ele é arrastado)
             <div
               key={cardId}
-              draggable={isReordering}
-              onDragStart={() => handleDragStart(cardId)}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={() => handleDrop(cardId)}
-              onTouchStart={startPressTimer}
-              onTouchEnd={cancelPressTimer}
-              onTouchMove={cancelPressTimer}
-              onMouseDown={startPressTimer}
-              onMouseUp={cancelPressTimer}
-              onMouseLeave={cancelPressTimer}
-              onClick={() => handleCardClick(cardId, card.action)}
-              className={`group relative p-3.5 rounded-3xl bg-gradient-to-br ${card.bgClasses} backdrop-blur-2xl flex flex-col justify-between text-left h-40 transition-all overflow-hidden select-none ${
-                isReordering
-                  ? 'animate-wiggle scale-[1.02] shadow-[0_0_20px_rgba(245,158,11,0.35)] ring-2 ring-amber-400/80 cursor-grab active:cursor-grabbing'
-                  : 'active-press cursor-pointer'
-              }`}
+              ref={(el) => {
+                slotRefs.current[cardId] = el;
+              }}
+              className="h-40"
             >
-              {/* Brilho translúcido */}
-              <div className={`absolute -top-10 -right-10 w-24 h-24 ${card.glowColor} rounded-full blur-xl group-hover:opacity-100 transition-all`} />
+              <div
+                onPointerDown={(e) => handlePointerDown(cardId, e)}
+                onPointerMove={handlePointerMovePending}
+                onPointerUp={clearPress}
+                onPointerCancel={clearPress}
+                onContextMenu={(e) => e.preventDefault()}
+                onClick={() => handleCardClick(card.action)}
+                style={{ ...cardStyle, WebkitTouchCallout: 'none' } as React.CSSProperties}
+                className={`group relative p-3.5 rounded-3xl bg-gradient-to-br ${card.bgClasses} backdrop-blur-2xl flex flex-col justify-between text-left h-40 w-full transition-shadow overflow-hidden select-none ${
+                  isDragging
+                    ? 'ring-2 ring-amber-400/80 shadow-[0_18px_40px_rgba(0,0,0,0.6),0_0_25px_rgba(245,158,11,0.45)] cursor-grabbing'
+                    : 'active-press cursor-pointer'
+                }`}
+              >
+                <div className={`absolute -top-10 -right-10 w-24 h-24 ${card.glowColor} rounded-full blur-xl group-hover:opacity-100 transition-all`} />
 
-              {/* Topo do Card */}
-              <div className="flex items-start justify-between w-full z-10">
-                <div className="w-10 h-10 rounded-2xl bg-white/[0.08] border border-white/15 flex items-center justify-center">
-                  <Icon className={`w-5 h-5 stroke-[1.8] ${card.iconColor}`} />
-                </div>
-
-                {/* Controles no Modo Reorganização: Setas de Mover */}
-                {isReordering ? (
-                  <div className="flex items-center gap-1 bg-black/70 p-0.5 rounded-xl border border-amber-400/50 shadow-md">
-                    <button
-                      type="button"
-                      disabled={index === 0}
-                      onClick={(e) => handleMoveCard(index, 'left', e)}
-                      className="p-1 rounded-lg text-amber-300 hover:bg-white/10 disabled:opacity-30 disabled:pointer-events-none active-press"
-                      title="Mover para trás"
-                    >
-                      <ChevronLeft className="w-3.5 h-3.5 stroke-[3]" />
-                    </button>
-                    <button
-                      type="button"
-                      disabled={index === cardOrder.length - 1}
-                      onClick={(e) => handleMoveCard(index, 'right', e)}
-                      className="p-1 rounded-lg text-amber-300 hover:bg-white/10 disabled:opacity-30 disabled:pointer-events-none active-press"
-                      title="Mover para frente"
-                    >
-                      <ChevronRight className="w-3.5 h-3.5 stroke-[3]" />
-                    </button>
+                <div className="flex items-start justify-between w-full z-10">
+                  <div className="w-10 h-10 rounded-2xl bg-white/[0.08] border border-white/15 flex items-center justify-center">
+                    <Icon className={`w-5 h-5 stroke-[1.8] ${card.iconColor}`} />
                   </div>
-                ) : (
                   <span className="p-1 text-slate-500 group-hover:text-slate-300 transition-colors">
                     <MoreVertical className="w-4 h-4" />
                   </span>
-                )}
-              </div>
+                </div>
 
-              {/* Textos */}
-              <div className="z-10">
-                <h3 className="font-extrabold text-sm text-white leading-tight whitespace-pre-line">
-                  {card.title}
-                </h3>
-                <p className="text-[10px] text-slate-300 mt-1 font-medium">
-                  {card.subtitle}
-                </p>
+                <div className="z-10">
+                  <h3 className="font-extrabold text-sm text-white leading-tight whitespace-pre-line">{card.title}</h3>
+                  <p className="text-[10px] text-slate-300 mt-1 font-medium">{card.subtitle}</p>
+                </div>
               </div>
             </div>
           );

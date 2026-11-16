@@ -29,6 +29,13 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.048] — Mover Cards por Arraste com Press Longo (sem botão) e Release v1.0.43 (Build 44)
+- **Data/Hora:** 2026-11-16 00:46 (UTC-3)
+- Removido o botão 'Mover cards' e as setas. Segurando um card (450 ms) ele fica preso ao dedo; ao passar sobre outro, este se afasta com animação e a nova ordem é salva ao soltar.
+- **Tags Git:** `PR.048`, `PR.048.1`, `PR.048.2` | Restauração: `git checkout PR.048`
+
+---
+
 ### [PR.047] — Remoção do Card de Sincronização em Nuvem do Cabeçalho e Release v1.0.42 (Build 43)
 - **Data/Hora:** 2026-11-16 00:44 (UTC-3)
 - Removida a pílula 'Sincronização em Nuvem & Drive Ativa • Cross-Platform' do Header (desktop e mobile).
