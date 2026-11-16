@@ -27,6 +27,27 @@ export interface ResultadoVarreduraOS {
   }>;
 }
 
+export const GRE_DRIVE_FOLDERS: Record<string, string> = {
+  'gre-01': '13OuHS-lr4qn1ohBS-aml5PzJQ-UGs1jo',
+  'gre-02': '1oLatt6cko10pfRmIh3v1270Jjhr3Mojl',
+  'gre-03': '1482U9RVf8RXFCLv_nTLvtW7G30-ZFENm',
+  'gre-04': '1xZtAVXv5Zf9AIvyLxIJCQm3oYfJamozP',
+  'gre-05': '14Bj5-BKk-LPPcow6euYevjNv_V4MLFJT',
+  'gre-08': '1x8evukKGbS9m7X2QPHX-g1TaeHlplQk_',
+  'gre-09': '1wsACbRLJRbzrpR1gOFDGAwY5PT2v7r8L',
+  'gre-10': '1nKKyR7QWQGwxOthJEP1tyDCt6mqqF4CM',
+  'gre-12': '158mEC5xb5u2asZ18NdffiiKkwkuUz34K',
+  'gre-13': '1eM-YNuUZC_Vz9QowL7l0oTNRT-acfxom',
+  'gre-14': '1hCpqgaBQ2-zewvD-0HDz1yTarkU5Lz94',
+  'gre-15': '1CnlQrkY9VoLut-v-gjfR53aRZwu64wp2',
+  'gre-16': '1QsXrJxrjICufNcU_q-Fk1IcxnTCp8KzG',
+  'gre-17': '1nwUtecEowSUyu8m0ST3qMdaot9EWDnRC',
+  'gre-18': '1A_ub985SoAwyC9bvgFlPm5iqGfieL9SZ',
+  'gre-19': '1MfKNKtgSr-1-_n8i-5y-XS2yu_bSUoyL',
+  'gre-20': '1SrHC9BZJ-96lrDpzYGGMS2-OKdLJRnbE',
+  'gre-21': '1nfSzuNUQtar_ER-shhPwOs9ucklvPYKq'
+};
+
 class DriveOSScannerService {
   /**
    * Extrai o Folder ID a partir de qualquer formato de link do Google Drive
@@ -61,7 +82,7 @@ class DriveOSScannerService {
   }
 
   /**
-   * Gera todas as variantes de um número de OS para busca de arquivos (ex: 2026/794)
+   * Gera todas as variantes de um número de OS para busca de arquivos (ex: 2025/671 -> 2025.000671)
    */
   gerarTermosBuscaOS(numeroOS: string): string[] {
     if (!numeroOS) return [];
@@ -69,10 +90,39 @@ class DriveOSScannerService {
     const termos = new Set<string>();
 
     termos.add(limpo);
+    termos.add(limpo.replace(/\//g, '.'));
     termos.add(limpo.replace(/\//g, '-'));
     termos.add(limpo.replace(/\//g, '_'));
     termos.add(limpo.replace(/\//g, ' '));
     termos.add(limpo.replace(/[^0-9]/g, ''));
+
+    // Trata formato YYYY/NNN (ex: 2025/671 -> 2025.000671)
+    const match1 = limpo.match(/^(\d{4})\/(\d+)$/);
+    if (match1) {
+      const ano = match1[1];
+      const num = match1[2];
+      const pad6 = num.padStart(6, '0');
+      termos.add(`${ano}.${pad6}`);
+      termos.add(`${ano}.${num}`);
+      termos.add(`${pad6}.${ano}`);
+      termos.add(`${num}.${ano}`);
+      termos.add(pad6);
+      termos.add(num);
+    }
+
+    // Trata formato NNN/YYYY (ex: 671/2025 -> 2025.000671)
+    const match2 = limpo.match(/^(\d+)\/(\d{4})$/);
+    if (match2) {
+      const num = match2[1];
+      const ano = match2[2];
+      const pad6 = num.padStart(6, '0');
+      termos.add(`${ano}.${pad6}`);
+      termos.add(`${ano}.${num}`);
+      termos.add(`${pad6}.${ano}`);
+      termos.add(`${num}.${ano}`);
+      termos.add(pad6);
+      termos.add(num);
+    }
 
     // Captura parte após a barra (ex: de 2026/794 pega 794)
     const matchBarra = limpo.match(/\/(\d+)/);
@@ -81,12 +131,6 @@ class DriveOSScannerService {
       termos.add(`os ${matchBarra[1]}`);
       termos.add(`os_${matchBarra[1]}`);
       termos.add(`os-${matchBarra[1]}`);
-    }
-
-    // Captura parte antes da barra
-    const matchPrefixo = limpo.match(/(\d+)\//);
-    if (matchPrefixo && matchPrefixo[1]) {
-      termos.add(matchPrefixo[1]);
     }
 
     return Array.from(termos).filter((t) => t.length >= 2);
@@ -139,10 +183,12 @@ class DriveOSScannerService {
   gerarLinkBuscaDrive(greId?: string, numeroOS?: string): string {
     const targetFolderUrl = storage.getPastaGeralOSDriveUrl();
     const folderId = this.extrairFolderId(targetFolderUrl);
+    const greFolderId = greId ? GRE_DRIVE_FOLDERS[greId] : undefined;
+    const effectiveFolderId = greFolderId || folderId;
     const termoBusca = (numeroOS || '').replace(/\//g, '-').trim();
 
-    if (folderId && termoBusca) {
-      return `https://drive.google.com/drive/folders/${folderId}?q=${encodeURIComponent(termoBusca)}`;
+    if (effectiveFolderId && termoBusca) {
+      return `https://drive.google.com/drive/folders/${effectiveFolderId}?q=${encodeURIComponent(termoBusca)}`;
     }
     return targetFolderUrl;
   }

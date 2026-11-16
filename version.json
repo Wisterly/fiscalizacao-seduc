@@ -1,14 +1,15 @@
 {
-  "version": "1.0.33",
-  "buildNumber": 34,
+  "version": "1.0.34",
+  "buildNumber": 35,
   "releaseDate": "2026-11-15",
   "minRequiredVersion": "1.0.0",
   "downloadUrl": "https://github.com/Wisterly/fiscalizacao-seduc/releases/download/apk-latest/Fiscal.IA.apk",
   "changelog": [
-    "Correção no filtro da planilha oficial da Ata SEDUC: inclusão das 66 obras com status A INICIAR (total de 211 obras ativas no estado)",
-    "Inclusão e exibição imediata do CETI Armando Burlamaqui (Oeiras - 8ª GRE, OS 2025/943 no valor de R$ 128.229,78) e demais unidades A INICIAR",
-    "Novas pílulas de filtro rápido na aba de Orçamentos: Todas, Com OS, Em Execução, A Iniciar e Sem OS",
-    "Busca inteligente com tolerância fonética e normalização automática para nomes de escolas e responsáveis",
-    "Atualização automática do cache local para versão v6 garantindo recarregamento imediato"
+    "Reformulação completa da sincronização de Orçamentos e OS conforme orientações detalhadas da Planilha Oficial",
+    "Mapeamento rigoroso das colunas E (GRE), H (Escola), I (Município), J (Valor), K (Número da OS), N (Fiscal), O (Construtora), R (Status da Obra) e S (Status Diário)",
+    "Filtro estrito: Com OS agrupa exclusivamente as obras em EXECUÇÃO na Coluna R; Concluídas, Canceladas, Aguardando Saldo e A Iniciar direcionadas para Sem OS",
+    "Sub-filtros rápidos por Status Diário da Coluna S: Parada (vermelho), Ritmo Lento (âmbar) e Em Execução (verde)",
+    "Integração automática com o novo Google Drive oficial (1NmRb7W-iezPnBufBZo2DAqao8_eTanZy): 579 arquivos de OSs indexados com vinculação direta para visualização e download",
+    "Configurações atualizadas com os novos links oficiais da Planilha da Ata e Pasta Compartilhada de OSs"
   ]
 }

@@ -1,5 +1,7 @@
 import { Escola, OrdemServico } from '../types';
 import { storage } from './storageService';
+import driveArquivosIndex from '../data/driveArquivosIndex.json';
+import { driveOSScanner } from './driveOSScannerService';
 
 export const SEDUC_SHEET_ID = '1SHZdGIlPEgu_M9U0IRak9hyGbc7lsZLXuhNz7pJfNdc';
 export const SEDUC_INEP_GID = '89902018';
@@ -283,19 +285,19 @@ export function parseAtaCsvToOS(csvText: string, currentSchools: Escola[]): {
     if (!rawEscola && !rawNumeroOS) continue;
     if (rawEscola.toUpperCase().includes('NOME ENTIDADE')) continue;
 
-    // FILTRO DE OBRAS ATIVAS (SEDUC ATA):
-    // Inclui ordens de serviço onde a Coluna R (Status Geral) conste EXECUÇÃO ou A INICIAR
+    // REGRA DE OURO SOLICITADA PELO USUÁRIO:
+    // Apenas ordens de serviço onde a Coluna R (Status Geral) conste estritamente EXECUÇÃO (Com OS).
+    // Escolas com Concluída, Cancelada, Aguardando Saldo, A Iniciar ou em branco ficam em "Sem OS".
     const isExecucao = rawStatus.includes('EXECU');
-    const isAIniciar = rawStatus.includes('INICIAR');
-
-    if (!isExecucao && !isAIniciar) {
+    if (!isExecucao) {
       continue;
     }
 
-    // Normaliza status diário e tipoStatus
-    const statusDiarioNormalizado = rawStatusDiario || (isAIniciar ? 'A Iniciar' : 'Em andamento');
+    // Normaliza status diário da Coluna S (Parada, Ritmo Lento, Em andamento)
+    const statusDiarioNormalizado = rawStatusDiario || 'Em andamento';
     const isParada = statusDiarioNormalizado.toLowerCase().includes('parada') || statusDiarioNormalizado.toLowerCase().includes('paralisada');
-    const statusObraLabel = isAIniciar ? 'A INICIAR' : 'EM EXECUÇÃO';
+    const isRitmoLento = statusDiarioNormalizado.toLowerCase().includes('lento') || statusDiarioNormalizado.toLowerCase().includes('ritmo');
+    const statusObraLabel = 'EM EXECUÇÃO';
 
     // Localiza ou cria a Escola
     const greId = extractGreId(rawGre, municipio) || 'gre-01';
@@ -331,7 +333,7 @@ export function parseAtaCsvToOS(csvText: string, currentSchools: Escola[]): {
       schoolByNome.set(normalizeHeader(rawEscola), nova);
     }
 
-    // Valor da OS
+    // Valor da OS (Coluna J)
     const valorClean = (r[colValor] || '').replace(/[^\d,\.-]/g, '').replace(/\./g, '').replace(',', '.');
     const valor = parseFloat(valorClean) || 0;
 
@@ -340,7 +342,7 @@ export function parseAtaCsvToOS(csvText: string, currentSchools: Escola[]): {
     if (r[colPercentual]) {
       const num = parseFloat(r[colPercentual].replace(/[^\d\.]/g, ''));
       if (!isNaN(num)) percentual = Math.min(100, Math.max(0, num));
-    } else if (statusObraLabel === 'EM EXECUÇÃO') {
+    } else {
       percentual = 35;
     }
 
@@ -353,19 +355,25 @@ export function parseAtaCsvToOS(csvText: string, currentSchools: Escola[]): {
     const fiscal = (r[colFiscal] || '').trim() || 'Fiscal SEDUC';
     const arquivoPdfGerado = (r[colPdf] || '').trim();
 
-    // Link do Drive / PDF
-    let osPdfUrl: string | undefined = undefined;
-    let orcamentoPdfUrl: string | undefined = undefined;
+    // VINCULAÇÃO AUTOMÁTICA COM O GOOGLE DRIVE DAS ORDENS DE SERVIÇO
+    const termos = driveOSScanner.gerarTermosBuscaOS(rawNumeroOS);
+    const arquivoEncontrado = (driveArquivosIndex as any[]).find((f: any) => {
+      const fn = (f.fileName || '').toLowerCase();
+      return termos.some((t: string) => fn.includes(t.toLowerCase()));
+    });
 
-    if (arquivoPdfGerado) {
-      if (arquivoPdfGerado.startsWith('http')) {
-        osPdfUrl = arquivoPdfGerado;
-      } else {
-        osPdfUrl = `${driveBaseFolder}`;
-      }
-    } else if (driveBaseFolder) {
-      osPdfUrl = driveBaseFolder;
-      orcamentoPdfUrl = driveBaseFolder;
+    let osPdfUrl: string | undefined = undefined;
+    let osPdfNome: string | undefined = undefined;
+
+    if (arquivoEncontrado) {
+      osPdfUrl = arquivoEncontrado.driveUrl;
+      osPdfNome = arquivoEncontrado.fileName;
+    } else if (arquivoPdfGerado && arquivoPdfGerado.startsWith('http')) {
+      osPdfUrl = arquivoPdfGerado;
+      osPdfNome = `OS_${rawNumeroOS.replace(/\//g, '_')}.pdf`;
+    } else {
+      osPdfUrl = driveOSScanner.gerarLinkBuscaDrive(greId, rawNumeroOS);
+      osPdfNome = `OS_${rawNumeroOS.replace(/\//g, '_')}.pdf`;
     }
 
     const cleanOsId = rawNumeroOS ? rawNumeroOS.replace(/[^0-9a-zA-Z]/g, '_') : `row_${i}`;
@@ -383,7 +391,7 @@ export function parseAtaCsvToOS(csvText: string, currentSchools: Escola[]): {
       dataInicio,
       prazoFinal,
       status: 'ativa',
-      tipoStatus: isParada ? 'paralisada' : isAIniciar ? 'aguardando' : 'em_execucao',
+      tipoStatus: isParada ? 'paralisada' : 'em_execucao',
       statusObra: statusObraLabel,
       statusDiario: statusDiarioNormalizado,
       contratoNumero,
@@ -391,7 +399,9 @@ export function parseAtaCsvToOS(csvText: string, currentSchools: Escola[]): {
       fiscalResponsavel: fiscal,
       arquivoPdfGerado,
       osPdfUrl,
-      orcamentoPdfUrl,
+      osPdfNome,
+      osAnexoAutomatico: true,
+      driveFolderOSUrl: storage.getPastaGeralOSDriveUrl(),
       empresaContratada: construtora,
       orcamentoPdfSimulado: `orcamento_${inep || cleanOsId}.pdf`,
       memorialDescritivoPdfSimulado: `memorial_${inep || cleanOsId}.pdf`,
@@ -399,7 +409,7 @@ export function parseAtaCsvToOS(csvText: string, currentSchools: Escola[]): {
         {
           id: `obs-ata-${i}`,
           data: dataEmissaoOS || new Date().toLocaleDateString('pt-BR'),
-          texto: `Ordem de Serviço ${rawNumeroOS} com status diário [${statusDiarioNormalizado}] e valor ${valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}. Contrato ${contratoNumero || 'S/N'}.`,
+          texto: `Ordem de Serviço ${rawNumeroOS} em EXECUÇÃO com status diário [${statusDiarioNormalizado}] e valor ${valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}. Contrato ${contratoNumero || 'S/N'}. Fiscal: ${fiscal}.`,
           autor: fiscal
         }
       ]

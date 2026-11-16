@@ -29,6 +29,26 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.039] — Reformulação da Sincronização de Orçamentos e OS (Colunas E, H, I, J, K, N, O, R e S), Integração do Novo Drive Oficial (579 OSs), Sub-Filtros Diários e Release v1.0.34 (Build 35)
+- **Data/Hora:** 2026-11-15 23:45 (UTC-3)
+- **Escopos Definidos:**
+  - `PR.039` (Geral): Reformulação completa da sincronização de Ordens de Serviço na aba de Orçamentos conforme as diretrizes precisas da Planilha Oficial da SEDUC:
+    1. **Mapeamento Exato de Colunas:** Coluna E (GRE), Coluna H (Escola), Coluna I (Município), Coluna J (Valor), Coluna K (Número da OS), Coluna N (Fiscal Responsável), Coluna O (Construtora), Coluna R (Status da Obra) e Coluna S (Status Diário).
+    2. **Filtro Estrito 'Com OS' vs 'Sem OS':** A aba **Com OS** agrupa exclusivamente as escolas com ordem de serviço em **`EXECUÇÃO`** na Coluna R (total de 145 ordens em execução no estado). As escolas marcadas como Concluída, Cancelada, Aguardando Saldo, A Iniciar ou em branco são direcionadas para a aba **Sem OS**.
+    3. **Sub-Filtros Rápidos por Status Diário (Coluna S):** Implementação de pílulas táteis com contadores e cores dinâmicas: **Todos**, **Parada** (vermelho), **Ritmo Lento** (âmbar) e **Em Execução** (esmeralda).
+    4. **Integração do Novo Google Drive Oficial:** Rastreamento completo da nova pasta compartilhada (`https://drive.google.com/drive/folders/1NmRb7W-iezPnBufBZo2DAqao8_eTanZy?usp=sharing`) com **579 arquivos de Ordens de Serviço em PDF indexados** nas subpastas das 18 GREs. Casamento automático de números de OS (ex: `2025/671` -> `OS 2025.000671...`) com links diretos para visualização e download ou busca direcionada por GRE.
+    5. **Configurações Centralizadas:** Links padrão salvos e migrados em Configurações > Planilha da Ata e Pasta Compartilhada de OSs do Google Drive. Cache do app elevado para versão `v7` (`seduc_fiscal_os_v7`). Versão atualizada para **v1.0.34 (Build 35)**.
+  - `PR.039.1` (Web / Desktop): Na visualização Web, a aba de Orçamentos oferece alternância imediata entre Com OS, Sem OS e Todas, com visualização do Status Diário e botões diretos de Baixar Ordem de Serviço (PDF do Drive).
+  - `PR.039.2` (Mobile / Android): No smartphone Android, o aplicativo compila com nova versão `versionName 1.0.34` e `versionCode 35`. As pílulas de status diário contam com Safe Area e toque tátil responsivo.
+- **Tags Git:** `PR.039`, `PR.039.1`, `PR.039.2`
+- **Arquivo Local do APK:** `c:\Users\Lenovo\Documents\antigravity\LAB - GPR\Fiscal.IA.lab - GPR\Fiscal.IA.apk`
+- **Comando de Restauração Rápida:**
+  ```bash
+  git checkout PR.039
+  ```
+
+---
+
 ### [PR.038] — Correção e Inclusão das Obras 'A INICIAR' na Ata SEDUC (211 OSs Ativas), CETI Armando Burlamaqui (8ª GRE), Filtros Rápidos de Status, Busca Fonética e Release v1.0.33 (Build 34)
 - **Data/Hora:** 2026-11-15 23:15 (UTC-3)
 - **Escopos Definidos:**

@@ -29,7 +29,7 @@ const STORAGE_KEYS = {
   GRES: 'seduc_fiscal_gres_v4',
   SCHOOLS: 'seduc_fiscal_schools_inep_v7',
   AMBIENTES: 'seduc_fiscal_ambientes_v1',
-  OS: 'seduc_fiscal_os_v6',
+  OS: 'seduc_fiscal_os_v7',
   ALERTAS: 'seduc_fiscal_alertas_v3',
   DEMANDAS: 'seduc_fiscal_demandas_v3',
   TAREFAS: 'seduc_fiscal_tarefas_v3',
@@ -48,10 +48,10 @@ export const DEFAULT_PLANILHA_ATA_URL =
   'https://docs.google.com/spreadsheets/d/1SHZdGIlPEgu_M9U0IRak9hyGbc7lsZLXuhNz7pJfNdc/edit?gid=671056752#gid=671056752';
 
 export const DEFAULT_DRIVE_OBRAS_URL =
-  'https://drive.google.com/drive/folders/1yBJ5EFkqekhkY0-_Yit0K05qGoGBE8je?usp=drive_link';
+  'https://drive.google.com/drive/folders/1NmRb7W-iezPnBufBZo2DAqao8_eTanZy?usp=sharing';
 
 export const DEFAULT_PASTA_GERAL_OS_DRIVE_URL =
-  'https://drive.google.com/drive/folders/1yBJ5EFkqekhkY0-_Yit0K05qGoGBE8je?usp=drive_link';
+  'https://drive.google.com/drive/folders/1NmRb7W-iezPnBufBZo2DAqao8_eTanZy?usp=sharing';
 
 class StorageService {
   constructor() {
@@ -63,10 +63,20 @@ class StorageService {
    */
   private migrarELimparExemplos(): void {
     try {
+      // Migração automática de URLs legadas do Drive para a nova pasta compartilhada oficial
+      const driveUrls = [STORAGE_KEYS.DRIVE_OBRAS_URL, STORAGE_KEYS.PASTA_GERAL_OS_DRIVE_URL];
+      driveUrls.forEach((k) => {
+        const val = localStorage.getItem(k);
+        if (val && val.includes('1yBJ5EFkqekhkY0')) {
+          localStorage.setItem(k, DEFAULT_DRIVE_OBRAS_URL);
+        }
+      });
+
       const chavesAntigas = [
         'seduc_fiscal_os_v1',
         'seduc_fiscal_os_v2',
         'seduc_fiscal_os_v5',
+        'seduc_fiscal_os_v6',
         'seduc_fiscal_alertas_v1',
         'seduc_fiscal_alertas_v2',
         'seduc_fiscal_demandas_v1',
@@ -286,7 +296,7 @@ class StorageService {
 
   // --- Ordens de Serviço & Medição ---
   getOrdensServico(): OrdemServico[] {
-    const CURRENT_OS_CACHE_VERSION = 'v6_211_execucao_e_iniciar_armando_burlamaqui';
+    const CURRENT_OS_CACHE_VERSION = 'v7_execucao_145_drive_1NmRb7W';
     const savedVersion = localStorage.getItem('seduc_fiscal_os_cache_ver');
     const list = this.getItem<OrdemServico[]>(STORAGE_KEYS.OS, INITIAL_OS);
 

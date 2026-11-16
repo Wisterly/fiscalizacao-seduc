@@ -67,7 +67,8 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
   };
 
   const [selectedMunicipio, setSelectedMunicipio] = useState<string>('todos');
-  const [filtroStatus, setFiltroStatus] = useState<'todas' | 'com_os' | 'execucao' | 'a_iniciar' | 'sem_os'>('todas');
+  const [filtroStatus, setFiltroStatus] = useState<'com_os' | 'sem_os' | 'todas'>('com_os');
+  const [filtroDiario, setFiltroDiario] = useState<'todos' | 'parada' | 'ritmo_lento' | 'em_andamento'>('todos');
   const [searchTerm, setSearchTerm] = useState('');
   const [escolaExpandidaId, setEscolaExpandidaId] = useState<string | null>(null);
 
@@ -173,25 +174,34 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
     });
   };
 
-  // Filtragem das escolas
+  // Filtragem das escolas segundo as diretrizes estritas do usuário:
+  // - Com OS: apenas escolas com ordem de serviço em EXECUÇÃO na Coluna R
+  // - Sem OS: escolas sem ordem de serviço em execução (concluída, cancelada, aguardando saldo, a iniciar ou sem OS)
   const filteredSchools = schoolsDaGre.filter((school) => {
     const osDaEscola = getOsListForSchool(school);
 
     const matchesMun = selectedMunicipio === 'todos' || school.municipio === selectedMunicipio;
 
-    const temExecucao = osDaEscola.some(
-      (os) => (os.statusObra || '').toUpperCase().includes('EXECU') || (os.statusDiario || '').toLowerCase().includes('andamento')
-    );
-    const temAIniciar = osDaEscola.some(
-      (os) => (os.statusObra || '').toUpperCase().includes('INICIAR') || (os.statusDiario || '').toLowerCase().includes('iniciar')
+    // Tem OS em Execução (Coluna R = EXECUÇÃO)
+    const hasOsEmExecucao = osDaEscola.some(
+      (os) => (os.statusObra || '').toUpperCase().includes('EXECU') || os.status === 'ativa'
     );
 
     const matchesStatus =
       filtroStatus === 'todas' ||
-      (filtroStatus === 'com_os' && osDaEscola.length > 0) ||
-      (filtroStatus === 'execucao' && temExecucao) ||
-      (filtroStatus === 'a_iniciar' && temAIniciar) ||
-      (filtroStatus === 'sem_os' && osDaEscola.length === 0);
+      (filtroStatus === 'com_os' && hasOsEmExecucao) ||
+      (filtroStatus === 'sem_os' && !hasOsEmExecucao);
+
+    // Filtro pelo Status Diário da Coluna S (Parada, Ritmo Lento, Em andamento)
+    const matchesDiario =
+      filtroDiario === 'todos' ||
+      osDaEscola.some((os) => {
+        const s = (os.statusDiario || '').toLowerCase();
+        if (filtroDiario === 'parada') return s.includes('parada') || s.includes('paralisada');
+        if (filtroDiario === 'ritmo_lento') return s.includes('lento') || s.includes('ritmo');
+        if (filtroDiario === 'em_andamento') return s.includes('andamento') || s.includes('execu');
+        return true;
+      });
 
     const termNorm = normStr(searchTerm);
     // Tolerância fonética/digitação para Amanda Bulamarque -> Armando Burlamaqui
@@ -208,10 +218,11 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
           normStr(os.numeroOS).includes(termNorm) ||
           normStr(os.objeto).includes(termNorm) ||
           normStr(os.empresaContratada).includes(termNorm) ||
-          normStr(os.fiscalResponsavel).includes(termNorm)
+          normStr(os.fiscalResponsavel).includes(termNorm) ||
+          normStr(os.statusDiario).includes(termNorm)
       );
 
-    return matchesMun && matchesStatus && matchesSearch;
+    return matchesMun && matchesStatus && matchesDiario && matchesSearch;
   });
 
   // Ordena para que escolas com OS apareçam no topo
@@ -301,12 +312,44 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
         </div>
       </div>
 
-      {/* 3. PÍLULAS DE FILTRO RÁPIDO & SINCRONIZAÇÃO */}
-      <div className="px-4 mb-4">
+      {/* 3. PÍLULAS DE FILTRO RÁPIDO & SINCRONIZAÇÃO (COM OS / SEM OS / TODAS + STATUS DIÁRIO) */}
+      <div className="px-4 mb-4 space-y-2">
         <div className="flex items-center justify-between gap-2 overflow-x-auto no-scrollbar pb-1">
           <div className="flex items-center gap-1.5 shrink-0">
             <button
-              onClick={() => setFiltroStatus('todas')}
+              onClick={() => {
+                setFiltroStatus('com_os');
+                setFiltroDiario('todos');
+              }}
+              className={`px-3 py-1.5 rounded-full text-xs transition-all active-press flex items-center gap-1.5 ${
+                filtroStatus === 'com_os'
+                  ? 'border-2 border-cyan-400 bg-cyan-500/20 text-cyan-200 font-extrabold shadow-[0_0_12px_rgba(6,182,212,0.3)]'
+                  : 'border border-white/10 bg-slate-900/60 text-slate-400 hover:text-slate-200 font-medium'
+              }`}
+            >
+              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+              <span>Com OS ({schoolsDaGre.filter((s) => getOsListForSchool(s).some(os => (os.statusObra || '').toUpperCase().includes('EXECU') || os.status === 'ativa')).length})</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setFiltroStatus('sem_os');
+                setFiltroDiario('todos');
+              }}
+              className={`px-3 py-1.5 rounded-full text-xs transition-all active-press ${
+                filtroStatus === 'sem_os'
+                  ? 'border-2 border-slate-400 bg-white/10 text-white font-extrabold'
+                  : 'border border-white/10 bg-slate-900/60 text-slate-400 hover:text-slate-200 font-medium'
+              }`}
+            >
+              Sem OS ({schoolsDaGre.filter((s) => !getOsListForSchool(s).some(os => (os.statusObra || '').toUpperCase().includes('EXECU') || os.status === 'ativa')).length})
+            </button>
+
+            <button
+              onClick={() => {
+                setFiltroStatus('todas');
+                setFiltroDiario('todos');
+              }}
               className={`px-3 py-1.5 rounded-full text-xs transition-all active-press ${
                 filtroStatus === 'todas'
                   ? 'border-2 border-amber-400 bg-amber-500/15 text-amber-300 font-extrabold shadow-[0_0_12px_rgba(234,179,8,0.25)]'
@@ -314,50 +357,6 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
               }`}
             >
               Todas ({schoolsDaGre.length})
-            </button>
-
-            <button
-              onClick={() => setFiltroStatus('com_os')}
-              className={`px-3 py-1.5 rounded-full text-xs transition-all active-press ${
-                filtroStatus === 'com_os'
-                  ? 'border-2 border-cyan-400 bg-cyan-500/15 text-cyan-300 font-extrabold shadow-[0_0_12px_rgba(6,182,212,0.25)]'
-                  : 'border border-white/10 bg-slate-900/60 text-slate-400 hover:text-slate-200 font-medium'
-              }`}
-            >
-              Com OS ({schoolsDaGre.filter((s) => getOsListForSchool(s).length > 0).length})
-            </button>
-
-            <button
-              onClick={() => setFiltroStatus('execucao')}
-              className={`px-3 py-1.5 rounded-full text-xs transition-all active-press ${
-                filtroStatus === 'execucao'
-                  ? 'border-2 border-emerald-400 bg-emerald-500/15 text-emerald-300 font-extrabold shadow-[0_0_12px_rgba(16,185,129,0.25)]'
-                  : 'border border-white/10 bg-slate-900/60 text-slate-400 hover:text-slate-200 font-medium'
-              }`}
-            >
-              Em Execução ({schoolsDaGre.filter((s) => getOsListForSchool(s).some((os) => (os.statusObra || '').toUpperCase().includes('EXECU') || (os.statusDiario || '').toLowerCase().includes('andamento'))).length})
-            </button>
-
-            <button
-              onClick={() => setFiltroStatus('a_iniciar')}
-              className={`px-3 py-1.5 rounded-full text-xs transition-all active-press ${
-                filtroStatus === 'a_iniciar'
-                  ? 'border-2 border-blue-400 bg-blue-500/15 text-blue-300 font-extrabold shadow-[0_0_12px_rgba(59,130,246,0.25)]'
-                  : 'border border-white/10 bg-slate-900/60 text-slate-400 hover:text-slate-200 font-medium'
-              }`}
-            >
-              A Iniciar ({schoolsDaGre.filter((s) => getOsListForSchool(s).some((os) => (os.statusObra || '').toUpperCase().includes('INICIAR') || (os.statusDiario || '').toLowerCase().includes('iniciar'))).length})
-            </button>
-
-            <button
-              onClick={() => setFiltroStatus('sem_os')}
-              className={`px-3 py-1.5 rounded-full text-xs transition-all active-press ${
-                filtroStatus === 'sem_os'
-                  ? 'border-2 border-slate-400 bg-white/10 text-white font-extrabold'
-                  : 'border border-white/10 bg-slate-900/60 text-slate-400 hover:text-slate-200 font-medium'
-              }`}
-            >
-              Sem OS ({schoolsDaGre.filter((s) => getOsListForSchool(s).length === 0).length})
             </button>
           </div>
 
@@ -384,6 +383,56 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
             </button>
           </div>
         </div>
+
+        {/* SUB-PÍLULAS DE STATUS DIÁRIO (Coluna S: Parada, Ritmo Lento, Em andamento) */}
+        {filtroStatus !== 'sem_os' && (
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-0.5">
+            <span className="text-[10px] uppercase font-bold text-slate-400 shrink-0 mr-0.5">Diário:</span>
+            <button
+              onClick={() => setFiltroDiario('todos')}
+              className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all active-press ${
+                filtroDiario === 'todos'
+                  ? 'bg-slate-700 text-white border border-slate-500'
+                  : 'bg-slate-900/40 text-slate-400 border border-white/5 hover:text-slate-300'
+              }`}
+            >
+              Todos
+            </button>
+            <button
+              onClick={() => setFiltroDiario('parada')}
+              className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all active-press flex items-center gap-1 ${
+                filtroDiario === 'parada'
+                  ? 'bg-red-500/25 text-red-300 border border-red-500/50 shadow-sm'
+                  : 'bg-red-500/10 text-red-400/80 border border-red-500/20 hover:text-red-300'
+              }`}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
+              <span>Parada ({schoolsDaGre.filter((s) => getOsListForSchool(s).some(os => (os.statusDiario || '').toLowerCase().includes('parada') || (os.statusDiario || '').toLowerCase().includes('paralisada'))).length})</span>
+            </button>
+            <button
+              onClick={() => setFiltroDiario('ritmo_lento')}
+              className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all active-press flex items-center gap-1 ${
+                filtroDiario === 'ritmo_lento'
+                  ? 'bg-amber-500/25 text-amber-300 border border-amber-500/50 shadow-sm'
+                  : 'bg-amber-500/10 text-amber-400/80 border border-amber-500/20 hover:text-amber-300'
+              }`}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+              <span>Ritmo Lento ({schoolsDaGre.filter((s) => getOsListForSchool(s).some(os => (os.statusDiario || '').toLowerCase().includes('lento') || (os.statusDiario || '').toLowerCase().includes('ritmo'))).length})</span>
+            </button>
+            <button
+              onClick={() => setFiltroDiario('em_andamento')}
+              className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all active-press flex items-center gap-1 ${
+                filtroDiario === 'em_andamento'
+                  ? 'bg-emerald-500/25 text-emerald-300 border border-emerald-500/50 shadow-sm'
+                  : 'bg-emerald-500/10 text-emerald-400/80 border border-emerald-500/20 hover:text-emerald-300'
+              }`}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              <span>Em Execução ({schoolsDaGre.filter((s) => getOsListForSchool(s).some(os => (os.statusDiario || '').toLowerCase().includes('andamento') || (os.statusDiario || '').toLowerCase().includes('execu'))).length})</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* 4. LISTA DE CARDS DE TODAS AS ESCOLAS DA GRE */}
