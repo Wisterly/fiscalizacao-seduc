@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   FileText,
   Search,
@@ -20,7 +20,8 @@ import {
   FileCode,
   CheckCircle2,
   FolderOpen,
-  FolderSearch
+  FolderSearch,
+  AlertTriangle
 } from 'lucide-react';
 import { OrdemServico, GRE, Escola } from '../../types';
 import { DocumentPreviewModal } from './DocumentPreviewModal';
@@ -29,6 +30,12 @@ import { GreSelector } from '../vistorias/GreSelector';
 import { syncAtaFromGoogleSheets } from '../../services/sheetsSyncService';
 import { storage } from '../../services/storageService';
 import { driveOSScanner } from '../../services/driveOSScannerService';
+import {
+  LocalAttachmentRecord,
+  saveLocalAttachment,
+  deleteLocalAttachment,
+  getAllLocalAttachmentsMap
+} from '../../services/orcamentosDbService';
 
 interface OrcamentosViewProps {
   ordensServico: OrdemServico[];
@@ -71,6 +78,79 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
   const [filtroDiario, setFiltroDiario] = useState<'todos' | 'parada' | 'ritmo_lento' | 'em_andamento' | 'aguardando_inicio'>('todos');
   const [searchTerm, setSearchTerm] = useState('');
   const [escolaExpandidaId, setEscolaExpandidaId] = useState<string | null>(null);
+
+  // Sistema Híbrido de Documentos Locais via IndexedDB (Seção 6.2 do Prompt Mestre)
+  const [localAttachments, setLocalAttachments] = useState<Record<string, LocalAttachmentRecord>>({});
+
+  useEffect(() => {
+    getAllLocalAttachmentsMap().then((map) => {
+      setLocalAttachments(map);
+    });
+  }, []);
+
+  const handleUploadLocalDoc = async (osId: string, tipo: 'orcamento' | 'os', file?: File | null) => {
+    if (!file) return;
+    try {
+      const saved = await saveLocalAttachment(osId, tipo, file);
+      setLocalAttachments((prev) => ({
+        ...prev,
+        [saved.key]: saved
+      }));
+    } catch (err: any) {
+      alert(`Erro ao anexar documento offline: ${err?.message || err}`);
+    }
+  };
+
+  const handleRemoveLocalDoc = async (osId: string, tipo: 'orcamento' | 'os') => {
+    if (!window.confirm('Remover este anexo local salvo no aparelho?')) return;
+    const ok = await deleteLocalAttachment(osId, tipo);
+    if (ok) {
+      setLocalAttachments((prev) => {
+        const next = { ...prev };
+        delete next[`${osId}_${tipo}`];
+        return next;
+      });
+    }
+  };
+
+  const handleViewLocalDoc = (record: LocalAttachmentRecord) => {
+    const link = document.createElement('a');
+    link.href = record.dataUrl;
+    link.download = record.name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Atualização rápida de Status Geral ou Situação Operacional direto no Card (Seção 5.2 e 6.3)
+  const handleUpdateOsField = (os: OrdemServico, field: 'statusObra' | 'statusDiario', value: string) => {
+    const updated: OrdemServico = {
+      ...os,
+      [field]: value
+    };
+
+    const stGeral = (field === 'statusObra' ? value : os.statusObra || '').toUpperCase();
+    const stDiario = (field === 'statusDiario' ? value : os.statusDiario || '').toUpperCase();
+
+    if (stDiario.includes('PARADA') || stGeral.includes('PARALISADA')) {
+      updated.tipoStatus = 'paralisada';
+    } else if (stGeral.includes('CONCLU') || stDiario.includes('CONCLU')) {
+      updated.tipoStatus = 'finalizada';
+      updated.status = 'historico';
+    } else if (stGeral.includes('INICIAR') || stGeral.includes('AGUARDANDO')) {
+      updated.tipoStatus = 'aguardando';
+      updated.status = 'ativa';
+    } else {
+      updated.tipoStatus = 'em_execucao';
+      updated.status = 'ativa';
+    }
+
+    if (onSaveOS) {
+      onSaveOS(updated);
+    } else {
+      storage.saveOrdemServico(updated);
+    }
+  };
 
   // Modais
   const [previewDoc, setPreviewDoc] = useState<{ os: OrdemServico; tipo: 'orcamento' | 'memorial' } | null>(null);
@@ -505,12 +585,19 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
             const osList = getOsListForSchool(school);
             const isExpandida = escolaExpandidaId === school.id;
             const totalOrcadoEscola = osList.reduce((acc, os) => acc + (os.valorOrcamento || 0), 0);
+            const hasObraParada = osList.some(
+              (os) =>
+                (os.statusDiario || '').toUpperCase().includes('PARADA') ||
+                (os.statusObra || '').toUpperCase().includes('PARALISADA')
+            );
 
             return (
               <div
                 key={school.id}
                 className={`rounded-2xl border backdrop-blur-xl transition-all duration-200 overflow-hidden ${
-                  osList.length > 0
+                  hasObraParada
+                    ? 'bg-slate-900/90 border-rose-500/50 shadow-lg shadow-rose-950/20'
+                    : osList.length > 0
                     ? 'bg-slate-900/80 border-amber-500/25 shadow-glass hover:border-amber-400/40'
                     : 'bg-slate-900/50 border-white/10 hover:border-white/20'
                 }`}
@@ -536,6 +623,12 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
                           ? '0 Orçamentos / OS'
                           : `${osList.length} ${osList.length === 1 ? 'OS Cadastrada' : 'OSs Cadastradas'}`}
                       </span>
+                      {hasObraParada && (
+                        <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-rose-500/20 text-rose-300 border border-rose-500/40 flex items-center gap-1 animate-pulse">
+                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                          OBRA PARADA
+                        </span>
+                      )}
                     </div>
 
                     <h3 className="text-xs font-black text-white leading-snug">
@@ -596,219 +689,316 @@ export const OrcamentosView: React.FC<OrcamentosViewProps> = ({
                         </div>
 
                         {osList.map((os) => {
-                          const temOSPdf = Boolean(os.osPdfBlob || os.osPdfUrl || os.drivePdfUrl || os.downloadPdfUrl || os.arquivoPdfGerado);
-                          const temOrcamentoPdf = Boolean(os.orcamentoPdfBlob || os.orcamentoPdfUrl || os.orcamentoPdfSimulado);
-                          const driveBase = storage.getDriveObrasUrl();
+                          const statusGeralTexto = (os.statusObra || 'EM EXECUÇÃO').toUpperCase().trim();
+                          const statusDiarioTexto = (os.statusDiario || (statusGeralTexto.includes('INICIAR') ? 'AGUARDANDO INÍCIO' : 'EM ANDAMENTO')).toUpperCase().trim();
 
-                          const handleDownloadOS = () => {
-                            if (os.osPdfBlob) {
-                              handleOpenOrDownload(os.osPdfBlob, os.osPdfNome || `OS_${os.numeroOS}.pdf`);
-                            } else if (os.downloadPdfUrl && os.downloadPdfUrl.startsWith('http')) {
-                              window.open(os.downloadPdfUrl, '_blank');
-                            } else if (os.drivePdfUrl && os.drivePdfUrl.startsWith('http')) {
-                              window.open(os.drivePdfUrl, '_blank');
-                            } else if (os.osPdfUrl && os.osPdfUrl.startsWith('http')) {
-                              window.open(os.osPdfUrl, '_blank');
-                            } else if (os.arquivoPdfGerado && os.arquivoPdfGerado.startsWith('http')) {
-                              window.open(os.arquivoPdfGerado, '_blank');
-                            } else {
-                              const linkDrive = driveOSScanner.gerarLinkBuscaDrive(os.greId, os.numeroOS);
-                              window.open(linkDrive, '_blank');
-                            }
+                          const isParada =
+                            statusDiarioTexto.includes('PARADA') ||
+                            statusDiarioTexto.includes('PARALISADA') ||
+                            statusGeralTexto.includes('PARALISADA');
+                          const isRitmoLento = statusDiarioTexto.includes('LENTO') || statusDiarioTexto.includes('RITMO');
+                          const isAIniciar = statusGeralTexto.includes('INICIAR') || statusDiarioTexto.includes('INÍCIO');
+
+                          // Links oficiais do Google Drive (Seção 6.1)
+                          const driveOrcamentoUrl = os.orcamentoPdfUrl && os.orcamentoPdfUrl.startsWith('http') ? os.orcamentoPdfUrl : null;
+                          const driveOsUrlCandidate = os.drivePdfUrl || os.osPdfUrl || os.arquivoPdfGerado;
+                          const driveOsUrl = driveOsUrlCandidate && driveOsUrlCandidate.startsWith('http') ? driveOsUrlCandidate : null;
+
+                          // Anexos locais persistidos no IndexedDB (Seção 6.2)
+                          const localOrcamento = localAttachments[`${os.id}_orcamento`] || null;
+                          const localOS = localAttachments[`${os.id}_os`] || null;
+
+                          const getStatusBadgeClass = (st: string) => {
+                            if (st.includes('EXECU')) return 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+                            if (st.includes('INICIAR')) return 'bg-purple-500/20 text-purple-300 border border-purple-500/40';
+                            if (st.includes('PARALIS')) return 'bg-rose-500/20 text-rose-300 border border-rose-500/40';
+                            if (st.includes('CONCLU')) return 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40';
+                            if (st.includes('CANCEL')) return 'bg-slate-700/60 text-slate-300 border border-slate-600';
+                            return 'bg-amber-500/20 text-amber-300 border border-amber-500/40';
                           };
-
-                          const handleDownloadOrcamento = () => {
-                            if (os.orcamentoPdfBlob) {
-                              handleOpenOrDownload(
-                                os.orcamentoPdfBlob,
-                                os.orcamentoPdfNome || `Orcamento_${os.numeroOS}.pdf`
-                              );
-                            } else if (os.orcamentoPdfUrl && os.orcamentoPdfUrl.startsWith('http')) {
-                              window.open(os.orcamentoPdfUrl, '_blank');
-                            } else if (driveBase) {
-                              window.open(driveBase, '_blank');
-                            } else {
-                              setPreviewDoc({ os, tipo: 'orcamento' });
-                            }
-                          };
-
-                          // O usuário solicitou que o status exibido em destaque seja o STATUS DIÁRIO (Coluna S da Planilha da Ata)
-                          const statusDiarioTexto = (os.statusDiario || (os.statusObra === 'A INICIAR' ? 'Aguardando Início' : 'Em andamento')).trim();
-                          const isParada = statusDiarioTexto.toLowerCase().includes('parada') || statusDiarioTexto.toLowerCase().includes('paralisada');
-                          const isRitmoLento = statusDiarioTexto.toLowerCase().includes('lento') || statusDiarioTexto.toLowerCase().includes('ritmo');
-                          const isAIniciar = (os.statusObra || '').toUpperCase().includes('INICIAR') || statusDiarioTexto.toLowerCase().includes('iniciar') || statusDiarioTexto.toLowerCase().includes('início');
-                          const isAndamento = !isAIniciar && (statusDiarioTexto.toLowerCase().includes('andamento') || statusDiarioTexto.toLowerCase().includes('execu'));
-                          const isPendencia = statusDiarioTexto.toLowerCase().includes('pend');
 
                           return (
                             <div
                               key={os.id}
-                              className="p-3.5 rounded-2xl bg-slate-900/90 border border-white/10 space-y-3 shadow-md"
+                              className={`bg-slate-900 border ${
+                                isParada ? 'border-rose-500/50 shadow-rose-950/30' : 'border-slate-800'
+                              } rounded-2xl p-4 flex flex-col gap-3 shadow-xl transition-all`}
                             >
-                              {/* Topo da OS com Status Diário e Status da Obra em Destaque Obrigatório */}
+                              {/* Topo: Regional, Unidade Escolar, Empresa e Badges (Seção 6.3) */}
                               <div className="flex items-start justify-between gap-2">
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex items-center gap-2 flex-wrap">
-                                    <span className="font-mono text-xs font-black text-amber-300 bg-amber-500/10 px-2.5 py-0.5 rounded-lg border border-amber-500/25 shadow-sm">
-                                      OS Nº {os.numeroOS}
-                                    </span>
-
-                                    {/* BADGE DE STATUS GERAL DA OBRA (Coluna R: EM EXECUÇÃO / A INICIAR) */}
-                                    <span
-                                      className={`text-[10px] font-black px-2 py-0.5 rounded-full border uppercase tracking-wider ${
-                                        isAIniciar
-                                          ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
-                                          : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                                      }`}
-                                    >
-                                      {os.statusObra || (isAIniciar ? 'A INICIAR' : 'EM EXECUÇÃO')}
-                                    </span>
-
-                                    {/* BADGE DE STATUS DIÁRIO (Coluna S) */}
-                                    <span
-                                      className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border uppercase tracking-wider flex items-center gap-1.5 shadow-sm ${
-                                        isParada
-                                          ? 'bg-red-500/20 text-red-300 border-red-500/40 shadow-red-500/10'
-                                          : isRitmoLento
-                                          ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-amber-500/10'
-                                          : isAIniciar
-                                          ? 'bg-purple-500/20 text-purple-200 border-purple-500/40'
-                                          : isAndamento
-                                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-emerald-500/10'
-                                          : isPendencia
-                                          ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40'
-                                          : 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
-                                      }`}
-                                    >
-                                      <span
-                                        className={`w-2 h-2 rounded-full animate-pulse ${
-                                          isParada
-                                            ? 'bg-red-400'
-                                            : isRitmoLento
-                                            ? 'bg-amber-400'
-                                            : isAIniciar
-                                            ? 'bg-purple-400'
-                                            : isAndamento
-                                            ? 'bg-emerald-400'
-                                            : 'bg-cyan-400'
-                                        }`}
-                                      />
-                                      <span>Diário: {statusDiarioTexto.toUpperCase()}</span>
-                                    </span>
-                                  </div>
-
-                                  <p className="text-xs font-extrabold text-white mt-1.5 leading-snug">
-                                    {os.objeto || 'Serviços de Manutenção Predial e Reforma Geral'}
+                                <div className="flex-1 min-w-0">
+                                  <span className="text-[10px] font-bold uppercase tracking-wider text-blue-400">
+                                    {String(activeGre.numero).padStart(2, '0')}ª GRE • {activeGre.sede}
+                                  </span>
+                                  <h4 className="text-sm font-black text-white tracking-tight leading-snug">
+                                    {school.nome}
+                                  </h4>
+                                  <p className="text-xs text-slate-400 mt-0.5">
+                                    <span className="text-slate-300">📍 {os.municipio || school.municipio}</span> • Empresa:{' '}
+                                    <strong className="text-slate-200">{os.empresaContratada}</strong>
                                   </p>
-
-                                  <div className="text-[11px] text-slate-300 mt-1 space-y-0.5">
-                                    <p>
-                                      Empresa: <strong className="text-white">{os.empresaContratada}</strong>
-                                      {os.contratoNumero && (
-                                        <span className="text-slate-400 ml-1.5">• Contrato: <strong className="text-amber-200">{os.contratoNumero}</strong></span>
-                                      )}
+                                  {os.fiscalResponsavel && (
+                                    <p className="text-[11px] text-slate-400 mt-0.5">
+                                      Fiscal: <strong className="text-slate-300">{os.fiscalResponsavel}</strong>
                                     </p>
-                                    {os.fiscalResponsavel && (
-                                      <p className="text-slate-400">
-                                        Fiscal Responsável: <strong className="text-slate-300">{os.fiscalResponsavel}</strong>
-                                      </p>
-                                    )}
-                                  </div>
+                                  )}
                                 </div>
 
-                                <div className="text-right shrink-0">
-                                  <span className="text-[10px] text-slate-400 block font-medium">Valor Orçado</span>
-                                  <span className="text-xs sm:text-sm font-extrabold text-amber-400 font-mono">
+                                <div className="flex flex-col items-end gap-1.5 shrink-0">
+                                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${getStatusBadgeClass(statusGeralTexto)}`}>
+                                    {statusGeralTexto}
+                                  </span>
+
+                                  {isParada ? (
+                                    <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-rose-500/20 text-rose-300 border border-rose-500/40 flex items-center gap-1 animate-pulse">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                                      🚨 OBRA PARADA
+                                    </span>
+                                  ) : isRitmoLento ? (
+                                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                                      {statusDiarioTexto}
+                                    </span>
+                                  ) : isAIniciar ? (
+                                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-purple-500/15 text-purple-300 border border-purple-500/30">
+                                      {statusDiarioTexto}
+                                    </span>
+                                  ) : (
+                                    <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                                      {statusDiarioTexto}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Destaque: Ordem de Serviço e Valor (Seção 6.3) */}
+                              <div className="grid grid-cols-2 gap-2 bg-slate-950/60 border border-slate-800 rounded-xl p-2.5">
+                                <div className="flex flex-col">
+                                  <span className="text-[9px] uppercase font-bold text-slate-400">Ordem de Serviço (OS):</span>
+                                  <span className="font-mono text-xs font-black text-blue-300 truncate">{os.numeroOS}</span>
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="text-[9px] uppercase font-bold text-slate-400">Valor da OS:</span>
+                                  <span className="font-mono text-xs font-black text-emerald-400 truncate">
                                     {formatarMoeda(os.valorOrcamento)}
                                   </span>
                                 </div>
                               </div>
 
-                              {/* INDICAÇÃO DE ANEXO AUTOMÁTICO DE OS OU STATUS DOS ARQUIVOS */}
-                              <div className="flex items-center justify-between gap-1 text-[10px] px-1 text-slate-400">
-                                <span className="flex items-center gap-1 truncate">
-                                  {os.osAnexoAutomatico ? (
-                                    <span className="text-emerald-400 font-semibold flex items-center gap-1 truncate">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                                      OS vinculada automaticamente do Drive: <strong className="text-white truncate">{os.osPdfNome || 'Arquivo PDF'}</strong>
-                                    </span>
-                                  ) : (
-                                    <span>OS: {os.osPdfNome || 'Pasta Geral do Drive'}</span>
-                                  )}
+                              {/* Módulo Híbrido de Arquivos: Google Drive + IndexedDB Local (Seção 6) */}
+                              <div className="bg-slate-950/80 border border-slate-800/80 rounded-xl p-3 flex flex-col gap-2.5">
+                                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                                  <span>📁</span> Orçamento e Ordem de Serviço (Arquivos)
                                 </span>
 
-                                <span className="text-amber-300 font-medium shrink-0">
-                                  {temOrcamentoPdf ? 'Orçamento anexado' : 'Orçamento: Anexo Manual'}
-                                </span>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                  {/* Orçamento */}
+                                  <div className="flex flex-col gap-1.5 p-2 rounded-lg bg-slate-900 border border-slate-800">
+                                    <span className="text-[10px] font-bold text-slate-300">📑 Orçamento</span>
+                                    {driveOrcamentoUrl ? (
+                                      <a
+                                        href={driveOrcamentoUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="px-2.5 py-1.5 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-cyan-500/30 transition-colors"
+                                      >
+                                        <span>🔗</span> Ver no Drive ↗
+                                      </a>
+                                    ) : localOrcamento ? (
+                                      <div className="flex items-center justify-between gap-1">
+                                        <button
+                                          type="button"
+                                          onClick={() => handleViewLocalDoc(localOrcamento)}
+                                          className="px-2 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs truncate flex-1 text-left flex items-center gap-1"
+                                          title={`Baixar / Abrir ${localOrcamento.name}`}
+                                        >
+                                          <span>📄</span>
+                                          <span className="truncate">{localOrcamento.name}</span>
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleRemoveLocalDoc(os.id, 'orcamento')}
+                                          className="p-1.5 text-rose-400 hover:bg-rose-500/20 rounded"
+                                          title="Remover anexo local"
+                                        >
+                                          ✕
+                                        </button>
+                                      </div>
+                                    ) : os.orcamentoPdfBlob ? (
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          handleOpenOrDownload(
+                                            os.orcamentoPdfBlob,
+                                            os.orcamentoPdfNome || `Orcamento_${os.numeroOS}.pdf`
+                                          )
+                                        }
+                                        className="px-2.5 py-1.5 rounded-lg bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 text-xs font-bold flex items-center justify-center gap-1.5"
+                                      >
+                                        <Download className="w-3.5 h-3.5" />
+                                        <span>Baixar Orçamento</span>
+                                      </button>
+                                    ) : (
+                                      <label className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer active-press transition-colors">
+                                        <span>📎</span> Anexar Orçamento
+                                        <input
+                                          type="file"
+                                          className="hidden"
+                                          accept=".pdf,.xlsx,.xls,.png,.jpg,.jpeg"
+                                          onChange={(e) => {
+                                            handleUploadLocalDoc(os.id, 'orcamento', e.target.files?.[0]);
+                                            e.target.value = '';
+                                          }}
+                                        />
+                                      </label>
+                                    )}
+                                  </div>
+
+                                  {/* Ordem de Serviço (OS) */}
+                                  <div className="flex flex-col gap-1.5 p-2 rounded-lg bg-slate-900 border border-slate-800">
+                                    <span className="text-[10px] font-bold text-slate-300">📋 Ordem de Serviço (OS)</span>
+                                    {localOS ? (
+                                      <div className="flex items-center justify-between gap-1">
+                                        <button
+                                          type="button"
+                                          onClick={() => handleViewLocalDoc(localOS)}
+                                          className="px-2 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs truncate flex-1 text-left flex items-center gap-1"
+                                          title={`Baixar / Abrir ${localOS.name}`}
+                                        >
+                                          <span>📄</span>
+                                          <span className="truncate">{localOS.name}</span>
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleRemoveLocalDoc(os.id, 'os')}
+                                          className="p-1.5 text-rose-400 hover:bg-rose-500/20 rounded"
+                                          title="Remover anexo local"
+                                        >
+                                          ✕
+                                        </button>
+                                      </div>
+                                    ) : driveOsUrl ? (
+                                      <div className="flex items-center gap-1.5">
+                                        <a
+                                          href={driveOsUrl}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          className="flex-1 px-2.5 py-1.5 rounded-lg bg-blue-500/20 text-blue-300 border border-blue-500/40 text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-blue-500/30 transition-colors"
+                                        >
+                                          <span>🔗</span> Ver no Drive ↗
+                                        </a>
+                                        <label
+                                          className="px-2 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-bold cursor-pointer"
+                                          title="Anexar via local no celular (IndexedDB)"
+                                        >
+                                          📎
+                                          <input
+                                            type="file"
+                                            className="hidden"
+                                            accept=".pdf,.png,.jpg,.jpeg"
+                                            onChange={(e) => {
+                                              handleUploadLocalDoc(os.id, 'os', e.target.files?.[0]);
+                                              e.target.value = '';
+                                            }}
+                                          />
+                                        </label>
+                                      </div>
+                                    ) : os.osPdfBlob ? (
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          handleOpenOrDownload(os.osPdfBlob, os.osPdfNome || `OS_${os.numeroOS}.pdf`)
+                                        }
+                                        className="px-2.5 py-1.5 rounded-lg bg-blue-500/15 text-blue-300 border border-blue-500/30 text-xs font-bold flex items-center justify-center gap-1.5"
+                                      >
+                                        <Download className="w-3.5 h-3.5" />
+                                        <span>Baixar OS</span>
+                                      </button>
+                                    ) : (
+                                      <label className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer active-press transition-colors">
+                                        <span>📎</span> Anexar OS
+                                        <input
+                                          type="file"
+                                          className="hidden"
+                                          accept=".pdf,.png,.jpg,.jpeg"
+                                          onChange={(e) => {
+                                            handleUploadLocalDoc(os.id, 'os', e.target.files?.[0]);
+                                            e.target.value = '';
+                                          }}
+                                        />
+                                      </label>
+                                    )}
+                                  </div>
+                                </div>
                               </div>
 
-                              {/* BOTÕES DE DOWNLOAD DO ORÇAMENTO E DA ORDEM DE SERVIÇO EM DESTAQUE */}
-                              <div className="grid grid-cols-2 gap-2 pt-1 border-t border-white/10">
-                                {/* Botão Orçamento (Processo Manual Conforme Especificado) */}
-                                <button
-                                  type="button"
-                                  onClick={handleDownloadOrcamento}
-                                  className="p-2.5 rounded-xl text-[11px] font-extrabold flex items-center justify-center gap-1.5 transition-all active-press border bg-cyan-500/15 border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/25 shadow-sm"
-                                  title="Baixar ou anexar manualmente o arquivo de Orçamento (PDF / Planilha)"
-                                >
-                                  {temOrcamentoPdf ? (
-                                    <Download className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                                  ) : (
-                                    <Plus className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                                  )}
-                                  <span className="truncate">
-                                    {temOrcamentoPdf ? 'Baixar Orçamento' : '+ Anexar Orçamento (Manual)'}
-                                  </span>
-                                </button>
+                              {/* Seletores Rápidos de Status Geral e Situação Operacional (Seção 5.2 e 6.3) */}
+                              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800">
+                                <div>
+                                  <label className="text-[9px] uppercase font-bold text-slate-400 block mb-0.5">
+                                    Status Geral
+                                  </label>
+                                  <select
+                                    value={statusGeralTexto}
+                                    onChange={(e) => handleUpdateOsField(os, 'statusObra', e.target.value)}
+                                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-white outline-none focus:border-cyan-400"
+                                  >
+                                    <option value="EM EXECUÇÃO">EM EXECUÇÃO</option>
+                                    <option value="CONCLUÍDO">CONCLUÍDO</option>
+                                    <option value="A INICIAR">A INICIAR</option>
+                                    <option value="AGUARDANDO SALDO">AGUARDANDO SALDO</option>
+                                    <option value="PARALISADA">PARALISADA</option>
+                                    <option value="CANCELADA">CANCELADA</option>
+                                  </select>
+                                </div>
 
-                                {/* Botão Baixar Ordem de Serviço (Localizada e Anexada Automaticamente do Drive) */}
-                                <button
-                                  type="button"
-                                  onClick={handleDownloadOS}
-                                  className="p-2.5 rounded-xl text-[11px] font-extrabold flex items-center justify-center gap-1.5 transition-all active-press border bg-emerald-500/15 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/25 shadow-sm"
-                                  title="Baixar ou visualizar Ordem de Serviço (PDF localizado automaticamente no Drive)"
-                                >
-                                  <Download className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                                  <span className="truncate">Baixar Ordem de Serviço</span>
-                                </button>
+                                <div>
+                                  <label className="text-[9px] uppercase font-bold text-slate-400 block mb-0.5">
+                                    Situação Operacional
+                                  </label>
+                                  <select
+                                    value={statusDiarioTexto}
+                                    onChange={(e) => handleUpdateOsField(os, 'statusDiario', e.target.value)}
+                                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-white outline-none focus:border-cyan-400"
+                                  >
+                                    <option value="EM ANDAMENTO">EM ANDAMENTO</option>
+                                    <option value="PARADA">PARADA</option>
+                                    <option value="RITMO LENTO">RITMO LENTO</option>
+                                    <option value="AGUARDANDO INÍCIO">AGUARDANDO INÍCIO</option>
+                                    <option value="CONCLUÍDO">CONCLUÍDO</option>
+                                  </select>
+                                </div>
                               </div>
 
-                              {/* Ações da OS: Editar / Excluir */}
-                              <div className="flex items-center justify-between pt-1 border-t border-white/5 text-[10px]">
-                                <span className="text-slate-400">
-                                  Vigência: <strong className="text-slate-300">{os.prazoFinal || '180 dias'}</strong>
-                                </span>
+                              {/* Ações Discretas da OS: Editar / Excluir (SEM data de término conforme Seção 5.3) */}
+                              <div className="flex items-center justify-end gap-2 pt-1 border-t border-white/5 text-[10px]">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setModalSchool(school);
+                                    setModalOS(os);
+                                  }}
+                                  className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-cyan-300 flex items-center gap-1 active-press"
+                                  title="Editar dados e anexos desta OS"
+                                >
+                                  <Edit3 className="w-3 h-3" />
+                                  <span>Editar</span>
+                                </button>
 
-                                <div className="flex items-center gap-2">
+                                {onDeleteOS && (
                                   <button
                                     type="button"
                                     onClick={() => {
-                                      setModalSchool(school);
-                                      setModalOS(os);
+                                      if (confirm(`Deseja realmente remover a OS ${os.numeroOS}?`)) {
+                                        onDeleteOS(os.id);
+                                      }
                                     }}
-                                    className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-cyan-300 flex items-center gap-1 active-press"
-                                    title="Editar dados e anexos desta OS"
+                                    className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 flex items-center gap-1 active-press"
+                                    title="Excluir OS"
                                   >
-                                    <Edit3 className="w-3 h-3" />
-                                    <span>Editar</span>
+                                    <Trash2 className="w-3 h-3" />
+                                    <span>Excluir</span>
                                   </button>
-
-                                  {onDeleteOS && (
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        if (confirm(`Deseja realmente remover a OS ${os.numeroOS}?`)) {
-                                          onDeleteOS(os.id);
-                                        }
-                                      }}
-                                      className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 flex items-center gap-1 active-press"
-                                      title="Excluir OS"
-                                    >
-                                      <Trash2 className="w-3 h-3" />
-                                      <span>Excluir</span>
-                                    </button>
-                                  )}
-                                </div>
+                                )}
                               </div>
                             </div>
                           );

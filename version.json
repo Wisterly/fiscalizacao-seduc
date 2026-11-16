@@ -1,16 +1,15 @@
 {
-  "version": "1.0.35",
-  "buildNumber": 36,
+  "version": "1.0.36",
+  "buildNumber": 37,
   "releaseDate": "2026-11-16",
   "minRequiredVersion": "1.0.0",
   "downloadUrl": "https://github.com/Wisterly/fiscalizacao-seduc/releases/download/apk-latest/Fiscal.IA.apk",
   "changelog": [
-    "Inclusão das obras com status 'A INICIAR' no filtro 'Com OS' junto com as em 'EXECUÇÃO', totalizando 211 Ordens de Serviço ativas em todo o Piauí",
-    "Correção e homologação completa da 8ª GRE (Oeiras): CETI Armando Burlamaqui (OS 2025/943), CETI Família Agrícola Dom Edilberto III (OS 2026/794) e 100% das 11 ordens ativas",
-    "Sintetização dinâmica de escolas para unidades sem registro prévio na GRE (ex: Cine Rex, UE Marechal Pires Ferreira, Antigo Prédio José Narciso), eliminando 100% das ordens órfãs",
-    "Casamento inteligente e tolerante por INEP, ID e remoção de prefixos institucionais (CETI, CEJA, U.E., Unidade Escolar)",
-    "Novo sub-filtro rápido e badge específico para obras 'A Iniciar' (Aguardando Início) na aba de Orçamentos e OS",
-    "Vinculação direta e download de arquivos em PDF do Google Drive para todas as 211 ordens de serviço ativas",
-    "Atualização forçada do cache local de OS para versão v8 garantindo sincronização instantânea em todos os dispositivos"
+    "Implementação integral do padrão do Prompt Mestre (Seções 5 e 6) na aba de Orçamentos e OS",
+    "Sistema Híbrido de Documentos com banco offline IndexedDB (db_orcamentos_os / anexos_obras) integrado ao Google Drive para Orçamentos e Ordens de Serviço",
+    "Upload inline instantâneo de Orçamento e OS direto no card da obra com remoção e visualização offline no aparelho",
+    "Tratamento especial de obras 'Em Execução mas Paradas': borda avermelhada (border-rose-500/50) e badge pulsante 🚨 OBRA PARADA",
+    "Seletores interativos inline no card para alterar diretamente Status Geral e Situação Operacional",
+    "Omissão de previsão/data de término do card conforme regra de negócio da Seção 5.3"
   ]
 }

@@ -29,6 +29,26 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.041] — Implementação Integral do Prompt Mestre na Aba de Orçamentos e OS (Sistema Híbrido Google Drive + IndexedDB, Alerta Obra Parada, Seletores Inline e Release v1.0.36 / Build 37)
+- **Data/Hora:** 2026-11-16 00:12 (UTC-3)
+- **Escopos Definidos:**
+  - `PR.041` (Geral): Implementação completa das especificações técnicas das Seções 5 e 6 do `PROMPT_MESTRE_MEDICOES_ORCAMENTOS_OS_COMPLETO.md` na aba de Orçamentos e OS:
+    1. **Sistema Híbrido de Documentos (`orcamentosDbService.ts`):** Criação do banco local offline **IndexedDB** (`db_orcamentos_os` / object store `anexos_obras`) integrado à vinculação automática do **Google Drive**. Permite anexar arquivos de Orçamento (PDF, Excel, imagens) e Ordem de Serviço diretamente no card da obra com persistência offline ilimitada no celular, além de visualização e remoção instantâneas.
+    2. **Tratamento Especial "Em Execução mas Paradas":** Cards de escolas e OSs com situação operacional `PARADA` ou status `PARALISADA` recebem borda avermelhada (`border-rose-500/50`) e badge vermelho pulsante `🚨 OBRA PARADA`.
+    3. **Seletores Interativos Inline:** Adicionados dropdowns diretamente no card da obra para alteração instantânea do **Status Geral** (`EM EXECUÇÃO`, `CONCLUÍDO`, `A INICIAR`, `AGUARDANDO SALDO`, `PARALISADA`, `CANCELADA`) e da **Situação Operacional** (`EM ANDAMENTO`, `PARADA`, `RITMO LENTO`, `AGUARDANDO INÍCIO`, `CONCLUÍDO`).
+    4. **Omissão de Data de Término:** Removida a exibição de prazo/vigência de conclusão do card conforme diretriz da Seção 5.3, mantendo foco estrito em Regional, Escola, Município, Empresa, Número da OS, Valor da OS, Badges e Módulo de Arquivos.
+    5. **Preservação Integral das Regras de Filtragem:** Mantidas todas as 211 OSs ativas (`EXECUÇÃO` + `A INICIAR`), sintetização dinâmica de escolas sem ordens órfãs e busca fonética. Versão atualizada para **v1.0.36 (Build 37)**.
+  - `PR.041.1` (Web / Desktop): Na visualização Web, os cards exibem o módulo híbrido Drive + IndexedDB com upload direto em 1 clique e seletores responsivos de status.
+  - `PR.041.2` (Mobile / Android): No smartphone Android, o aplicativo compila com `versionName 1.0.36` e `versionCode 37`, persistindo anexos pesados de campo no IndexedDB nativo da WebView sem estourar o limite do `localStorage`.
+- **Tags Git:** `PR.041`, `PR.041.1`, `PR.041.2`
+- **Arquivo Local do APK:** `c:\Users\Lenovo\Documents\antigravity\LAB - GPR\Fiscal.IA.lab - GPR\Fiscal.IA.apk`
+- **Comando de Restauração Rápida:**
+  ```bash
+  git checkout PR.041
+  ```
+
+---
+
 ### [PR.040] — Diagnóstico de Filtragem por GRE, Inclusão de Obras 'A INICIAR' no Filtro 'Com OS' (211 OSs Ativas), Sintetização de Escolas Órfãs e Release v1.0.35 (Build 36)
 - **Data/Hora:** 2026-11-16 00:05 (UTC-3)
 - **Escopos Definidos:**
