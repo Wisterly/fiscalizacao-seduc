@@ -153,9 +153,9 @@ export function App() {
     syncAtaSilencioso();
   }, []);
 
-  // Varredura de atualização OTA na inicialização do aplicativo (em até 1.5 a 2 segundos)
+  // Varredura de atualização OTA na inicialização e sempre que o aplicativo voltar ao foco (resume)
   useEffect(() => {
-    const timer = setTimeout(async () => {
+    const triggerCheck = async () => {
       try {
         const res = await checkForUpdate();
         if (res.hasUpdate && res.metadata) {
@@ -165,11 +165,29 @@ export function App() {
           });
         }
       } catch (err) {
-        console.warn('Checagem OTA rápida inicial:', err);
+        console.warn('Checagem OTA rápida:', err);
       }
-    }, 1500);
+    };
 
-    return () => clearTimeout(timer);
+    const timer = setTimeout(triggerCheck, 1200);
+
+    let appStateListener: any = null;
+    CapApp.addListener('appStateChange', ({ isActive }) => {
+      if (isActive) {
+        triggerCheck();
+      }
+    })
+      .then((l) => {
+        appStateListener = l;
+      })
+      .catch(() => {});
+
+    return () => {
+      clearTimeout(timer);
+      if (appStateListener) {
+        appStateListener.remove();
+      }
+    };
   }, []);
 
   // --- Gestão Inteligente do Botão / Gesto Voltar (Android & Navegador) ---

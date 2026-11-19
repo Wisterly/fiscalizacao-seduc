@@ -64,15 +64,16 @@ export const VERCEL_APP_URL = 'https://fiscalizacao-seduc.vercel.app';
 export const DEFAULT_APK_DOWNLOAD_URL =
   'https://github.com/Wisterly/fiscalizacao-seduc/releases/download/apk-latest/Fiscal.IA.apk';
 
-export const CURRENT_APP_VERSION = '1.0.29';
-export const CURRENT_BUILD_NUMBER = 30;
+export const CURRENT_APP_VERSION = '1.0.47';
+export const CURRENT_BUILD_NUMBER = 48;
 
 /**
- * Busca os metadados de versão com fallback em múltiplos canais (Vercel -> GitHub -> Local)
+ * Busca os metadados de versão com fallback em múltiplos canais (GitHub API -> Vercel -> GitHub Raw -> Local)
  */
 async function fetchRemoteVersionMetadata(): Promise<VersionMetadata | null> {
   const timestamp = Date.now();
   const endpoints = [
+    `https://api.github.com/repos/Wisterly/fiscalizacao-seduc/contents/version.json?ref=main&_t=${timestamp}`,
     `${VERCEL_APP_URL}/version.json?_t=${timestamp}`,
     `${GITHUB_REPO_URL}/main/version.json?_t=${timestamp}`,
     `/version.json?_t=${timestamp}`
@@ -80,7 +81,11 @@ async function fetchRemoteVersionMetadata(): Promise<VersionMetadata | null> {
 
   for (const url of endpoints) {
     try {
-      const response = await fetch(url, { cache: 'no-store' });
+      const isGhApi = url.includes('api.github.com');
+      const response = await fetch(url, {
+        cache: 'no-store',
+        headers: isGhApi ? { Accept: 'application/vnd.github.v3.raw' } : undefined
+      });
       if (response.ok) {
         const data = await response.json();
         if (data && data.buildNumber) {

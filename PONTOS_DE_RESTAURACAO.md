@@ -29,6 +29,19 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.052] — Detecção Instantânea de Atualização OTA sem Cache (GitHub API + Resume Listener) e Sincronização de Versão v1.0.47 (Build 48)
+- **Data/Hora:** 2026-11-19 01:57 (UTC-3)
+- **Escopos Definidos:**
+  - `PR.052` (Geral):
+    1. **Consulta OTA Instantânea (`appUpdater.ts`):** Adicionado endpoint direto da GitHub Contents API (`Accept: application/vnd.github.v3.raw`) como canal primário de checagem de versão, eliminando o atraso de 1 a 3 minutos do deploy da Vercel e do cache CDN do `raw.githubusercontent.com`.
+    2. **Checagem ao Retornar ao Foco (`App.tsx`):** Adicionado listener `appStateChange` do Capacitor para disparar `checkForUpdate()` automaticamente sempre que o fiscal reabrir ou voltar ao aplicativo em segundo plano.
+    3. **Sincronização do Botão de Download Direto (`ConfigView.tsx` e `appUpdater.ts`):** Atualizado `CURRENT_APP_VERSION` (`1.0.47`) / `CURRENT_BUILD_NUMBER` (`48`) e vinculado o rótulo do botão "Baixar Novo APK Direto" à versão remota em tempo real (`remoteMetadata?.version`).
+  - `PR.052.1` (Web / Desktop): Sincronizado em `https://fiscalizacao-seduc.vercel.app`.
+  - `PR.052.2` (Mobile / Android): APK Android compilado com `versionName 1.0.47` e `versionCode 48` e publicado imediatamente na release `apk-latest`.
+- **Tags Git:** `PR.052`, `PR.052.1`, `PR.052.2` | Restauração: `git checkout PR.052`
+
+---
+
 ### [PR.051] — Rascunho Automático de Vistorias (24h no IndexedDB), Modo Disparo Contínuo com Carrossel Horizontal e Reabertura/Edição de Relatórios Concluídos (Release v1.0.46 / Build 47)
 - **Data/Hora:** 2026-11-19 01:42 (UTC-3)
 - **Escopos Definidos:**

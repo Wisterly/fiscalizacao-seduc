@@ -57,6 +57,7 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
   // Estado do OTA Update
   const [checkingUpdate, setCheckingUpdate] = useState(false);
   const [installedInfo, setInstalledInfo] = useState<AppInfo | null>(null);
+  const [remoteMetadata, setRemoteMetadata] = useState<VersionMetadata | null>(null);
   const [updateStatus, setUpdateStatus] = useState<string | null>(null);
 
   // Estado da Sincronização em Nuvem & Google Drive
@@ -180,6 +181,15 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
 
   useEffect(() => {
     getInstalledAppInfo().then((info) => setInstalledInfo(info));
+    checkForUpdate()
+      .then((res) => {
+        if (res.installed) setInstalledInfo(res.installed);
+        if (res.metadata) setRemoteMetadata(res.metadata);
+        if (res.hasUpdate && res.metadata) {
+          setUpdateStatus(`Nova versão disponível: v${res.metadata.version} (#${res.metadata.buildNumber})`);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const handleSync = () => {
@@ -197,9 +207,10 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
     try {
       const res = await checkForUpdate();
       setInstalledInfo(res.installed);
+      if (res.metadata) setRemoteMetadata(res.metadata);
 
       if (res.hasUpdate && res.metadata) {
-        setUpdateStatus('Nova versão encontrada!');
+        setUpdateStatus(`Nova versão encontrada: v${res.metadata.version} (#${res.metadata.buildNumber})!`);
         if (onOpenUpdateModal) {
           onOpenUpdateModal(res.metadata, res.installed);
         }
@@ -543,13 +554,15 @@ export const ConfigView: React.FC<ConfigViewProps> = ({
             </button>
 
             <a
-              href={DEFAULT_APK_DOWNLOAD_URL}
+              href={remoteMetadata?.downloadUrl || DEFAULT_APK_DOWNLOAD_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="w-full py-2 px-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 hover:text-white text-[11px] font-semibold flex items-center justify-center gap-1.5 active-press transition-colors"
             >
               <Download className="w-3.5 h-3.5 text-cyan-400" />
-              <span>Baixar Novo APK Direto (v{CURRENT_APP_VERSION})</span>
+              <span>
+                Baixar Novo APK Direto (v{remoteMetadata?.version || installedInfo?.versionName || CURRENT_APP_VERSION})
+              </span>
             </a>
           </div>
         </div>
