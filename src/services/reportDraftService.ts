@@ -51,7 +51,12 @@ export const reportDraftService = {
         const tx = db.transaction(STORE_NAME, 'readwrite');
         const store = tx.objectStore(STORE_NAME);
         store.put(record);
-        tx.oncomplete = () => resolve();
+        tx.oncomplete = () => {
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('gpr:draft-updated', { detail: { escolaId: record.escolaId } }));
+          }
+          resolve();
+        };
         tx.onerror = () => reject(tx.error);
       });
     } catch (err) {
@@ -108,7 +113,12 @@ export const reportDraftService = {
         const tx = db.transaction(STORE_NAME, 'readwrite');
         const store = tx.objectStore(STORE_NAME);
         store.delete(escolaId);
-        tx.oncomplete = () => resolve();
+        tx.oncomplete = () => {
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('gpr:draft-updated', { detail: { escolaId } }));
+          }
+          resolve();
+        };
         tx.onerror = () => reject(tx.error);
       });
     } catch (err) {

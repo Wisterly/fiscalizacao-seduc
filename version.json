@@ -1,11 +1,12 @@
 ﻿{
-  "version": "1.0.48",
-  "buildNumber": 49,
+  "version": "1.0.49",
+  "buildNumber": 50,
   "releaseDate": "2026-11-19",
   "minRequiredVersion": "1.0.0",
   "downloadUrl": "https://github.com/Wisterly/fiscalizacao-seduc/releases/download/apk-latest/Fiscal.IA.apk",
   "changelog": [
-    "Correção do carrossel horizontal de fotos: toque simples apenas seleciona a foto para edição; modo de exclusão só ativa ao pressionar e segurar (long press)",
-    "Salvamento automático em rascunho no IndexedDB com retenção de 24 horas e reabertura/edição completa de relatórios finalizados"
+    "Card de relatório em rascunho exibido diretamente na linha do tempo da escola com efeito blur e tarja RASCUNHO (basta tocar para continuar, sem banner de restaurar)",
+    "Caixa de texto rápida (+ Novo Ambiente) diretamente na edição da foto para digitar e confirmar com OK, selecionando o novo ambiente automaticamente",
+    "Carrossel horizontal de fotos com seleção em 1 toque e exclusão somente ao pressionar e segurar (long press)"
   ]
 }

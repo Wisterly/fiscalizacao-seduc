@@ -29,6 +29,18 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.054] — Card de Relatório em Rascunho na Linha do Tempo com Blur + Tarja RASCUNHO e Caixa Rápida "+ Novo Ambiente" na Foto (Release v1.0.49 / Build 50)
+- **Data/Hora:** 2026-11-19 02:44 (UTC-3)
+- **Escopos Definidos:**
+  - `PR.054` (Geral):
+    1. **Card de Rascunho na Lista de Relatórios (`SchoolTimeline.tsx` e `NewLevantamentoModal.tsx`):** Removido o banner de restauração dentro do modal. Agora, quando existe um relatório em andamento (até 24h), ele aparece diretamente no topo da linha do tempo de relatórios da escola com o esqueleto do relatório desfocado (`blur` + vidro translúcido) e uma tarja central destacada **`RASCUNHO`**. Ao clicar nele, o fiscal já continua exatamente de onde parou sem botões intermediários. Também pode ser excluído segurando o card (`long press`).
+    2. **Caixa de Texto Inline para `+ Novo Ambiente` Direto na Foto (`NewLevantamentoModal.tsx`):** Corrigido o botão `+ Novo Ambiente` no painel da foto selecionada para abrir um card/caixa de texto ali mesmo com foco automático e botão **`OK`** (ou tecla `Enter`). Ao confirmar, o novo ambiente é cadastrado globalmente, adicionado ao quantitativo da escola e selecionado automaticamente na foto ativa.
+  - `PR.054.1` (Web / Desktop): Sincronizado em `https://fiscalizacao-seduc.vercel.app`.
+  - `PR.054.2` (Mobile / Android): APK Android compilado com `versionName 1.0.49` e `versionCode 50` e publicado na release `apk-latest`.
+- **Tags Git:** `PR.054`, `PR.054.1`, `PR.054.2` | Restauração: `git checkout PR.054`
+
+---
+
 ### [PR.053] — Correção da Interação no Carrossel de Fotos (Toque Simples Seleciona, Pressionar e Segurar Ativa Modo de Exclusão) e Release v1.0.48 (Build 49)
 - **Data/Hora:** 2026-11-19 02:18 (UTC-3)
 - **Escopos Definidos:**

@@ -67,9 +67,12 @@ export const NewLevantamentoModal: React.FC<NewLevantamentoModalProps> = ({
     return initial;
   });
 
-  // Modal para criação de novo ambiente global
+  // Modal para criação de novo ambiente global (Seção 2 e Seção 3 da foto ativa)
   const [showNovoAmbienteInput, setShowNovoAmbienteInput] = useState(false);
   const [nomeNovoAmbiente, setNomeNovoAmbiente] = useState('');
+  const [showPhotoNovoAmbienteInput, setShowPhotoNovoAmbienteInput] = useState(false);
+  const [nomePhotoNovoAmbiente, setNomePhotoNovoAmbiente] = useState('');
+  const [pendingSelectAmbienteName, setPendingSelectAmbienteName] = useState<string | null>(null);
 
   // 3. Fotos Catalogadas (Suporte a Disparo Contínuo & Carrossel Horizontal)
   const [fotos, setFotos] = useState<FotoLevantamento[]>(() => levantamentoParaEditar?.fotos || []);
@@ -82,20 +85,26 @@ export const NewLevantamentoModal: React.FC<NewLevantamentoModalProps> = ({
 
   // 4. Gerenciamento de Rascunho Automático (TTL de 24h)
   const [activeDraft, setActiveDraft] = useState<ReportDraft | null>(null);
-  const [draftBannerVisible, setDraftBannerVisible] = useState(false);
   const [draftSavedAt, setDraftSavedAt] = useState<number | null>(null);
 
-  // Efeito: Carrega rascunho persistido (se não estiver em modo de edição de laudo existente)
+  // Efeito: Carrega e restaura automaticamente o rascunho persistido (sem banner de confirmação)
   useEffect(() => {
     if (isEditing) return;
 
     let isMounted = true;
     reportDraftService.getDraft(school.id).then((draft) => {
       if (!isMounted || !draft) return;
-      // Se houver fotos ou motivo, mostra opção de restauração
-      if (draft.fotos.length > 0 || draft.motivoVisita.trim()) {
+      if (draft.fotos.length > 0 || draft.motivoVisita.trim() || draft.observacoesDiretora.trim()) {
         setActiveDraft(draft);
-        setDraftBannerVisible(true);
+        setMotivoVisita(draft.motivoVisita || '');
+        setObservacoesDiretora(draft.observacoesDiretora || '');
+        if (draft.ambientesQuantitativo && Object.keys(draft.ambientesQuantitativo).length > 0) {
+          setQuantitativos(draft.ambientesQuantitativo);
+        }
+        if (draft.fotos && draft.fotos.length > 0) {
+          setFotos(draft.fotos);
+          setSelectedPhotoIndex(0);
+        }
       }
     });
 
@@ -103,6 +112,31 @@ export const NewLevantamentoModal: React.FC<NewLevantamentoModalProps> = ({
       isMounted = false;
     };
   }, [school.id, isEditing]);
+
+  // Efeito: Quando um novo ambiente é criado a partir da foto ativa, seleciona-o automaticamente na foto e adiciona 1 no quantitativo
+  useEffect(() => {
+    if (!pendingSelectAmbienteName) return;
+    const matched = ambientes.find(
+      (a) => a.nome.toLowerCase() === pendingSelectAmbienteName.toLowerCase()
+    );
+    if (matched) {
+      setQuantitativos((prev) => ({
+        ...prev,
+        [matched.id]: Math.max(1, prev[matched.id] || 0)
+      }));
+      setFotos((prev) => {
+        if (!prev[selectedPhotoIndex]) return prev;
+        const updated = [...prev];
+        updated[selectedPhotoIndex] = {
+          ...updated[selectedPhotoIndex],
+          ambienteId: matched.id,
+          ambienteNome: matched.nome
+        };
+        return updated;
+      });
+      setPendingSelectAmbienteName(null);
+    }
+  }, [ambientes, pendingSelectAmbienteName, selectedPhotoIndex]);
 
   // Efeito: Salva rascunho automaticamente a cada alteração (com debounce de 600ms)
   useEffect(() => {
@@ -128,28 +162,6 @@ export const NewLevantamentoModal: React.FC<NewLevantamentoModalProps> = ({
     }
   }, [school.id, levantamentoParaEditar?.id, dataHoraAtual, motivoVisita, observacoesDiretora, quantitativos, fotos, activeDraft]);
 
-  // Restaurar rascunho recuperado
-  const handleRestaurarRascunho = () => {
-    if (!activeDraft) return;
-    setMotivoVisita(activeDraft.motivoVisita || '');
-    setObservacoesDiretora(activeDraft.observacoesDiretora || '');
-    if (activeDraft.ambientesQuantitativo && Object.keys(activeDraft.ambientesQuantitativo).length > 0) {
-      setQuantitativos(activeDraft.ambientesQuantitativo);
-    }
-    if (activeDraft.fotos && activeDraft.fotos.length > 0) {
-      setFotos(activeDraft.fotos);
-      setSelectedPhotoIndex(0);
-    }
-    setDraftBannerVisible(false);
-  };
-
-  // Descartar rascunho
-  const handleDescartarRascunho = async () => {
-    await reportDraftService.deleteDraft(school.id);
-    setActiveDraft(null);
-    setDraftBannerVisible(false);
-  };
-
   // Manipulador de quantitativo
   const handleAlterarQtd = (ambId: string, delta: number) => {
     setQuantitativos((prev) => {
@@ -159,13 +171,25 @@ export const NewLevantamentoModal: React.FC<NewLevantamentoModalProps> = ({
     });
   };
 
-  // Criação de novo ambiente global
+  // Criação de novo ambiente global (Seção 2)
   const handleCriarAmbiente = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nomeNovoAmbiente.trim()) return;
-    onAddAmbienteGlobal(nomeNovoAmbiente.trim());
+    const trimmed = nomeNovoAmbiente.trim();
+    if (!trimmed) return;
+    onAddAmbienteGlobal(trimmed);
+    setPendingSelectAmbienteName(trimmed);
     setNomeNovoAmbiente('');
     setShowNovoAmbienteInput(false);
+  };
+
+  // Criação de novo ambiente direto na Foto Ativa (Seção 3)
+  const handleCriarAmbienteNaFoto = () => {
+    const trimmed = nomePhotoNovoAmbiente.trim();
+    if (!trimmed) return;
+    onAddAmbienteGlobal(trimmed);
+    setPendingSelectAmbienteName(trimmed);
+    setNomePhotoNovoAmbiente('');
+    setShowPhotoNovoAmbienteInput(false);
   };
 
   // Compressão Otimizada de Imagem: Preserva resolução total de engenharia (Full HD 1920px) sem estourar memória
@@ -486,39 +510,6 @@ export const NewLevantamentoModal: React.FC<NewLevantamentoModalProps> = ({
             <X className="w-5 h-5" />
           </button>
         </div>
-
-        {/* Banner de Rascunho Recuperado (quando houver rascunho anterior de até 24h) */}
-        {draftBannerVisible && activeDraft && !isEditing && (
-          <div className="p-3 bg-gradient-to-r from-amber-950/80 via-slate-900 to-amber-950/80 border-b border-amber-500/30 flex items-center justify-between gap-2.5 animate-fadeIn">
-            <div className="flex items-center gap-2 min-w-0">
-              <RotateCcw className="w-4 h-4 text-amber-400 shrink-0" />
-              <div className="min-w-0">
-                <p className="text-xs font-bold text-amber-200 truncate">
-                  Rascunho recente recuperado ({activeDraft.fotos.length} fotos)
-                </p>
-                <p className="text-[10px] text-amber-400/80">
-                  {reportDraftService.formatDraftRemainingTime(activeDraft.updatedAt)} para expiração
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-1.5 shrink-0">
-              <button
-                type="button"
-                onClick={handleRestaurarRascunho}
-                className="px-2.5 py-1 rounded-xl bg-amber-500 text-slate-950 font-extrabold text-[11px] active-press shadow-sm"
-              >
-                Continuar
-              </button>
-              <button
-                type="button"
-                onClick={handleDescartarRascunho}
-                className="px-2 py-1 rounded-xl bg-slate-800 border border-white/10 text-slate-400 hover:text-white text-[10px] active-press"
-              >
-                Descartar
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* Formulário com Rolagem Fluida */}
         <form onSubmit={handleFinalizarLevantamento} className="p-3.5 sm:p-5 overflow-y-auto space-y-4 no-scrollbar flex-1">
@@ -917,19 +908,64 @@ export const NewLevantamentoModal: React.FC<NewLevantamentoModalProps> = ({
                     </div>
 
                     {/* 1. Escolha do Ambiente da Foto Selecionada */}
-                    <div>
+                    <div className="space-y-2">
                       <div className="flex items-center justify-between mb-1">
                         <label className="text-[11px] font-bold text-slate-300">
                           Ambiente Desta Foto *
                         </label>
                         <button
                           type="button"
-                          onClick={() => setShowNovoAmbienteInput(true)}
-                          className="text-[10px] text-amber-300 font-semibold hover:underline"
+                          onClick={() => setShowPhotoNovoAmbienteInput((prev) => !prev)}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-amber-500/15 border border-amber-500/35 text-[10px] text-amber-300 font-bold hover:text-amber-200 active-press"
                         >
-                          + Novo Ambiente
+                          <Plus className="w-3 h-3" />
+                          <span>Novo Ambiente</span>
                         </button>
                       </div>
+
+                      {/* Caixa de Texto Inline para Adicionar Novo Ambiente Direto na Foto */}
+                      {showPhotoNovoAmbienteInput && (
+                        <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-2 animate-fadeIn">
+                          <span className="text-[10px] text-amber-300 font-semibold block">
+                            Digite o nome do novo ambiente para inserir e selecionar nesta foto:
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              autoFocus
+                              placeholder="Ex: Quadra Coberta, Refeitório, Sala 09..."
+                              value={nomePhotoNovoAmbiente}
+                              onChange={(e) => setNomePhotoNovoAmbiente(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  handleCriarAmbienteNaFoto();
+                                }
+                              }}
+                              className="flex-1 text-xs bg-slate-900 border border-amber-500/40 rounded-xl px-3 py-1.5 text-white placeholder-slate-400 focus:outline-none focus:border-amber-400"
+                            />
+                            <button
+                              type="button"
+                              onClick={handleCriarAmbienteNaFoto}
+                              className="px-3 py-1.5 rounded-xl bg-amber-500 text-slate-950 font-extrabold text-xs active-press shadow-sm"
+                            >
+                              OK
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowPhotoNovoAmbienteInput(false);
+                                setNomePhotoNovoAmbiente('');
+                              }}
+                              className="p-1.5 rounded-xl bg-slate-800 border border-white/10 text-slate-400 hover:text-white active-press"
+                              title="Cancelar"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
                       <select
                         value={activePhoto.ambienteId}
                         onChange={(e) => {

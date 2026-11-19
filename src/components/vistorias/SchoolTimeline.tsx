@@ -23,6 +23,7 @@ import { EditSchoolModal } from './EditSchoolModal';
 import { SchoolOSSection } from './SchoolOSSection';
 import { DocumentPreviewModal } from '../orcamentos/DocumentPreviewModal';
 import { storage } from '../../services/storageService';
+import { reportDraftService, ReportDraft } from '../../services/reportDraftService';
 
 interface SchoolTimelineProps {
   school: Escola;
@@ -63,6 +64,30 @@ export const SchoolTimeline: React.FC<SchoolTimelineProps> = ({
     propOrdensServico || storage.getOrdensServico()
   );
   const [previewDoc, setPreviewDoc] = useState<{ os: OrdemServico; tipo: 'orcamento' | 'memorial' } | null>(null);
+  const [schoolDraft, setSchoolDraft] = useState<ReportDraft | null>(null);
+
+  // Carrega rascunho ativo da escola (até 24h) para exibir na linha do tempo com tarja RASCUNHO
+  useEffect(() => {
+    let isMounted = true;
+    const loadDraft = () => {
+      reportDraftService.getDraft(school.id).then((d) => {
+        if (!isMounted) return;
+        if (d && (d.fotos.length > 0 || d.motivoVisita.trim() || d.observacoesDiretora.trim())) {
+          setSchoolDraft(d);
+        } else {
+          setSchoolDraft(null);
+        }
+      });
+    };
+    loadDraft();
+
+    const handleDraftChanged = () => loadDraft();
+    window.addEventListener('gpr:draft-updated', handleDraftChanged);
+    return () => {
+      isMounted = false;
+      window.removeEventListener('gpr:draft-updated', handleDraftChanged);
+    };
+  }, [school.id, levantamentos]);
 
   useEffect(() => {
     if (propOrdensServico) {
@@ -173,17 +198,29 @@ export const SchoolTimeline: React.FC<SchoolTimelineProps> = ({
     onVisualizarLevantamento(lev);
   };
 
+  const DRAFT_CARD_ID = '__draft__';
+  const totalCardsCount = sortedLevantamentos.length + (schoolDraft ? 1 : 0);
+
   const handleToggleAll = () => {
-    if (selectedIds.size === sortedLevantamentos.length) {
+    const allIds = [
+      ...(schoolDraft ? [DRAFT_CARD_ID] : []),
+      ...sortedLevantamentos.map((l) => l.id)
+    ];
+    if (selectedIds.size === allIds.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(sortedLevantamentos.map((l) => l.id)));
+      setSelectedIds(new Set(allIds));
     }
   };
 
-  const handleConfirmDelete = () => {
-    if (onDeleteLevantamentos && selectedIds.size > 0) {
-      onDeleteLevantamentos(Array.from(selectedIds));
+  const handleConfirmDelete = async () => {
+    if (selectedIds.has(DRAFT_CARD_ID)) {
+      await reportDraftService.deleteDraft(school.id);
+      setSchoolDraft(null);
+    }
+    const realIds = Array.from(selectedIds).filter((id) => id !== DRAFT_CARD_ID);
+    if (onDeleteLevantamentos && realIds.length > 0) {
+      onDeleteLevantamentos(realIds);
     }
     setShowDeleteConfirm(false);
     setSelectionMode(false);
@@ -405,7 +442,7 @@ export const SchoolTimeline: React.FC<SchoolTimelineProps> = ({
               onClick={handleToggleAll}
               className="px-2.5 py-1.5 rounded-xl bg-white/5 border border-white/10 text-[11px] font-bold text-slate-200 active-press"
             >
-              {selectedIds.size === sortedLevantamentos.length ? 'Desmarcar' : 'Todos'}
+              {selectedIds.size === totalCardsCount ? 'Desmarcar' : 'Todos'}
             </button>
             <button
               type="button"
@@ -422,9 +459,9 @@ export const SchoolTimeline: React.FC<SchoolTimelineProps> = ({
         <div className="flex items-center justify-between mb-3 px-1">
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
             <Calendar className="w-3.5 h-3.5 text-cyan-400" />
-            Relatórios & Vistorias ({sortedLevantamentos.length})
+            Relatórios & Vistorias ({totalCardsCount})
           </h3>
-          {sortedLevantamentos.length > 0 && (
+          {totalCardsCount > 0 && (
             <span className="text-[10px] text-slate-500">Segure no card para excluir</span>
           )}
         </div>
@@ -432,7 +469,127 @@ export const SchoolTimeline: React.FC<SchoolTimelineProps> = ({
 
       {/* Linha do Tempo Vertical dos Relatórios */}
       <div className="relative pl-6 pb-8 space-y-4 before:content-[''] before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-gradient-to-b before:from-cyan-500/60 before:via-slate-700 before:to-transparent">
-        {sortedLevantamentos.length === 0 ? (
+        {/* Card de Rascunho Ativo com Efeito Blur e Tarja RASCUNHO */}
+        {schoolDraft && (() => {
+          const isDraftSelected = selectedIds.has(DRAFT_CARD_ID);
+          const draftFotosCount = schoolDraft.fotos.length;
+
+          return (
+            <div
+              key={DRAFT_CARD_ID}
+              onPointerDown={(e) => handlePointerDown(DRAFT_CARD_ID, e)}
+              onPointerUp={clearPressTimer}
+              onPointerCancel={clearPressTimer}
+              onPointerMove={handlePointerMove}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                activateSelectionFor(DRAFT_CARD_ID);
+              }}
+              onClick={() => {
+                if (longPressTriggeredRef.current) {
+                  longPressTriggeredRef.current = false;
+                  return;
+                }
+                if (selectionMode) {
+                  setSelectedIds((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(DRAFT_CARD_ID)) next.delete(DRAFT_CARD_ID);
+                    else next.add(DRAFT_CARD_ID);
+                    return next;
+                  });
+                  return;
+                }
+                onNovoLevantamento();
+              }}
+              className={`relative p-3.5 rounded-2xl backdrop-blur-xl transition-all cursor-pointer active-press shadow-glass select-none overflow-hidden ${
+                isDraftSelected
+                  ? 'bg-orange-950/35 border-2 border-orange-400/80 shadow-[0_0_16px_rgba(249,115,22,0.3)]'
+                  : 'bg-slate-900/65 hover:bg-slate-900/85 border border-amber-500/45 shadow-[0_0_20px_rgba(245,158,11,0.14)]'
+              }`}
+            >
+              {/* Marcador de ponto na linha do tempo */}
+              <span
+                className={`absolute -left-[19px] top-4 w-3.5 h-3.5 rounded-full border-2 border-[#090D16] ${
+                  isDraftSelected
+                    ? 'bg-orange-400 shadow-glass-glow-orange'
+                    : 'bg-amber-400 shadow-glass-glow-orange animate-pulse'
+                }`}
+              />
+
+              {/* Esqueleto do Relatório em Rascunho com Efeito Blur */}
+              <div className="filter blur-[1.8px] opacity-60 pointer-events-none select-none">
+                <div className="flex items-start justify-between gap-2 mb-1.5">
+                  <div className="flex items-center gap-2 text-xs font-bold text-white">
+                    <Clock className="w-3.5 h-3.5 text-amber-400" />
+                    <span>{schoolDraft.dataHora}</span>
+                  </div>
+                  <span className="text-[10px] text-amber-300 bg-amber-500/15 px-2 py-0.2 rounded-md border border-amber-500/30 font-medium">
+                    {draftFotosCount} {draftFotosCount === 1 ? 'Foto' : 'Fotos'}
+                  </span>
+                </div>
+
+                <h4 className="text-xs font-semibold text-slate-200 line-clamp-1 mb-1">
+                  {schoolDraft.motivoVisita || 'Relatório Fotográfico em Andamento...'}
+                </h4>
+
+                {schoolDraft.observacoesDiretora && (
+                  <p className="text-[11px] text-slate-400 line-clamp-2 italic bg-black/20 p-2 rounded-xl mb-2">
+                    "{schoolDraft.observacoesDiretora}"
+                  </p>
+                )}
+
+                {draftFotosCount > 0 && (
+                  <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
+                    {schoolDraft.fotos.slice(0, 4).map((f) => (
+                      <div key={f.id} className="relative w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 border border-white/10">
+                        <img src={f.url} alt={f.ambienteNome} className="w-full h-full object-cover" />
+                        <span className="absolute bottom-0 inset-x-0 bg-black/60 text-[8px] text-center text-slate-200 truncate px-0.5">
+                          {f.ambienteNome}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between pt-2 mt-2 border-t border-white/[0.06] text-[10px] text-slate-400">
+                  <span>Fiscal: Eng. Fiscal SEDUC / GPR</span>
+                  <span className="text-amber-400 font-semibold">Em edição</span>
+                </div>
+              </div>
+
+              {/* Camada de Vidro Translúcido (Blur) + Tarja Central RASCUNHO */}
+              <div className="absolute inset-0 bg-slate-950/35 backdrop-blur-[2.5px] flex flex-col items-center justify-center p-3 z-10">
+                {selectionMode && (
+                  <span
+                    className={`absolute top-3 left-3 w-5 h-5 rounded-md flex items-center justify-center border transition-colors ${
+                      isDraftSelected
+                        ? 'bg-orange-500 border-orange-400 text-slate-950'
+                        : 'bg-slate-900/90 border-white/30 text-transparent'
+                    }`}
+                  >
+                    <Check className="w-3.5 h-3.5 stroke-[3]" />
+                  </span>
+                )}
+
+                {/* Tarja Oficial RASCUNHO */}
+                <div className="w-full max-w-[260px] py-2 px-4 rounded-xl bg-gradient-to-r from-amber-500/95 via-amber-400 to-orange-500/95 text-slate-950 font-black text-xs uppercase tracking-[0.18em] text-center shadow-[0_4px_20px_rgba(245,158,11,0.45)] border border-white/30 flex items-center justify-center gap-2">
+                  <Edit3 className="w-3.5 h-3.5 stroke-[2.8]" />
+                  <span>RASCUNHO</span>
+                </div>
+
+                <span className="mt-1.5 text-[10px] font-bold text-amber-200 drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)] bg-black/55 px-2.5 py-0.5 rounded-full border border-amber-500/30">
+                  {selectionMode
+                    ? isDraftSelected
+                      ? 'Selecionado para excluir'
+                      : 'Toque para selecionar'
+                    : `Toque para continuar (${draftFotosCount} ${draftFotosCount === 1 ? 'foto' : 'fotos'}) • ${reportDraftService.formatDraftRemainingTime(schoolDraft.updatedAt)}`}
+                </span>
+              </div>
+            </div>
+          );
+        })()}
+
+        {totalCardsCount === 0 ? (
           <div className="p-4 rounded-2xl bg-slate-900/40 border border-white/5 text-xs text-slate-400 text-center">
             Nenhum relatório registrado para esta escola. Toque em "Novo Relatório Fotográfico" acima para iniciar a vistoria.
           </div>
