@@ -29,6 +29,25 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.051] — Rascunho Automático de Vistorias (24h no IndexedDB), Modo Disparo Contínuo com Carrossel Horizontal e Reabertura/Edição de Relatórios Concluídos (Release v1.0.46 / Build 47)
+- **Data/Hora:** 2026-11-19 01:42 (UTC-3)
+- **Escopos Definidos:**
+  - `PR.051` (Geral): Solução completa para as três exigências reais de campo relatadas pelo fiscal:
+    1. **Salvamento Automático em Rascunho com Retenção Estrita de 24 Horas (`reportDraftService.ts`):** Criado serviço nativo IndexedDB (`db_vistoria_drafts_v1` / `report_drafts`) que salva o laudo a cada foto tirada ou dado alterado. Se o app fechar, travar ou o celular descarregar, os dados são recuperados intactos com banner informativo de tempo restante. Se passar de 24 horas sem ação, o sistema purga o rascunho automaticamente.
+    2. **Disparo Contínuo e Carrossel Horizontal Deslizante:** O fiscal agora pode tirar várias fotos consecutivas sem ser obrigado a catalogar uma por uma. As fotos são organizadas em um carrossel horizontal deslizante (`snap-x flex gap-2.5 overflow-x-auto`) com badges de numeração (`#1`, `#2`...), check verde de preenchimento e seleção rápida com 1 toque para catalogar ambiente, patologias SEDUC e legendas com apoio de IA.
+    3. **Reabertura e Edição Completa de Relatórios Finalizados:** Adicionados botões "Editar Relatório" no `SchoolTimeline` e no `InspectionReportModal`, permitindo reabrir laudos já concluídos para anexar novas fotos, alterar observações ou cadastrar novos ambientes globais sem duplicar o histórico.
+    4. **Preservação de Alta Nitidez:** Compressão inteligente em 1920px Full HD (0.88), eliminando o travamento e estouro de memória sem perder a resolução visual das patologias construtivas. Versão elevada para **v1.0.46 (Build 47)**.
+  - `PR.051.1` (Web / Desktop): Visualização no navegador (`https://fiscalizacao-seduc.vercel.app`) com carrossel fluido e persistência IndexedDB compatível.
+  - `PR.051.2` (Mobile / Android): APK Android compilado com `versionName 1.0.46` e `versionCode 47` e atualizado na release `apk-latest`.
+- **Tags Git:** `PR.051`, `PR.051.1`, `PR.051.2`
+- **Arquivo Local do APK:** `c:\Users\Lenovo\Documents\antigravity\LAB - GPR\Fiscal.IA.lab - GPR\Fiscal.IA.apk`
+- **Comando de Restauração Rápida:**
+  ```bash
+  git checkout PR.051
+  ```
+
+---
+
 ### [PR.050] — Otimização Mobile dos Filtros em Pílulas (DIÁRIO / Status / Municípios) e Release v1.0.45 (Build 46)
 - **Data/Hora:** 2026-11-16 01:33 (UTC-3)
 - No mobile/APK (< md), o bloco DIÁRIO fica em linha própria acima de pílulas arredondadas (rounded-full) com bolinha colorida e quebra automática em 2 linhas (Todos, Parada, Ritmo Lento, Em Execução, A Iniciar), e os filtros de Orçamentos, Medições e Municípios quebram linha sem corte lateral. No desktop (md:), layout mantido integralmente sem alterações.

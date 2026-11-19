@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Printer, Share2, Calendar, MapPin, Building, User, AlertTriangle, Sparkles, CheckCircle2, HardDrive, ExternalLink } from 'lucide-react';
+import { X, Printer, Share2, Calendar, MapPin, Building, User, AlertTriangle, Sparkles, CheckCircle2, HardDrive, ExternalLink, Edit3 } from 'lucide-react';
 import { Levantamento, Escola, Ambiente } from '../../types';
 import { cloudSync } from '../../services/cloudSyncService';
 
@@ -7,6 +7,7 @@ interface InspectionReportModalProps {
   levantamento: Levantamento;
   school?: Escola;
   ambientes: Ambiente[];
+  onEditar?: (levantamento: Levantamento) => void;
   onClose: () => void;
 }
 
@@ -14,6 +15,7 @@ export const InspectionReportModal: React.FC<InspectionReportModalProps> = ({
   levantamento,
   school,
   ambientes,
+  onEditar,
   onClose
 }) => {
   const getAmbienteNome = (ambId: string) => {
@@ -51,6 +53,16 @@ export const InspectionReportModal: React.FC<InspectionReportModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
+            {onEditar && (
+              <button
+                onClick={() => onEditar(levantamento)}
+                className="px-3 py-1.5 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 hover:text-white active-press flex items-center gap-1.5 text-xs font-bold shadow-sm"
+                title="Editar fotos, ambientes e informações deste relatório"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                <span>Editar</span>
+              </button>
+            )}
             {driveConfig.googleDriveFolderUrl && (
               <a
                 href={driveConfig.googleDriveFolderUrl}
@@ -229,18 +241,29 @@ export const InspectionReportModal: React.FC<InspectionReportModalProps> = ({
         </div>
 
         {/* Rodapé do Modal */}
-        <div className="p-3.5 border-t border-white/10 bg-slate-900/60 flex items-center justify-between">
+        <div className="p-3.5 border-t border-white/10 bg-slate-900/60 flex items-center justify-between gap-2 flex-wrap">
           <span className="text-xs text-emerald-400 flex items-center gap-1.5 font-medium">
-            <CheckCircle2 className="w-4 h-4" />
-            Laudo Registrado no Sistema GPR
+            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            <span className="truncate">Laudo Registrado no Sistema GPR</span>
           </span>
 
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-xl bg-cyan-500 text-slate-950 font-bold text-xs active-press shadow-glass-glow-turq"
-          >
-            Fechar Relatório
-          </button>
+          <div className="flex items-center gap-2">
+            {onEditar && (
+              <button
+                onClick={() => onEditar(levantamento)}
+                className="px-3.5 py-2 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 hover:text-white font-bold text-xs active-press flex items-center gap-1.5"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                <span>Continuar Editando</span>
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="px-4 py-2 rounded-xl bg-cyan-500 text-slate-950 font-bold text-xs active-press shadow-glass-glow-turq"
+            >
+              Fechar Relatório
+            </button>
+          </div>
         </div>
       </div>
     </div>

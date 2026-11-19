@@ -1,1 +1,12 @@
-﻿{"version":"1.0.45","buildNumber":46,"releaseDate":"2026-11-16","minRequiredVersion":"1.0.0","downloadUrl":"https://github.com/Wisterly/fiscalizacao-seduc/releases/download/apk-latest/Fiscal.IA.apk","changelog":["Layout mobile dos filtros DIÁRIO e status modelado em pílulas arredondadas com quebra automática (2 linhas) conforme referência visual, mantendo desktop intacto"]}
+﻿{
+  "version": "1.0.46",
+  "buildNumber": 47,
+  "releaseDate": "2026-11-19",
+  "minRequiredVersion": "1.0.0",
+  "downloadUrl": "https://github.com/Wisterly/fiscalizacao-seduc/releases/download/apk-latest/Fiscal.IA.apk",
+  "changelog": [
+    "Salvamento automático em rascunho com persistência no IndexedDB e retenção de até 24 horas para proteção contra desligamento ou travamento",
+    "Modo de disparo contínuo de fotos com navegação em carrossel horizontal deslizante e visualização rápida por foto",
+    "Reabertura e edição completa de relatórios técnicos já finalizados (adicionar/remover fotos, alterar ambientes e notas)"
+  ]
+}

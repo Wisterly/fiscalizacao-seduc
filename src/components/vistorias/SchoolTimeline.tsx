@@ -14,7 +14,8 @@ import {
   ExternalLink,
   Trash2,
   Check,
-  X
+  X,
+  Edit3
 } from 'lucide-react';
 import { Escola, Levantamento, GRE, OrdemServico } from '../../types';
 import { StatusConservacaoBadge } from '../common/Badge';
@@ -30,6 +31,7 @@ interface SchoolTimelineProps {
   onBack: () => void;
   onNovoLevantamento: () => void;
   onVisualizarLevantamento: (levantamento: Levantamento) => void;
+  onEditarLevantamento?: (levantamento: Levantamento) => void;
   onUpdateSchool: (updatedSchool: Escola) => void;
   onDeleteLevantamentos?: (ids: string[]) => void;
   onVerOS?: (osId: string) => void;
@@ -48,6 +50,7 @@ export const SchoolTimeline: React.FC<SchoolTimelineProps> = ({
   onBack,
   onNovoLevantamento,
   onVisualizarLevantamento,
+  onEditarLevantamento,
   onUpdateSchool,
   onDeleteLevantamentos,
   onVerOS,
@@ -531,7 +534,23 @@ export const SchoolTimeline: React.FC<SchoolTimelineProps> = ({
 
                 {/* Rodapé do Card */}
                 <div className="flex items-center justify-between pt-2 mt-2 border-t border-white/[0.06] text-[10px] text-slate-400">
-                  <span>Fiscal: {lev.concluidoPor}</span>
+                  <div className="flex items-center gap-2">
+                    <span>Fiscal: {lev.concluidoPor}</span>
+                    {onEditarLevantamento && !selectionMode && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEditarLevantamento(lev);
+                        }}
+                        className="px-2 py-0.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 hover:text-amber-200 active-press font-bold text-[9.5px] flex items-center gap-1"
+                        title="Continuar editando e anexando fotos neste relatório"
+                      >
+                        <Edit3 className="w-2.5 h-2.5" />
+                        <span>Editar</span>
+                      </button>
+                    )}
+                  </div>
                   <span className="text-cyan-400 flex items-center gap-0.5 font-semibold">
                     {selectionMode ? (isSelected ? 'Selecionado' : 'Toque para marcar') : 'Abrir Relatório Completo'}
                     {!selectionMode && <ChevronRight className="w-3 h-3" />}

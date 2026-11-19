@@ -29,6 +29,7 @@ import { SchoolList } from './components/vistorias/SchoolList';
 import { SchoolTimeline } from './components/vistorias/SchoolTimeline';
 import { NewLevantamentoModal } from './components/vistorias/NewLevantamentoModal';
 import { InspectionReportModal } from './components/vistorias/InspectionReportModal';
+import { reportDraftService } from './services/reportDraftService';
 import { OrcamentosView } from './components/orcamentos/OrcamentosView';
 import { MedicoesView } from './components/medicoes/MedicoesView';
 import { RotasView } from './components/rotas/RotasView';
@@ -81,6 +82,7 @@ export function App() {
 
   // Modais de Vistoria
   const [schoolForNewLevantamento, setSchoolForNewLevantamento] = useState<Escola | null>(null);
+  const [levantamentoParaEditar, setLevantamentoParaEditar] = useState<Levantamento | null>(null);
   const [reportModalData, setReportModalData] = useState<{ levantamento: Levantamento; school?: Escola } | null>(null);
 
   // Alvo específico de OS para abrir direto
@@ -133,8 +135,9 @@ export function App() {
     }
   }, []);
 
-  // Sincronização automática em segundo plano das ordens de serviço da Ata da SEDUC
+  // Sincronização automática em segundo plano das ordens de serviço da Ata da SEDUC e purga de rascunhos de 24h
   useEffect(() => {
+    reportDraftService.purgeExpiredDrafts().catch(() => {});
     const syncAtaSilencioso = async () => {
       try {
         const res = await syncAtaFromGoogleSheets(storage.getSchools());
@@ -178,6 +181,7 @@ export function App() {
     }
     if (schoolForNewLevantamento) {
       setSchoolForNewLevantamento(null);
+      setLevantamentoParaEditar(null);
       return true;
     }
     if (updateModalData) {
@@ -405,15 +409,25 @@ export function App() {
   };
 
   // --- Handlers de Levantamentos Fotográficos ---
-  const handleSalvarLevantamento = (novoLevantamentoData: Omit<Levantamento, 'id'>) => {
-    const saved = storage.addLevantamento(novoLevantamentoData);
+  const handleSalvarLevantamento = (novoLevantamentoData: Omit<Levantamento, 'id'>, idExistente?: string) => {
+    let saved: Levantamento;
+    if (idExistente) {
+      saved = storage.updateLevantamento({
+        ...novoLevantamentoData,
+        id: idExistente
+      });
+    } else {
+      saved = storage.addLevantamento(novoLevantamentoData);
+    }
+
     setLevantamentos(storage.getLevantamentos());
     setSchools(storage.getSchools());
     setAlertas(storage.getAlertas());
     setDemandas(storage.getDemandas());
     setSchoolForNewLevantamento(null);
+    setLevantamentoParaEditar(null);
 
-    // Abre imediatamente o relatório gerado
+    // Abre imediatamente o relatório gerado ou editado
     const esc = schools.find(s => s.id === novoLevantamentoData.escolaId);
     setReportModalData({
       levantamento: saved,
@@ -670,6 +684,10 @@ export function App() {
                       school: selectedSchool
                     });
                   }}
+                  onEditarLevantamento={(lev) => {
+                    setLevantamentoParaEditar(lev);
+                    setSchoolForNewLevantamento(selectedSchool);
+                  }}
                   onUpdateSchool={handleUpdateSchool}
                   onDeleteLevantamentos={handleDeleteLevantamentos}
                   onVerOS={(osId) => {
@@ -754,14 +772,18 @@ export function App() {
           />
         )}
 
-        {/* MODAL: NOVO LEVANTAMENTO FOTOGRÁFICO */}
+        {/* MODAL: NOVO LEVANTAMENTO OU EDIÇÃO DE LAUDO */}
         {schoolForNewLevantamento && (
           <NewLevantamentoModal
             school={schoolForNewLevantamento}
             ambientes={ambientes}
+            levantamentoParaEditar={levantamentoParaEditar}
             onAddAmbienteGlobal={handleAddAmbienteGlobal}
             onSalvarLevantamento={handleSalvarLevantamento}
-            onClose={() => setSchoolForNewLevantamento(null)}
+            onClose={() => {
+              setSchoolForNewLevantamento(null);
+              setLevantamentoParaEditar(null);
+            }}
           />
         )}
 
@@ -771,6 +793,17 @@ export function App() {
             levantamento={reportModalData.levantamento}
             school={reportModalData.school}
             ambientes={ambientes}
+            onEditar={(lev) => {
+              const esc =
+                reportModalData.school ||
+                selectedSchool ||
+                schools.find((s) => s.id === lev.escolaId);
+              setReportModalData(null);
+              if (esc) {
+                setLevantamentoParaEditar(lev);
+                setSchoolForNewLevantamento(esc);
+              }
+            }}
             onClose={() => setReportModalData(null)}
           />
         )}

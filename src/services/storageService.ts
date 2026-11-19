@@ -559,6 +559,40 @@ class StorageService {
     return novo;
   }
 
+  updateLevantamento(levantamento: Levantamento): Levantamento {
+    const list = this.getLevantamentos();
+    const updated = list.map(l => (l.id === levantamento.id ? levantamento : l));
+    this.setItem(STORAGE_KEYS.LEVANTAMENTOS, updated);
+
+    // Registra alertas de fotos urgentes novas ou atualizadas
+    levantamento.fotos.forEach(foto => {
+      if (foto.isUrgente && foto.urgenciaNota) {
+        this.addAlerta({
+          titulo: `Alerta na Foto: ${foto.ambienteNome}`,
+          descricao: foto.urgenciaNota,
+          prioridade: 'critica',
+          responsavel: foto.responsavelUrgencia || 'Naila',
+          linkModulo: 'vistorias',
+          targetId: levantamento.id
+        });
+
+        this.addDemanda({
+          titulo: foto.urgenciaNota,
+          descricao: `Foto atualizada no ambiente ${foto.ambienteNome}. Observação técnica: ${foto.legendaTecnicaIA || foto.legendaOriginal}`,
+          tipo: 'vistoria_urgente',
+          responsavel: foto.responsavelUrgencia || 'Naila',
+          prioridade: 'alta',
+          dataLimite: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          alertFrequency: foto.diasAlerta && foto.diasAlerta.length > 0 ? 'dias_semana' : 'todos_os_dias',
+          diasSemana: foto.diasAlerta || ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'],
+          escolaId: levantamento.escolaId
+        });
+      }
+    });
+
+    return levantamento;
+  }
+
   deleteLevantamentos(ids: string[]): Levantamento[] {
     const idSet = new Set(ids);
     const updated = this.getLevantamentos().filter(l => !idSet.has(l.id));
