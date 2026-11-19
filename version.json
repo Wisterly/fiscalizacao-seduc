@@ -1,12 +1,11 @@
 ﻿{
-  "version": "1.0.47",
-  "buildNumber": 48,
+  "version": "1.0.48",
+  "buildNumber": 49,
   "releaseDate": "2026-11-19",
   "minRequiredVersion": "1.0.0",
   "downloadUrl": "https://github.com/Wisterly/fiscalizacao-seduc/releases/download/apk-latest/Fiscal.IA.apk",
   "changelog": [
-    "Disparo instantâneo do detector de atualização OTA via GitHub API sem atraso de cache e detecção automática ao reabrir o app",
-    "Salvamento automático em rascunho no IndexedDB com retenção de 24 horas contra travamento ou desligamento",
-    "Modo de disparo contínuo de fotos com navegação em carrossel horizontal deslizante e reabertura/edição completa de relatórios finalizados"
+    "Correção do carrossel horizontal de fotos: toque simples apenas seleciona a foto para edição; modo de exclusão só ativa ao pressionar e segurar (long press)",
+    "Salvamento automático em rascunho no IndexedDB com retenção de 24 horas e reabertura/edição completa de relatórios finalizados"
   ]
 }

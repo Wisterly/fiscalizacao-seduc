@@ -315,6 +315,89 @@ export const NewLevantamentoModal: React.FC<NewLevantamentoModalProps> = ({
     });
   };
 
+  // --- Modo de Exclusão por Pressão Longa (Long Press) no Carrossel ---
+  const [photoDeleteMode, setPhotoDeleteMode] = useState(false);
+  const [selectedPhotosToDelete, setSelectedPhotosToDelete] = useState<Set<string>>(new Set());
+  const photoPressTimerRef = useRef<number | null>(null);
+  const photoPressStartRef = useRef<{ x: number; y: number } | null>(null);
+  const photoLongPressTriggeredRef = useRef(false);
+
+  const clearPhotoPressTimer = () => {
+    if (photoPressTimerRef.current) {
+      window.clearTimeout(photoPressTimerRef.current);
+      photoPressTimerRef.current = null;
+    }
+    photoPressStartRef.current = null;
+  };
+
+  useEffect(() => {
+    return () => clearPhotoPressTimer();
+  }, []);
+
+  const activatePhotoDeleteMode = (fotoId: string) => {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate(45);
+    }
+    setPhotoDeleteMode(true);
+    setSelectedPhotosToDelete(new Set([fotoId]));
+  };
+
+  const handlePhotoPointerDown = (fotoId: string, e: React.PointerEvent) => {
+    if (e.button !== 0 && e.pointerType === 'mouse') return;
+    photoLongPressTriggeredRef.current = false;
+    clearPhotoPressTimer();
+    photoPressStartRef.current = { x: e.clientX, y: e.clientY };
+
+    photoPressTimerRef.current = window.setTimeout(() => {
+      photoLongPressTriggeredRef.current = true;
+      activatePhotoDeleteMode(fotoId);
+    }, 450);
+  };
+
+  const handlePhotoPointerMove = (e: React.PointerEvent) => {
+    if (!photoPressStartRef.current) return;
+    const dx = Math.abs(e.clientX - photoPressStartRef.current.x);
+    const dy = Math.abs(e.clientY - photoPressStartRef.current.y);
+    if (dx > 10 || dy > 10) {
+      clearPhotoPressTimer();
+    }
+  };
+
+  const handlePhotoThumbClick = (fotoId: string, idx: number) => {
+    if (photoLongPressTriggeredRef.current) {
+      photoLongPressTriggeredRef.current = false;
+      return;
+    }
+
+    if (photoDeleteMode) {
+      setSelectedPhotosToDelete((prev) => {
+        const next = new Set(prev);
+        if (next.has(fotoId)) {
+          next.delete(fotoId);
+        } else {
+          next.add(fotoId);
+        }
+        if (next.size === 0) {
+          setPhotoDeleteMode(false);
+        }
+        return next;
+      });
+    } else {
+      setSelectedPhotoIndex(idx);
+    }
+  };
+
+  const handleConfirmDeleteSelectedPhotos = () => {
+    if (selectedPhotosToDelete.size === 0) return;
+    setFotos((prev) => {
+      const updated = prev.filter((f) => !selectedPhotosToDelete.has(f.id));
+      setSelectedPhotoIndex((curr) => Math.max(0, Math.min(curr, updated.length - 1)));
+      return updated;
+    });
+    setSelectedPhotosToDelete(new Set());
+    setPhotoDeleteMode(false);
+  };
+
   // Atualização dos dados da foto ativa no painel do carrossel
   const updateActivePhoto = (patch: Partial<FotoLevantamento>) => {
     setFotos((prev) => {
@@ -627,34 +710,115 @@ export const NewLevantamentoModal: React.FC<NewLevantamentoModalProps> = ({
             {/* ============================================================== */}
             {fotos.length > 0 ? (
               <div className="space-y-3">
+                {/* Barra Contextual de Modo de Exclusão (ativada por Long Press) */}
+                {photoDeleteMode ? (
+                  <div className="p-2.5 rounded-2xl bg-red-950/60 border border-red-500/40 flex items-center justify-between gap-2 animate-fadeIn">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPhotoDeleteMode(false);
+                          setSelectedPhotosToDelete(new Set());
+                        }}
+                        className="p-1 rounded-lg bg-white/10 text-slate-300 hover:text-white active-press"
+                        title="Cancelar modo de exclusão"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                      <span className="text-xs font-extrabold text-red-200 truncate">
+                        {selectedPhotosToDelete.size} {selectedPhotosToDelete.size === 1 ? 'foto selecionada' : 'fotos selecionadas'}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (selectedPhotosToDelete.size === fotos.length) {
+                            setPhotoDeleteMode(false);
+                            setSelectedPhotosToDelete(new Set());
+                          } else {
+                            setSelectedPhotosToDelete(new Set(fotos.map((f) => f.id)));
+                          }
+                        }}
+                        className="px-2 py-1 rounded-xl bg-white/10 border border-white/10 text-[10px] font-bold text-slate-200 active-press"
+                      >
+                        {selectedPhotosToDelete.size === fotos.length ? 'Desmarcar' : 'Todas'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleConfirmDeleteSelectedPhotos}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-red-500 text-white font-extrabold text-[11px] active-press shadow-md"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Excluir ({selectedPhotosToDelete.size})</span>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between px-1">
+                    <span className="text-[10px] text-slate-400">
+                      Toque na foto para editar • <strong className="text-slate-300">Segure na foto para excluir</strong>
+                    </span>
+                  </div>
+                )}
+
                 <div
                   ref={carouselRef}
                   className="flex gap-2.5 overflow-x-auto no-scrollbar py-1.5 px-0.5 snap-x scroll-smooth"
                 >
                   {fotos.map((f, idx) => {
                     const isSelected = idx === selectedPhotoIndex;
+                    const isMarkedForDelete = selectedPhotosToDelete.has(f.id);
                     const temLegenda = Boolean(f.legendaOriginal.trim() || f.legendaTecnicaIA.trim());
 
                     return (
                       <div
                         key={f.id}
-                        onClick={() => setSelectedPhotoIndex(idx)}
-                        className={`group relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden flex-shrink-0 cursor-pointer snap-start transition-all duration-200 active-press border ${
-                          isSelected
+                        onPointerDown={(e) => handlePhotoPointerDown(f.id, e)}
+                        onPointerUp={clearPhotoPressTimer}
+                        onPointerCancel={clearPhotoPressTimer}
+                        onPointerMove={handlePhotoPointerMove}
+                        onContextMenu={(e) => {
+                          e.preventDefault();
+                          activatePhotoDeleteMode(f.id);
+                        }}
+                        onClick={() => handlePhotoThumbClick(f.id, idx)}
+                        className={`relative w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden flex-shrink-0 cursor-pointer snap-start transition-all duration-200 active-press select-none border ${
+                          photoDeleteMode
+                            ? isMarkedForDelete
+                              ? 'ring-2 ring-red-500 border-red-400 shadow-[0_0_14px_rgba(239,68,68,0.6)] scale-105 z-10'
+                              : 'border-white/15 opacity-55'
+                            : isSelected
                             ? 'ring-2 ring-cyan-400 border-transparent shadow-[0_0_14px_rgba(6,182,212,0.5)] scale-105 z-10'
                             : 'border-white/10 hover:border-white/30 opacity-75 hover:opacity-100'
                         }`}
                       >
-                        <img src={f.url} alt={`Foto ${idx + 1}`} className="w-full h-full object-cover" />
+                        <img
+                          src={f.url}
+                          alt={`Foto ${idx + 1}`}
+                          draggable={false}
+                          className="w-full h-full object-cover pointer-events-none select-none"
+                        />
 
                         {/* Badge de Número da Foto */}
-                        <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded-md bg-black/75 backdrop-blur-md text-[9px] font-extrabold text-white border border-white/20">
+                        <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded-md bg-black/75 backdrop-blur-md text-[9px] font-extrabold text-white border border-white/20 pointer-events-none">
                           #{idx + 1}
                         </span>
 
-                        {/* Indicador de Status (Concluído ou Pendente) */}
-                        <div className="absolute top-1 right-1">
-                          {temLegenda ? (
+                        {/* Indicador de Status ou Seleção para Exclusão */}
+                        <div className="absolute top-1 right-1 pointer-events-none">
+                          {photoDeleteMode ? (
+                            <span
+                              className={`w-5 h-5 rounded-full flex items-center justify-center border shadow ${
+                                isMarkedForDelete
+                                  ? 'bg-red-500 border-red-300 text-white'
+                                  : 'bg-black/70 border-white/40 text-transparent'
+                              }`}
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </span>
+                          ) : temLegenda ? (
                             <span className="w-4 h-4 rounded-full bg-emerald-500 text-slate-950 flex items-center justify-center shadow">
                               <Check className="w-2.5 h-2.5 stroke-[3]" />
                             </span>
@@ -664,24 +828,15 @@ export const NewLevantamentoModal: React.FC<NewLevantamentoModalProps> = ({
                         </div>
 
                         {/* Nome do Ambiente no Rodapé do Card */}
-                        <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent p-1 pt-2">
+                        <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent p-1 pt-2 pointer-events-none">
                           <p className="text-[8.5px] font-semibold text-slate-200 truncate text-center leading-tight">
-                            {f.ambienteNome || 'Sem ambiente'}
+                            {photoDeleteMode
+                              ? isMarkedForDelete
+                                ? 'Marcada'
+                                : 'Toque p/ marcar'
+                              : f.ambienteNome || 'Sem ambiente'}
                           </p>
                         </div>
-
-                        {/* Botão Rápido de Excluir Foto no Carrossel */}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleRemoverFoto(f.id);
-                          }}
-                          className="absolute inset-0 bg-red-950/80 text-red-300 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
-                          title="Remover foto"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
                       </div>
                     );
                   })}
@@ -737,14 +892,6 @@ export const NewLevantamentoModal: React.FC<NewLevantamentoModalProps> = ({
                           title="Próxima foto"
                         >
                           <ChevronRight className="w-4 h-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoverFoto(activePhoto.id)}
-                          className="p-1 rounded-lg bg-red-500/20 border border-red-500/30 text-red-300 hover:text-red-100 active-press ml-1"
-                          title="Excluir esta foto"
-                        >
-                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </div>

@@ -29,6 +29,18 @@ A numeração segue rigorosamente a hierarquia de escopo:
 
 ## 📋 HISTÓRICO DE PONTOS DE RESTAURAÇÃO
 
+### [PR.053] — Correção da Interação no Carrossel de Fotos (Toque Simples Seleciona, Pressionar e Segurar Ativa Modo de Exclusão) e Release v1.0.48 (Build 49)
+- **Data/Hora:** 2026-11-19 02:18 (UTC-3)
+- **Escopos Definidos:**
+  - `PR.053` (Geral):
+    1. **Correção do Bug de Exclusão ao Tocar na Miniatura (`NewLevantamentoModal.tsx`):** Removido o overlay invisível `group-hover` (`absolute inset-0`) que capturava o primeiro toque no celular/Android e disparava a exclusão da foto em vez de selecioná-la.
+    2. **Modo de Exclusão Estrito por Pressionar e Segurar (`Long Press 450ms`):** Agora um toque simples (`tap` / `click`) seleciona imediatamente a foto no carrossel para editar ambiente, legenda e patologias. Para excluir fotos, basta pressionar e segurar (450ms) em qualquer foto do carrossel: o sistema vibra, abre a barra de exclusão em lote e permite marcar uma ou várias fotos para excluir.
+  - `PR.053.1` (Web / Desktop): Sincronizado em `https://fiscalizacao-seduc.vercel.app`.
+  - `PR.053.2` (Mobile / Android): APK Android compilado com `versionName 1.0.48` e `versionCode 49` e publicado na release `apk-latest`.
+- **Tags Git:** `PR.053`, `PR.053.1`, `PR.053.2` | Restauração: `git checkout PR.053`
+
+---
+
 ### [PR.052] — Detecção Instantânea de Atualização OTA sem Cache (GitHub API + Resume Listener) e Sincronização de Versão v1.0.47 (Build 48)
 - **Data/Hora:** 2026-11-19 01:57 (UTC-3)
 - **Escopos Definidos:**

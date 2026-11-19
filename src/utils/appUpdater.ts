@@ -64,8 +64,8 @@ export const VERCEL_APP_URL = 'https://fiscalizacao-seduc.vercel.app';
 export const DEFAULT_APK_DOWNLOAD_URL =
   'https://github.com/Wisterly/fiscalizacao-seduc/releases/download/apk-latest/Fiscal.IA.apk';
 
-export const CURRENT_APP_VERSION = '1.0.47';
-export const CURRENT_BUILD_NUMBER = 48;
+export const CURRENT_APP_VERSION = '1.0.48';
+export const CURRENT_BUILD_NUMBER = 49;
 
 /**
  * Busca os metadados de versão com fallback em múltiplos canais (GitHub API -> Vercel -> GitHub Raw -> Local)
